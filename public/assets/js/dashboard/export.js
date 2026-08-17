@@ -6,8 +6,8 @@
 import { I18n } from '../i18n.js';
 
 function csvCell(value) {
-    const s = value === null || value === undefined ? '' : String(value);
-    return '"' + s.replace(/"/g, '""') + '"';
+    const stringValue = value === null || value === undefined ? '' : String(value);
+    return '"' + stringValue.replace(/"/g, '""') + '"';
 }
 
 function widgetRows(widget) {
@@ -23,21 +23,21 @@ function widgetRows(widget) {
     }
     if (Array.isArray(data) && data.length > 0) {
         const columns = Object.keys(data[0]);
-        return [columns, ...data.map(r => columns.map(c => r[c]))];
+        return [columns, ...data.map(dataRow => columns.map(columnName => dataRow[columnName]))];
     }
     return null;
 }
 
 function downloadCSV(rows, title) {
-    const csv = rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+    const csv = rows.map(dataRow => dataRow.map(csvCell).join(',')).join('\r\n');
 
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const downloadLink = document.createElement('a');
     const slug = String(title || 'widget').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'widget';
-    a.href = url;
-    a.download = slug + '_' + new Date().toISOString().slice(0, 10) + '.csv';
-    a.click();
+    downloadLink.href = url;
+    downloadLink.download = slug + '_' + new Date().toISOString().slice(0, 10) + '.csv';
+    downloadLink.click();
     URL.revokeObjectURL(url);
 }
 
@@ -50,8 +50,8 @@ function buildExportButton(widget) {
     button.className = 'dash-export-btn';
     button.textContent = 'CSV';
     button.title = I18n.t('grid.export_csv');
-    button.addEventListener('click', (e) => {
-        e.stopPropagation();
+    button.addEventListener('click', (event) => {
+        event.stopPropagation();
         const rows = widgetRows(widget);
         if (rows) downloadCSV(rows, widget.title);
     });

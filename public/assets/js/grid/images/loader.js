@@ -28,7 +28,7 @@ export async function loadImageColumn(pageRows, schema) {
     const config = schema.tables[state.currentTable]?.images;
     if (!config?.enabled || !config.show_in_grid || !pageRows.length) return;
 
-    const ids = pageRows.map(r => r['id']).filter(Boolean).join(',');
+    const ids = pageRows.map(pageRow => pageRow['id']).filter(Boolean).join(',');
     if (!ids) return;
 
     try {
@@ -41,10 +41,10 @@ export async function loadImageColumn(pageRows, schema) {
         }
 
         for (const row of pageRows) {
-            const rid = String(row['id']);
-            const td  = document.querySelector(`[data-img-row-id="${CSS.escape(rid)}"]`);
+            const rowKey = String(row['id']);
+            const td  = document.querySelector(`[data-img-row-id="${CSS.escape(rowKey)}"]`);
             if (!td) continue;
-            renderThumb(td, store.get(`${state.currentTable}:${rid}`));
+            renderThumb(td, store.get(`${state.currentTable}:${rowKey}`));
         }
     } catch (error) {
         debugLog('image column load failed', error);

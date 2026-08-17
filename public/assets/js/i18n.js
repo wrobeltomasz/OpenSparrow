@@ -52,20 +52,20 @@ const I18n = (() => {
     }
 
     function _pluralForm(loc, n) {
-        const abs = Math.abs(n);
+        const absoluteCount = Math.abs(n);
         if (loc === 'pl') {
-            if (abs === 1) return 'one';
-            const m10 = abs % 10, m100 = abs % 100;
+            if (absoluteCount === 1) return 'one';
+            const m10 = absoluteCount % 10, m100 = absoluteCount % 100;
             if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'few';
             return 'many';
         }
         if (loc === 'ru' || loc === 'uk') {
-            const m10 = abs % 10, m100 = abs % 100;
+            const m10 = absoluteCount % 10, m100 = absoluteCount % 100;
             if (m10 === 1 && m100 !== 11) return 'one';
             if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'few';
             return 'many';
         }
-        return abs === 1 ? 'one' : 'other';
+        return absoluteCount === 1 ? 'one' : 'other';
     }
 
     return { load, t, locale };

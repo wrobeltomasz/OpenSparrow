@@ -7,7 +7,7 @@ import { BulkPanel } from './bulk_panel.js';
 import { showToast } from './toast.js';
 import { escHtml } from './util/esc.js';
 
-const T = window.FILES_TEXT;
+const TEXT = window.FILES_TEXT;
 
 document.addEventListener("DOMContentLoaded", () => {
     const API_URL = 'api/files.php';
@@ -60,16 +60,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     buttonUpload.addEventListener('click', uploadFile);
     buttonRefresh.addEventListener('click', () => loadFiles());
-    typeFilter.addEventListener('change', (e) => { currentType = e.target.value; currentPage = 1; loadFiles(); });
+    typeFilter.addEventListener('change', (labelError) => { currentType = labelError.target.value; currentPage = 1; loadFiles(); });
     tableSelect.addEventListener('change', loadRelatedRecords);
 
     sortHeaders.forEach(th => {
         th.addEventListener('click', () => {
-            const col = th.dataset.sort;
-            if (sortState.column === col) {
+            const columnName = th.dataset.sort;
+            if (sortState.column === columnName) {
                 sortState.asc = !sortState.asc;
             } else {
-                sortState = { column: col, asc: true };
+                sortState = { column: columnName, asc: true };
             }
             currentPage = 1;
             updateSortIndicators();
@@ -89,9 +89,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     let searchTimeout;
-    searchInput.addEventListener('input', (e) => {
+    searchInput.addEventListener('input', (labelError) => {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => { currentSearch = e.target.value; currentPage = 1; loadFiles(); }, 400);
+        searchTimeout = setTimeout(() => { currentSearch = labelError.target.value; currentPage = 1; loadFiles(); }, 400);
     });
 
     if (buttonClearFilters) {
@@ -105,8 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    tbody.addEventListener('click', async (e) => {
-        const button = e.target.closest('[data-action="delete-file"]');
+    tbody.addEventListener('click', async (labelError) => {
+        const button = labelError.target.closest('[data-action="delete-file"]');
         if (!button) return;
         const uuid = button.dataset.uuid;
         if (!uuid || !confirm('Are you sure you want to delete this file?')) return;
@@ -120,20 +120,20 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data.success) {
                 loadFiles();
             } else {
-                alert(T.delete_error.replace('{error}', data.error || T.unknown));
+                alert(TEXT.delete_error.replace('{error}', data.error || TEXT.unknown));
             }
-        } catch (err) {
-            alert(T.network_error);
+        } catch (error) {
+            alert(TEXT.network_error);
         }
     });
 
     function tagsToArray(raw) {
         if (!raw || raw === '{}') return [];
-        return raw.replace(/(^{|}$)/g, '').replace(/"/g, '').split(',').map(t => t.trim()).filter(Boolean);
+        return raw.replace(/(^{|}$)/g, '').replace(/"/g, '').split(',').map(tagName => tagName.trim()).filter(Boolean);
     }
 
     function tagsBadgesHtml(array) {
-        if (array.length) return array.map(t => `<span class="tag-badge">${escHtml(t)}</span>`).join(' ');
+        if (array.length) return array.map(tagName => `<span class="tag-badge">${escHtml(tagName)}</span>`).join(' ');
         return canEdit ? '<span class="f-tag-add">+ Add tags</span>' : '-';
     }
 
@@ -151,12 +151,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const data = await result.json();
             if (!data.success) {
-                showToast(T.save_error.replace('{error}', data.error || T.failed), 'error');
+                showToast(TEXT.save_error.replace('{error}', data.error || TEXT.failed), 'error');
                 return null;
             }
             return data.file;
-        } catch (err) {
-            showToast(T.network_error, 'error');
+        } catch (error) {
+            showToast(TEXT.network_error, 'error');
             return null;
         }
     }
@@ -166,14 +166,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const newValue = cell.textContent.trim();
         const original   = cell.dataset.orig || '';
         if (newValue === original) { cell.textContent = original; return; }
-        if (newValue === '') { cell.textContent = original; showToast(T.name_empty, 'error'); return; }
+        if (newValue === '') { cell.textContent = original; showToast(TEXT.name_empty, 'error'); return; }
         cell.dataset.saving = '1';
         const file = await saveMeta(cell.dataset.uuid, { display_name: newValue });
         delete cell.dataset.saving;
         if (file) {
             cell.dataset.orig = file.display_name;
             cell.textContent  = file.display_name;
-            showToast(T.name_updated, 'success');
+            showToast(TEXT.name_updated, 'success');
         } else {
             cell.textContent = original;
         }
@@ -189,12 +189,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const file = await saveMeta(cell.dataset.uuid, { tags: value });
         delete cell.dataset.saving;
         renderTagsCell(cell, file ? (file.tags || '{}') : (cell.dataset.tags || ''));
-        if (file) showToast(T.tags_updated, 'success');
+        if (file) showToast(TEXT.tags_updated, 'success');
     }
 
     if (canEdit) {
-        tbody.addEventListener('click', (e) => {
-            const cell = e.target.closest('td.f-td-tags');
+        tbody.addEventListener('click', (labelError) => {
+            const cell = labelError.target.closest('td.f-td-tags');
             if (!cell || cell.querySelector('input')) return;
             const array   = tagsToArray(cell.dataset.tags || '');
             const input = document.createElement('input');
@@ -207,27 +207,27 @@ document.addEventListener("DOMContentLoaded", () => {
             input.focus();
         });
 
-        tbody.addEventListener('focusout', (e) => {
-            const tagInput = e.target.closest('input.f-tag-edit');
+        tbody.addEventListener('focusout', (labelError) => {
+            const tagInput = labelError.target.closest('input.f-tag-edit');
             if (tagInput) { commitTags(tagInput); return; }
-            const nameCell = e.target.closest('td[data-edit="display"]');
+            const nameCell = labelError.target.closest('td[data-edit="display"]');
             if (nameCell) commitDisplay(nameCell);
         });
 
-        tbody.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                if (e.target.closest('input.f-tag-edit') || e.target.closest('td[data-edit="display"]')) {
-                    e.preventDefault();
-                    e.target.blur();
+        tbody.addEventListener('keydown', (labelError) => {
+            if (labelError.key === 'Enter') {
+                if (labelError.target.closest('input.f-tag-edit') || labelError.target.closest('td[data-edit="display"]')) {
+                    labelError.preventDefault();
+                    labelError.target.blur();
                 }
-            } else if (e.key === 'Escape') {
-                const tagInput = e.target.closest('input.f-tag-edit');
+            } else if (labelError.key === 'Escape') {
+                const tagInput = labelError.target.closest('input.f-tag-edit');
                 if (tagInput) {
                     const cell = tagInput.closest('td.f-td-tags');
                     renderTagsCell(cell, cell.dataset.tags || '');
                     return;
                 }
-                const nameCell = e.target.closest('td[data-edit="display"]');
+                const nameCell = labelError.target.closest('td[data-edit="display"]');
                 if (nameCell) { nameCell.textContent = nameCell.dataset.orig || ''; nameCell.blur(); }
             }
         });
@@ -244,8 +244,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    tbody.addEventListener('change', (e) => {
-        const callback = e.target.closest('.row-select-cb');
+    tbody.addEventListener('change', (labelError) => {
+        const callback = labelError.target.closest('.row-select-cb');
         if (!callback) return;
         if (callback.checked) selectedUuids.add(callback.dataset.uuid);
         else selectedUuids.delete(callback.dataset.uuid);
@@ -291,18 +291,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const tagButton = document.createElement('button');
         tagButton.className = 'me-bar-edit-btn';
         tagButton.id = 'fileBulkTagBtn';
-        tagButton.textContent = T.bulk_add_tags;
+        tagButton.textContent = TEXT.bulk_add_tags;
         tagButton.addEventListener('click', openTagPanel);
 
         const delButton = document.createElement('button');
         delButton.className = 'me-bar-delete-btn';
         delButton.id = 'fileBulkDeleteBtn';
-        delButton.textContent = T.delete;
+        delButton.textContent = TEXT.delete;
         delButton.addEventListener('click', massDeleteSelected);
 
         const clearButton = document.createElement('button');
         clearButton.className = 'me-bar-clear-btn';
-        clearButton.textContent = T.bulk_deselect;
+        clearButton.textContent = TEXT.bulk_deselect;
         clearButton.addEventListener('click', deselectAll);
 
         actions.appendChild(tagButton);
@@ -317,20 +317,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updateBulkBar() {
         if (!canEdit) return;
-        const n = selectedUuids.size;
-        const b = getBulkBar();
-        b.querySelector('#fileBulkCount').textContent = T.bulk_n_selected.replace('{n}', n);
-        if (n > 0) {
-            b.classList.add('active');
+        const selectedCount = selectedUuids.size;
+        const bulkBarElement = getBulkBar();
+        bulkBarElement.querySelector('#fileBulkCount').textContent = TEXT.bulk_n_selected.replace('{n}', selectedCount);
+        if (selectedCount > 0) {
+            bulkBarElement.classList.add('active');
         } else {
-            b.classList.remove('active');
+            bulkBarElement.classList.remove('active');
             if (tagPanel?.isOpen()) tagPanel.close();
         }
     }
 
     async function massDeleteSelected() {
-        const n = selectedUuids.size;
-        if (n === 0 || !confirm(`Delete ${n} selected file(s)?`)) return;
+        const selectedCount = selectedUuids.size;
+        if (selectedCount === 0 || !confirm(`Delete ${selectedCount} selected file(s)?`)) return;
         try {
             const result = await fetch(API_URL, {
                 method: 'POST',
@@ -339,21 +339,21 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const data = await result.json();
             if (data.success) {
-                showToast(T.deleted_n.replace('{n}', data.deleted), 'success');
+                showToast(TEXT.deleted_n.replace('{n}', data.deleted), 'success');
                 deselectAll();
                 loadFiles();
             } else {
-                showToast(T.delete_error.replace('{error}', data.error || T.unknown), 'error');
+                showToast(TEXT.delete_error.replace('{error}', data.error || TEXT.unknown), 'error');
             }
-        } catch (err) {
-            showToast(T.network_error, 'error');
+        } catch (error) {
+            showToast(TEXT.network_error, 'error');
         }
     }
 
     function openTagPanel() {
         if (selectedUuids.size === 0) return;
         if (!tagPanel) {
-            tagPanel = new BulkPanel({ id: 'fileTagPanel', title: T.bulk_add_tags, applyLabel: T.bulk_apply });
+            tagPanel = new BulkPanel({ id: 'fileTagPanel', title: TEXT.bulk_add_tags, applyLabel: TEXT.bulk_apply });
             tagPanel.onApply(applyMassTags);
         }
         buildTagPanelBody(tagPanel);
@@ -368,18 +368,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const scope = document.createElement('p');
         scope.className = 'me-scope-info';
-        scope.textContent = T.bulk_tags_scope.replace('{n}', selectedUuids.size);
+        scope.textContent = TEXT.bulk_tags_scope.replace('{n}', selectedUuids.size);
         body.appendChild(scope);
 
         const field = document.createElement('div');
         field.className = 'bp-field';
         const label = document.createElement('label');
         label.htmlFor = 'fileBulkTagsInput';
-        label.textContent = T.ph_tags;
+        label.textContent = TEXT.ph_tags;
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'fileBulkTagsInput';
-        input.placeholder = T.ph_tags_example;
+        input.placeholder = TEXT.ph_tags_example;
         input.addEventListener('input', () => panelInstance.setApplyDisabled(input.value.trim() === ''));
         field.appendChild(label);
         field.appendChild(input);
@@ -392,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!tags || selectedUuids.size === 0) return;
 
         panelInstance.setApplyDisabled(true);
-        panelInstance.setStatus(T.applying, false);
+        panelInstance.setStatus(TEXT.applying, false);
         try {
             const result = await fetch(API_URL, {
                 method: 'POST',
@@ -401,16 +401,16 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const data = await result.json();
             if (data.success) {
-                showToast(T.tagged_n.replace('{n}', data.tagged), 'success');
+                showToast(TEXT.tagged_n.replace('{n}', data.tagged), 'success');
                 panelInstance.close();
                 deselectAll();
                 loadFiles();
             } else {
-                panelInstance.setStatus(T.error_generic.replace('{error}', data.error || T.failed), true);
+                panelInstance.setStatus(TEXT.error_generic.replace('{error}', data.error || TEXT.failed), true);
                 panelInstance.setApplyDisabled(false);
             }
-        } catch (err) {
-            panelInstance.setStatus(T.network_error, true);
+        } catch (error) {
+            panelInstance.setStatus(TEXT.network_error, true);
             panelInstance.setApplyDisabled(false);
         }
     }
@@ -420,10 +420,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const result = await fetch(API_URL + '?action=get_relations_config');
             const data = await result.json();
             if (data.success && data.relations && data.relations.length > 0) {
-                data.relations.forEach(r => {
+                data.relations.forEach(record => {
                     const option = document.createElement('option');
-                    option.value = r.table;
-                    option.textContent = r.table;
+                    option.value = record.table;
+                    option.textContent = record.table;
                     tableSelect.appendChild(option);
                 });
             } else {
@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 recordSelect.disabled = true;
                 tableSelect.innerHTML = '<option value="">-- No relations active --</option>';
             }
-        } catch (err) {
+        } catch (error) {
             tableSelect.innerHTML = '<option value="">-- Network error --</option>';
         }
     }
@@ -450,24 +450,24 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await result.json();
             if (data.success && data.records) {
                 recordSelect.innerHTML = '<option value="">-- Select record --</option>';
-                data.records.forEach(r => {
+                data.records.forEach(record => {
                     const option = document.createElement('option');
-                    option.value = r.id;
-                    option.textContent = r.label;
+                    option.value = record.id;
+                    option.textContent = record.label;
                     recordSelect.appendChild(option);
                 });
                 recordSelect.disabled = false;
             } else {
                 recordSelect.innerHTML = '<option value="">-- Load error --</option>';
             }
-        } catch (err) {
+        } catch (error) {
             recordSelect.innerHTML = '<option value="">-- Network error --</option>';
         }
     }
 
     async function loadFiles() {
         if (buttonClearFilters) buttonClearFilters.hidden = !currentSearch && currentType === 'all';
-        tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-empty">${escHtml(T.loading)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-empty">${escHtml(TEXT.loading)}</td></tr>`;
         try {
             const parameters = new URLSearchParameters({
                 action: 'list',
@@ -487,9 +487,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const tablesToFetch = new Set();
-            data.files.forEach(f => {
-                if (f.related_table && !relationCache[f.related_table]) {
-                    tablesToFetch.add(f.related_table);
+            data.files.forEach(fileEntry => {
+                if (fileEntry.related_table && !relationCache[fileEntry.related_table]) {
+                    tablesToFetch.add(fileEntry.related_table);
                 }
             });
 
@@ -499,9 +499,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     const lData = await lResult.json();
                     relationCache[table] = {};
                     if (lData.success && lData.records) {
-                        lData.records.forEach(r => { relationCache[table][r.id] = r.label; });
+                        lData.records.forEach(record => { relationCache[table][record.id] = record.label; });
                     }
-                } catch (e) {
+                } catch (labelError) {
                     console.error('Failed to fetch labels for', table);
                 }
             });
@@ -510,52 +510,52 @@ document.addEventListener("DOMContentLoaded", () => {
             renderTable(data.files);
             renderPagination(data.total_pages, data.total_count);
             syncSelectionUI();
-        } catch (err) {
-            tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-error">${escHtml(T.network_error)}</td></tr>`;
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-error">${escHtml(TEXT.network_error)}</td></tr>`;
         }
     }
 
     function renderTable(files) {
         if (!files || files.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-empty">${escHtml(T.no_files_match)}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${COLSPAN}" class="f-td-empty">${escHtml(TEXT.no_files_match)}</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = files.map(f => {
-            const iconPath = icons[f.type] || icons.other;
-            const size     = formatBytes(f.size_bytes);
-            const date     = new Date(f.created_at).toLocaleDateString();
+        tbody.innerHTML = files.map(fileEntry => {
+            const iconPath = icons[fileEntry.type] || icons.other;
+            const size     = formatBytes(fileEntry.size_bytes);
+            const date     = new Date(fileEntry.created_at).toLocaleDateString();
 
             let relatedBadge = '-';
-            if (f.related_table && f.related_id) {
-                const displayLabel = relationCache[f.related_table] && relationCache[f.related_table][f.related_id]
-                    ? relationCache[f.related_table][f.related_id]
-                    : `${f.related_table} #${f.related_id}`;
+            if (fileEntry.related_table && fileEntry.related_id) {
+                const displayLabel = relationCache[fileEntry.related_table] && relationCache[fileEntry.related_table][fileEntry.related_id]
+                    ? relationCache[fileEntry.related_table][fileEntry.related_id]
+                    : `${fileEntry.related_table} #${fileEntry.related_id}`;
                 relatedBadge = `
-                    <a href="edit.php?table=${encodeURIComponent(f.related_table)}&id=${encodeURIComponent(f.related_id)}" class="related-badge" title="${T.go_to_record}">
+                    <a href="edit.php?table=${encodeURIComponent(fileEntry.related_table)}&id=${encodeURIComponent(fileEntry.related_id)}" class="related-badge" title="${TEXT.go_to_record}">
                         ${escHtml(displayLabel)}
                     </a>
                 `;
             }
 
-            const displayValue  = f.display_name || '';
+            const displayValue  = fileEntry.display_name || '';
             const displayCell = canEdit
-                ? `<td class="f-td-display editable" data-edit="display" data-uuid="${escHtml(f.uuid)}" data-orig="${escHtml(displayValue)}" contenteditable="true">${escHtml(displayValue)}</td>`
+                ? `<td class="f-td-display editable" data-edit="display" data-uuid="${escHtml(fileEntry.uuid)}" data-orig="${escHtml(displayValue)}" contenteditable="true">${escHtml(displayValue)}</td>`
                 : `<td class="f-td-display">${escHtml(displayValue || '-')}</td>`;
 
-            const tagsArr  = tagsToArray(f.tags);
+            const tagsArr  = tagsToArray(fileEntry.tags);
             const tagsCell = canEdit
-                ? `<td class="f-td-tags editable-tags" data-uuid="${escHtml(f.uuid)}" data-tags="${escHtml(f.tags || '{}')}" title="${T.edit_tags}">${tagsBadgesHtml(tagsArr)}</td>`
+                ? `<td class="f-td-tags editable-tags" data-uuid="${escHtml(fileEntry.uuid)}" data-tags="${escHtml(fileEntry.tags || '{}')}" title="${TEXT.edit_tags}">${tagsBadgesHtml(tagsArr)}</td>`
                 : `<td class="f-td-tags">${tagsArr.length ? tagsBadgesHtml(tagsArr) : '-'}</td>`;
 
             const deleteButton = window.USER_CAPS.canEdit
-                ? `<button class="btn-icon btn-icon-danger" data-action="delete-file" data-uuid="${escHtml(f.uuid)}" title="${T.delete}">
-                        <img src="assets/icons/delete.png" alt="${T.delete}">
+                ? `<button class="btn-icon btn-icon-danger" data-action="delete-file" data-uuid="${escHtml(fileEntry.uuid)}" title="${TEXT.delete}">
+                        <img src="assets/icons/delete.png" alt="${TEXT.delete}">
                     </button>`
                 : '';
 
             const selectTd = canEdit
-                ? `<td class="td-select"><input type="checkbox" class="row-select-cb" aria-label="${T.select_file}" data-uuid="${escHtml(f.uuid)}"></td>`
+                ? `<td class="td-select"><input type="checkbox" class="row-select-cb" aria-label="${TEXT.select_file}" data-uuid="${escHtml(fileEntry.uuid)}"></td>`
                 : '';
 
             return `
@@ -564,18 +564,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>
                         <div class="f-type-cell">
                             <img src="${escHtml(iconPath)}" alt="" class="f-type-icon">
-                            <span class="f-type-label">${escHtml(f.type.charAt(0).toUpperCase() + f.type.slice(1))}</span>
+                            <span class="f-type-label">${escHtml(fileEntry.type.charAt(0).toUpperCase() + fileEntry.type.slice(1))}</span>
                         </div>
                     </td>
-                    <td class="f-td-name">${escHtml(f.name)}</td>
+                    <td class="f-td-name">${escHtml(fileEntry.name)}</td>
                     ${displayCell}
                     ${tagsCell}
                     <td>${size}</td>
                     <td>${relatedBadge}</td>
                     <td>${date}</td>
                     <td class="td-actions">
-                        <a href="file_download.php?uuid=${encodeURIComponent(f.uuid)}" target="_blank" rel="noopener noreferrer" class="btn-icon" data-action="download-file" title="${T.download}">
-                            <img src="assets/icons/download.png" alt="${T.download}">
+                        <a href="file_download.php?uuid=${encodeURIComponent(fileEntry.uuid)}" target="_blank" rel="noopener noreferrer" class="btn-icon" data-action="download-file" title="${TEXT.download}">
+                            <img src="assets/icons/download.png" alt="${TEXT.download}">
                         </a>
                         ${deleteButton}
                     </td>
@@ -592,13 +592,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const sizeLabel = document.createElement('label');
         sizeLabel.className = 'pag-size';
-        sizeLabel.textContent = T.rows_per_page + ':';
+        sizeLabel.textContent = TEXT.rows_per_page + ':';
         const sizeSelect = document.createElement('select');
-        PAGE_SIZE_OPTIONS.forEach(n => {
+        PAGE_SIZE_OPTIONS.forEach(selectedCount => {
             const option = document.createElement('option');
-            option.value = n;
-            option.textContent = n;
-            if (n === pageSize) option.selected = true;
+            option.value = selectedCount;
+            option.textContent = selectedCount;
+            if (selectedCount === pageSize) option.selected = true;
             sizeSelect.appendChild(option);
         });
         sizeSelect.addEventListener('change', () => {
@@ -614,11 +614,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const to   = Math.min(currentPage * pageSize, totalCount);
         const information = document.createElement('span');
         information.className = 'pag-info';
-        information.textContent = T.showing.replace('{from}', from).replace('{to}', to).replace('{total}', totalCount);
+        information.textContent = TEXT.showing.replace('{from}', from).replace('{to}', to).replace('{total}', totalCount);
         pagElement.appendChild(information);
 
         const previousButton = document.createElement('button');
-        previousButton.textContent = T.pg_prev;
+        previousButton.textContent = TEXT.pg_prev;
         previousButton.disabled = currentPage <= 1;
         previousButton.addEventListener('click', () => {
             if (currentPage > 1) { currentPage--; loadFiles(); }
@@ -626,11 +626,11 @@ document.addEventListener("DOMContentLoaded", () => {
         pagElement.appendChild(previousButton);
 
         const pageInformation = document.createElement('span');
-        pageInformation.textContent = T.page_of.replace('{page}', currentPage).replace('{total}', totalPages);
+        pageInformation.textContent = TEXT.page_of.replace('{page}', currentPage).replace('{total}', totalPages);
         pagElement.appendChild(pageInformation);
 
         const nextButton = document.createElement('button');
-        nextButton.textContent = T.pg_next;
+        nextButton.textContent = TEXT.pg_next;
         nextButton.disabled = currentPage >= totalPages;
         nextButton.addEventListener('click', () => {
             if (currentPage < totalPages) { currentPage++; loadFiles(); }
@@ -670,7 +670,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 setUploadStatus('Error: ' + (data.error || 'Failed'), 'error');
             }
-        } catch (err) {
+        } catch (error) {
             setUploadStatus('Network error during upload.', 'error');
         }
     }
@@ -682,9 +682,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function formatBytes(bytes) {
         if (!bytes || bytes === 0) return '0 B';
-        const k = 1024;
+        const unitBase = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        const unitIndex = Math.floor(Math.log(bytes) / Math.log(unitBase));
+        return parseFloat((bytes / Math.pow(unitBase, unitIndex)).toFixed(2)) + ' ' + sizes[unitIndex];
     }
 });

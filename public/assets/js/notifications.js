@@ -25,8 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     badge.style.display = 'none';
                 }
             }
-        } catch (e) {
-            console.error('Notification check failed:', e);
+        } catch (error) {
+            console.error('Notification check failed:', error);
         }
     }
 
@@ -34,20 +34,20 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('api/notifications.php?action=get_list', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .then(r => r.json())
+        .then(response => response.json())
         .then(data => {
             if (!list) return;
             list.innerHTML = '';
             const items = data.notifications;
             if (items && items.length > 0) {
-                items.forEach(n => {
+                items.forEach(notification => {
                     const li = document.createElement('li');
                     li.style.cssText = 'padding:10px 15px;border-bottom:1px solid var(--border-light);font-weight:' +
-                        (n.is_read === 't' ? 'normal' : 'bold') + ';';
-                    li.textContent = n.title;
-                    if (n.link) {
+                        (notification.is_read === 't' ? 'normal' : 'bold') + ';';
+                    li.textContent = notification.title;
+                    if (notification.link) {
                         li.style.cursor = 'pointer';
-                        li.title = n.link;
+                        li.title = notification.link;
                         li.addEventListener('click', async () => {
                             await fetch('api/notifications.php?action=mark_read', {
                                 method: 'POST',
@@ -56,10 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     'X-Requested-With': 'XMLHttpRequest',
                                     'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
                                 },
-                                body: JSON.stringify({ id: parseInt(n.id) })
+                                body: JSON.stringify({ id: parseInt(notification.id) })
                             }).catch(() => {});
                             try {
-                                const target = new URL(n.link, window.location.origin);
+                                const target = new URL(notification.link, window.location.origin);
                                 if (target.origin === window.location.origin) {
                                     window.location.href = target.href;
                                 }
@@ -75,11 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 list.appendChild(empty);
             }
         })
-        .catch(e => console.error('Notification load failed:', e));
+        .catch(error => console.error('Notification load failed:', error));
     }
 
-    wrapper.addEventListener('click', e => {
-        e.stopPropagation();
+    wrapper.addEventListener('click', error => {
+        error.stopPropagation();
         if (!dropdown) return;
         if (dropdown.style.display === 'none' || dropdown.style.display === '') {
             dropdown.style.display = 'block';
@@ -89,8 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.addEventListener('click', e => {
-        if (dropdown && !e.target.closest('.notifications-wrapper')) {
+    document.addEventListener('click', event => {
+        if (dropdown && !event.target.closest('.notifications-wrapper')) {
             dropdown.style.display = 'none';
         }
     });

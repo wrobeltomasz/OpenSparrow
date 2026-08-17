@@ -124,23 +124,23 @@ function deselectAll() {
 
 function updateBar() {
     const size = state.selectedIds.size;
-    const b = getBar();
-    b.querySelector('#me-bar-count').textContent =
+    const barElement = getBar();
+    barElement.querySelector('#me-bar-count').textContent =
         I18n.t('mass_edit.rows_selected').replace('{n}', size);
 
     if (size > 0) {
-        b.classList.add('active');
+        barElement.classList.add('active');
     } else {
-        b.classList.remove('active');
+        barElement.classList.remove('active');
         if (panel?.isOpen()) panel.close();
     }
 }
 
 async function massDuplicateSelected() {
-    const n = state.selectedIds.size;
-    if (n === 0) return;
+    const selectedCount = state.selectedIds.size;
+    if (selectedCount === 0) return;
 
-    if (!confirm(I18n.t('mass_duplicate.confirm').replace('{n}', n))) return;
+    if (!confirm(I18n.t('mass_duplicate.confirm').replace('{n}', selectedCount))) return;
 
     let data;
     try {
@@ -167,10 +167,10 @@ async function massDuplicateSelected() {
 }
 
 async function massDeleteSelected() {
-    const n = state.selectedIds.size;
-    if (n === 0) return;
+    const selectedCount = state.selectedIds.size;
+    if (selectedCount === 0) return;
 
-    if (!confirm(I18n.t('mass_delete.confirm').replace('{n}', n))) return;
+    if (!confirm(I18n.t('mass_delete.confirm').replace('{n}', selectedCount))) return;
 
     let data;
     try {
@@ -194,20 +194,20 @@ async function massDeleteSelected() {
 }
 
 async function buildValueInput(columnConfig, columnName = '') {
-    const fks = window.schema?.tables?.[state.currentTable]?.foreign_keys ?? {};
-    if (columnName && fks[columnName]) {
-        const fkConfig   = fks[columnName];
+    const foreignKeys = window.schema?.tables?.[state.currentTable]?.foreign_keys ?? {};
+    if (columnName && foreignKeys[columnName]) {
+        const fkConfig   = foreignKeys[columnName];
         const dispColumns = Array.isArray(fkConfig.display_column)
             ? fkConfig.display_column
             : [fkConfig.display_column || 'id'];
         const cacheKey = `${state.currentTable}_${columnName}`;
 
-        const sel = document.createElement('select');
-        sel.id = 'me-value';
+        const selectElement = document.createElement('select');
+        selectElement.id = 'me-value';
         const blank = document.createElement('option');
         blank.value = '';
         blank.textContent = I18n.t('mass_edit.select_fk_placeholder');
-        sel.appendChild(blank);
+        selectElement.appendChild(blank);
 
         let referenceData = [];
         if (state.fkCache.has(cacheKey)) {
@@ -223,45 +223,45 @@ async function buildValueInput(columnConfig, columnName = '') {
             } catch {  }
         }
 
-        referenceData.forEach(r => {
-            const dv  = dispColumns.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || String(r.id);
+        referenceData.forEach(referenceRow => {
+            const displayValue  = dispColumns.map(displayColumn => referenceRow[displayColumn + '__display'] ?? referenceRow[displayColumn] ?? '').join(' - ') || String(referenceRow.id);
             const option = document.createElement('option');
-            option.value       = String(r.id);
-            option.textContent = dv;
-            sel.appendChild(option);
+            option.value       = String(referenceRow.id);
+            option.textContent = displayValue;
+            selectElement.appendChild(option);
         });
 
-        return sel;
+        return selectElement;
     }
 
     const type = (columnConfig.type ?? '').toLowerCase().split('(')[0].trim();
 
     if (type === 'boolean' || type === 'bool') {
-        const sel = document.createElement('select');
-        sel.id = 'me-value';
+        const selectElement = document.createElement('select');
+        selectElement.id = 'me-value';
         [['true', I18n.t('common.yes')], ['false', I18n.t('common.no')]].forEach(([v, l]) => {
             const option = document.createElement('option');
             option.value = v; option.textContent = l;
-            sel.appendChild(option);
+            selectElement.appendChild(option);
         });
-        return sel;
+        return selectElement;
     }
 
     if (type === 'enum' && Array.isArray(columnConfig.options)) {
-        const sel = document.createElement('select');
-        sel.id = 'me-value';
-        columnConfig.options.forEach(o => {
+        const selectElement = document.createElement('select');
+        selectElement.id = 'me-value';
+        columnConfig.options.forEach(optionValue => {
             const option = document.createElement('option');
-            option.value = o; option.textContent = o;
-            sel.appendChild(option);
+            option.value = optionValue; option.textContent = optionValue;
+            selectElement.appendChild(option);
         });
-        return sel;
+        return selectElement;
     }
 
     const NUMERIC_PREFIXES = ['int', 'int2', 'int4', 'int8', 'bigint', 'smallint',
         'serial', 'bigserial', 'numeric', 'decimal', 'float', 'float4',
         'float8', 'real', 'double', 'money'];
-    if (NUMERIC_PREFIXES.some(p => type.startsWith(p))) {
+    if (NUMERIC_PREFIXES.some(numericPrefix => type.startsWith(numericPrefix))) {
         const input = document.createElement('input');
         input.type = 'number'; input.id = 'me-value';
         input.placeholder = I18n.t('mass_edit.value_placeholder');
@@ -297,8 +297,8 @@ async function rebuildValueInput(panelInstance) {
     const columnSelect = panelInstance.bodyEl.querySelector('#me-column');
     if (!columnSelect) return;
     const cols = window.schema?.tables?.[state.currentTable]?.columns ?? {};
-    const old  = panelInstance.bodyEl.querySelector('#me-value');
-    if (old) old.remove();
+    const previousInput  = panelInstance.bodyEl.querySelector('#me-value');
+    if (previousInput) previousInput.remove();
     const valueField = panelInstance.bodyEl.querySelector('.me-val-field');
     if (valueField) valueField.appendChild(await buildValueInput(cols[columnSelect.value] ?? {}, columnSelect.value));
     clearPreviewUI(panelInstance);
@@ -365,11 +365,11 @@ async function buildMassEditBody(panelInstance) {
         if (valueElement) valueElement.disabled = nullCallback.checked;
         clearPreviewUI(panelInstance);
     });
-    body.addEventListener('input', e => {
-        if (e.target.id === 'me-value') clearPreviewUI(panelInstance);
+    body.addEventListener('input', event => {
+        if (event.target.id === 'me-value') clearPreviewUI(panelInstance);
     });
-    body.addEventListener('change', e => {
-        if (e.target.id === 'me-value') clearPreviewUI(panelInstance);
+    body.addEventListener('change', event => {
+        if (event.target.id === 'me-value') clearPreviewUI(panelInstance);
     });
 }
 
@@ -408,20 +408,20 @@ async function runPreview(panelInstance) {
 
     const rows = data.rows ?? [];
     if (rows.length > 0) {
-        const tbl = document.createElement('table');
-        tbl.className = 'bp-preview-table';
+        const tableElement = document.createElement('table');
+        tableElement.className = 'bp-preview-table';
 
         const thead = document.createElement('thead');
-        const hr    = document.createElement('tr');
+        const headerRow    = document.createElement('tr');
         [
             I18n.t('mass_edit.col_id'),
             I18n.t('mass_edit.col_current'),
             I18n.t('mass_edit.col_new'),
-        ].forEach(h => {
+        ].forEach(headerLabel => {
             const th = document.createElement('th');
-            th.textContent = h; hr.appendChild(th);
+            th.textContent = headerLabel; headerRow.appendChild(th);
         });
-        thead.appendChild(hr); tbl.appendChild(thead);
+        thead.appendChild(headerRow); tableElement.appendChild(thead);
 
         const tbody = document.createElement('tbody');
         for (const row of rows) {
@@ -433,8 +433,8 @@ async function runPreview(panelInstance) {
             tr.appendChild(tdId); tr.appendChild(tdOld); tr.appendChild(tdNew);
             tbody.appendChild(tr);
         }
-        tbl.appendChild(tbody);
-        previewArea.appendChild(tbl);
+        tableElement.appendChild(tbody);
+        previewArea.appendChild(tableElement);
     }
 
     previewLoaded      = true;
@@ -478,8 +478,8 @@ async function applyMassEdit(panelInstance) {
         return;
     }
 
-    const n = payload.row_ids.length;
-    if (!confirm(I18n.t('mass_edit.confirm').replace('{n}', n))) return;
+    const selectedCount = payload.row_ids.length;
+    if (!confirm(I18n.t('mass_edit.confirm').replace('{n}', selectedCount))) return;
 
     panelInstance.setApplyDisabled(true);
     panelInstance.setStatus(I18n.t('common.loading'), false);
@@ -556,20 +556,20 @@ function buildExportBody(panelInstance) {
     const list = document.createElement('div');
     list.className = 'me-col-picker-list';
 
-    displayedColumns.forEach(col => {
+    displayedColumns.forEach(columnKey => {
         const item = document.createElement('label');
         item.className = 'me-col-picker-item';
         const callback = document.createElement('input');
         callback.type = 'checkbox';
         callback.className = 'me-col-picker-cb';
-        callback.value = col;
+        callback.value = columnKey;
         callback.checked = true;
         callback.addEventListener('change', () => {
-            const any = Array.from(body.querySelectorAll('.me-col-picker-cb')).some(c => c.checked);
+            const any = Array.from(body.querySelectorAll('.me-col-picker-cb')).some(displayColumn => displayColumn.checked);
             panelInstance.setApplyDisabled(!any);
         });
         const span = document.createElement('span');
-        span.textContent = schemaColumns[col]?.display_name ?? col;
+        span.textContent = schemaColumns[columnKey]?.display_name ?? columnKey;
         item.appendChild(callback);
         item.appendChild(span);
         list.appendChild(item);
@@ -589,19 +589,19 @@ function applyExport(panelInstance) {
     }
 
     const { filteredData } = getState();
-    const rows        = filteredData.filter(r => state.selectedIds.has(r.id));
+    const rows        = filteredData.filter(referenceRow => state.selectedIds.has(referenceRow.id));
     const schemaColumns  = window.schema?.tables?.[state.currentTable]?.columns ?? {};
-    const header      = checkedColumns.map(c => JSON.stringify(schemaColumns[c]?.display_name ?? c)).join(',');
-    const lines       = rows.map(r =>
-        checkedColumns.map(c => JSON.stringify(r[c] ?? '')).join(',')
+    const header      = checkedColumns.map(displayColumn => JSON.stringify(schemaColumns[displayColumn]?.display_name ?? displayColumn)).join(',');
+    const lines       = rows.map(referenceRow =>
+        checkedColumns.map(displayColumn => JSON.stringify(referenceRow[displayColumn] ?? '')).join(',')
     );
     const csv  = [header, ...lines].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'export_selected.csv';
-    a.click();
+    const downloadLink    = document.createElement('a');
+    downloadLink.href     = url;
+    downloadLink.download = 'export_selected.csv';
+    downloadLink.click();
     URL.revokeObjectURL(url);
     panelInstance.close();
 }
@@ -630,13 +630,13 @@ async function buildOwnerBody(panelInstance) {
     scopeElement.textContent = I18n.t('mass_owner.scope_info').replace('{n}', state.selectedIds.size);
     body.appendChild(scopeElement);
 
-    const sel = document.createElement('select');
-    sel.id = 'me-owner-sel';
+    const selectElement = document.createElement('select');
+    selectElement.id = 'me-owner-sel';
     const blank = document.createElement('option');
     blank.value = '';
     blank.textContent = '— ' + I18n.t('mass_owner.select_user') + ' —';
-    sel.appendChild(blank);
-    body.appendChild(makeField('bp-field', I18n.t('mass_owner.select_user'), 'me-owner-sel', sel));
+    selectElement.appendChild(blank);
+    body.appendChild(makeField('bp-field', I18n.t('mass_owner.select_user'), 'me-owner-sel', selectElement));
 
     panelInstance.setStatus(I18n.t('common.loading'), false);
 
@@ -645,29 +645,29 @@ async function buildOwnerBody(panelInstance) {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
         });
         const data = await result.json();
-        (data.users ?? []).forEach(u => {
+        (data.users ?? []).forEach(user => {
             const option       = document.createElement('option');
-            option.value       = String(u.id);
-            option.textContent = u.username;
-            sel.appendChild(option);
+            option.value       = String(user.id);
+            option.textContent = user.username;
+            selectElement.appendChild(option);
         });
         panelInstance.clearStatus();
     } catch {
         panelInstance.setStatus(I18n.t('common.error_generic'), true);
     }
 
-    sel.addEventListener('change', () => panelInstance.setApplyDisabled(sel.value === ''));
+    selectElement.addEventListener('change', () => panelInstance.setApplyDisabled(selectElement.value === ''));
 }
 
 async function applyMassOwner(panelInstance) {
-    const sel = panelInstance.bodyEl.querySelector('#me-owner-sel');
-    if (!sel || sel.value === '') {
+    const selectElement = panelInstance.bodyEl.querySelector('#me-owner-sel');
+    if (!selectElement || selectElement.value === '') {
         panelInstance.setStatus(I18n.t('mass_owner.select_first'), true);
         return;
     }
 
-    const n = state.selectedIds.size;
-    if (!confirm(I18n.t('mass_owner.confirm').replace('{n}', n))) return;
+    const selectedCount = state.selectedIds.size;
+    if (!confirm(I18n.t('mass_owner.confirm').replace('{n}', selectedCount))) return;
 
     panelInstance.setApplyDisabled(true);
     panelInstance.setStatus(I18n.t('common.loading'), false);
@@ -680,7 +680,7 @@ async function applyMassOwner(panelInstance) {
             body: {
                 action:     'mass_set',
                 table:      state.currentTable,
-                owner_id:   parseInt(sel.value, 10),
+                owner_id:   parseInt(selectElement.value, 10),
                 row_ids:    Array.from(state.selectedIds),
                 csrf_token: getCsrfToken(),
             },
@@ -698,7 +698,7 @@ async function applyMassOwner(panelInstance) {
         return;
     }
 
-    showToast(I18n.t('mass_owner.applied').replace('{n}', data.updated ?? n), 'success');
+    showToast(I18n.t('mass_owner.applied').replace('{n}', data.updated ?? selectedCount), 'success');
     panelInstance.close();
     deselectAll();
     reloadGrid();

@@ -26,9 +26,9 @@ export async function renderMigrationsPage(context) {
         { label: 'Release Migrations', icon: 'box.png' },
     ]);
 
-    const sub = document.createElement('p');
-    sub.style.cssText = 'margin:0 0 20px;  ';
-    sub.textContent = 'Each migration runs once and is recorded in spw_migrations. Running "Apply Migrations" is safe to repeat.';
+    const subtitle = document.createElement('p');
+    subtitle.style.cssText = 'margin:0 0 20px;  ';
+    subtitle.textContent = 'Each migration runs once and is recorded in spw_migrations. Running "Apply Migrations" is safe to repeat.';
 
     const runButton = document.createElement('button');
     runButton.id = 'mig-run-btn';
@@ -44,7 +44,7 @@ export async function renderMigrationsPage(context) {
     tableWrap.id = 'mig-table';
     tableWrap.innerHTML = '<p style=" ">Loading…</p>';
 
-    panel0.append(sub, runButton, statusElement, tableWrap);
+    panel0.append(subtitle, runButton, statusElement, tableWrap);
 
     const relSub = document.createElement('p');
     relSub.style.cssText = 'margin:0 0 20px;  ';
@@ -108,37 +108,37 @@ async function loadMigrations(container) {
     }
 
     const migrations = data.migrations;
-    const pending    = migrations.filter(m => m.status === 'pending');
-    const applied    = migrations.filter(m => m.status === 'applied');
+    const pending    = migrations.filter(migration => migration.status === 'pending');
+    const applied    = migrations.filter(migration => migration.status === 'applied');
 
     const table = document.createElement('table');
     table.className = 'adm-tbl';
 
     const thead = table.createTHead();
     const hrow = thead.insertRow();
-    ['Migration', 'Status', 'Applied at'].forEach(h => {
+    ['Migration', 'Status', 'Applied at'].forEach(headerLabel => {
         const th = document.createElement('th');
         th.className = 'adm-th';
-        th.textContent = h;
+        th.textContent = headerLabel;
         hrow.appendChild(th);
     });
 
     const tbody = table.createTBody();
 
-    migrations.forEach(m => {
+    migrations.forEach(migration => {
         const tr = tbody.insertRow();
 
-        const isPending = m.status === 'pending';
+        const isPending = migration.status === 'pending';
         const badge = isPending
             ? '<span class="adm-badge adm-badge-warn">PENDING</span>'
             : '<span class="adm-badge adm-badge-ok">APPLIED</span>';
 
-        const appliedAt = m.applied_at
-            ? new Date(m.applied_at).toLocaleString()
+        const appliedAt = migration.applied_at
+            ? new Date(migration.applied_at).toLocaleString()
             : '—';
 
         tr.innerHTML = `
-            <td class="adm-td mono">${escHtml(m.name)}</td>
+            <td class="adm-td mono">${escHtml(migration.name)}</td>
             <td class="adm-td">${badge}</td>
             <td class="adm-td">${escHtml(appliedAt)}</td>`;
     });
@@ -176,12 +176,12 @@ async function loadReleaseMigrations(container) {
         return;
     }
 
-    versions.forEach(v => renderVersionCard(v, container));
+    versions.forEach(version => renderVersionCard(version, container));
 }
 
-function renderVersionCard(v, container) {
-    const isPending  = v.status === 'pending';
-    const hasActions = v.actions.some(a => a.type !== 'file_deprecated');
+function renderVersionCard(version, container) {
+    const isPending  = version.status === 'pending';
+    const hasActions = version.actions.some(versionAction => versionAction.type !== 'file_deprecated');
 
     const card = document.createElement('div');
     card.style.cssText = `border:1px solid ${isPending ? 'var(--warn)' : 'var(--accent-mid)'}; border-radius:6px; padding:16px 20px; margin-bottom:16px; background:${isPending ? 'var(--warn-light)' : 'var(--accent-mid)'};`;
@@ -191,7 +191,7 @@ function renderVersionCard(v, container) {
 
     const verSpan = document.createElement('span');
     verSpan.style.cssText = 'font-family:var(--font-mono);  font-weight:700; color:var(--text);';
-    verSpan.textContent = 'v' + v.version;
+    verSpan.textContent = 'v' + version.version;
 
     const badge = document.createElement('span');
     badge.className = `adm-badge ${isPending ? 'adm-badge-warn' : 'adm-badge-ok'}`;
@@ -200,28 +200,28 @@ function renderVersionCard(v, container) {
     headerRow.append(verSpan, badge);
     card.appendChild(headerRow);
 
-    if (v.notes) {
+    if (version.notes) {
         const notes = document.createElement('p');
         notes.style.cssText = '  margin:0 0 12px;';
-        notes.textContent = v.notes;
+        notes.textContent = version.notes;
         card.appendChild(notes);
     }
 
     const checkboxes = [];
 
-    if (isPending && v.actions.length > 0) {
+    if (isPending && version.actions.length > 0) {
         const actionsLabel = document.createElement('p');
         actionsLabel.style.cssText = ' font-weight:600;  margin:0 0 8px;  ';
         actionsLabel.textContent = 'Actions';
         card.appendChild(actionsLabel);
 
-        v.actions.forEach((a, index) => {
+        version.actions.forEach((versionAction, index) => {
             const row = document.createElement('label');
             row.style.cssText = 'display:flex; align-items:center; gap:8px;   margin-bottom:6px; cursor:pointer;';
 
             const callback = document.createElement('input');
             callback.type = 'checkbox';
-            if (a.type !== 'file_deprecated') {
+            if (versionAction.type !== 'file_deprecated') {
                 callback.checked = true;
                 callback.dataset.idx = index;
                 checkboxes.push(callback);
@@ -230,44 +230,44 @@ function renderVersionCard(v, container) {
                 callback.title = 'Informational only — no action taken';
             }
 
-            const lbl = document.createElement('span');
-            const typeTag = a.type === 'file_deprecated'
+            const labelElement = document.createElement('span');
+            const typeTag = versionAction.type === 'file_deprecated'
                 ? '<span style=" ">[info]</span> '
                 : '';
-            const existTag = (a.type === 'file_remove' && !a.exists)
+            const existTag = (versionAction.type === 'file_remove' && !versionAction.exists)
                 ? ' <span style=" ">(file not found — will skip)</span>'
-                : (a.type === 'config_key_remove' && !a.present)
+                : (versionAction.type === 'config_key_remove' && !versionAction.present)
                     ? ' <span style=" ">(key not found — will skip)</span>'
                     : '';
-            lbl.innerHTML = typeTag + escHtml(a.label) + existTag;
+            labelElement.innerHTML = typeTag + escHtml(versionAction.label) + existTag;
 
-            row.append(callback, lbl);
+            row.append(callback, labelElement);
             card.appendChild(row);
         });
-    } else if (isPending && v.actions.length === 0) {
+    } else if (isPending && version.actions.length === 0) {
         const none = document.createElement('p');
         none.style.cssText = '  margin:0 0 12px;';
         none.textContent = 'No file or config changes required for this release.';
         card.appendChild(none);
     }
 
-    if (!isPending && v.applied_data) {
-        const ad = v.applied_data;
+    if (!isPending && version.applied_data) {
+        const appliedData = version.applied_data;
         const hist = document.createElement('p');
         hist.style.cssText = '  margin:4px 0 0;';
-        hist.textContent = 'Applied: ' + new Date(ad.applied_at).toLocaleString();
+        hist.textContent = 'Applied: ' + new Date(appliedData.applied_at).toLocaleString();
         card.appendChild(hist);
 
-        if (ad.actions && ad.actions.length > 0) {
+        if (appliedData.actions && appliedData.actions.length > 0) {
             const actList = document.createElement('ul');
             actList.style.cssText = 'margin:8px 0 0; padding-left:18px;  ';
-            ad.actions.forEach(a => {
+            appliedData.actions.forEach(versionAction => {
                 const li = document.createElement('li');
-                if (a.status === 'done' && a.backup) {
-                    li.innerHTML = escHtml(a.type + ': ' + (a.path || a.file)) +
-                        ' <span style="">— backup: ' + escHtml(a.backup) + '</span>';
+                if (versionAction.status === 'done' && versionAction.backup) {
+                    li.innerHTML = escHtml(versionAction.type + ': ' + (versionAction.path || versionAction.file)) +
+                        ' <span style="">— backup: ' + escHtml(versionAction.backup) + '</span>';
                 } else {
-                    li.textContent = a.type + ': ' + (a.path || a.file || '') + ' [' + a.status + ']';
+                    li.textContent = versionAction.type + ': ' + (versionAction.path || versionAction.file || '') + ' [' + versionAction.status + ']';
                 }
                 actList.appendChild(li);
             });
@@ -289,7 +289,7 @@ function renderVersionCard(v, container) {
         applyButton.addEventListener('click', async () => {
             const selected = checkboxes.filter(callback => callback.checked).map(callback => parseInt(callback.dataset.idx, 10));
 
-            if (!confirm('Apply release migration v' + v.version + '? This will run the selected actions and cannot be undone.')) return;
+            if (!confirm('Apply release migration v' + version.version + '? This will run the selected actions and cannot be undone.')) return;
 
             applyButton.disabled    = true;
             applyButton.textContent = 'Applying…';
@@ -298,7 +298,7 @@ function renderVersionCard(v, container) {
             try {
                 const result  = await apiFetch('api_migrations.php?action=apply', {
                     method: 'POST',
-                    body: JSON.stringify({ version: v.version, selected }),
+                    body: JSON.stringify({ version: version.version, selected }),
                 });
                 const data = await result.json();
 

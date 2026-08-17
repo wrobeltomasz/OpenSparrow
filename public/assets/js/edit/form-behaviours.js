@@ -10,15 +10,15 @@ function initNavButtons() {
 }
 
 function initEnumColors() {
-    document.querySelectorAll('select[data-enum-colors]').forEach(sel => {
+    document.querySelectorAll('select[data-enum-colors]').forEach(selectElement => {
         let colors = {};
         try {
-            colors = JSON.parse(sel.dataset.enumColors || '{}');
-        } catch (e) {
+            colors = JSON.parse(selectElement.dataset.enumColors || '{}');
+        } catch (error) {
             return;
         }
-        const apply = () => { sel.style.background = colors[sel.value] || ''; };
-        sel.addEventListener('change', apply);
+        const apply = () => { selectElement.style.background = colors[selectElement.value] || ''; };
+        selectElement.addEventListener('change', apply);
         apply();
     });
 }
@@ -30,8 +30,8 @@ function initPatternValidation() {
             try {
                 const regex = new RegExp(input.dataset.pattern);
                 input.setCustomValidity(regex.test(input.value) ? '' : (input.dataset.message || 'Invalid format'));
-            } catch (e) {
-                console.error('Invalid RegExp in schema:', input.dataset.pattern, e);
+            } catch (error) {
+                console.error('Invalid RegExp in schema:', input.dataset.pattern, error);
             }
         };
         input.addEventListener('input', validate);

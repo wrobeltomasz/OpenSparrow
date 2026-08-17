@@ -69,8 +69,8 @@ function setVisible(picker, checked) {
 }
 
 function initPicker(picker) {
-    picker.addEventListener('change', e => {
-        if (e.target.matches('.m2m-option input')) {
+    picker.addEventListener('change', event => {
+        if (event.target.matches('.m2m-option input')) {
             renderSummary(picker);
         }
     });
@@ -79,9 +79,9 @@ function initPicker(picker) {
     if (search) {
         search.addEventListener('input', () => applyFilter(picker, search.value));
 
-        search.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
+        search.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
             }
         });
         picker.addEventListener('toggle', () => {
@@ -97,8 +97,8 @@ function initPicker(picker) {
     picker.querySelector('[data-m2m-all]')?.addEventListener('click', () => setVisible(picker, true));
     picker.querySelector('[data-m2m-none]')?.addEventListener('click', () => setVisible(picker, false));
 
-    picker.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && picker.open) {
+    picker.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && picker.open) {
             picker.open = false;
             picker.querySelector('.m2m-toggle')?.focus();
         }
@@ -115,9 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pickers.forEach(initPicker);
 
-    document.addEventListener('click', e => {
+    document.addEventListener('click', event => {
         pickers.forEach(picker => {
-            if (picker.open && !picker.contains(e.target)) {
+            if (picker.open && !picker.contains(event.target)) {
                 picker.open = false;
             }
         });

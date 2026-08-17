@@ -12,13 +12,13 @@ function applyColorRules(rawValue, rules) {
     const number = parseFloat(rawValue);
     if (isNaN(number)) return null;
     for (const rule of rules) {
-        const v = parseFloat(rule.value);
-        if (isNaN(v)) continue;
-        if (rule.op === '>'  && number >  v) return rule.color;
-        if (rule.op === '>=' && number >= v) return rule.color;
-        if (rule.op === '<'  && number <  v) return rule.color;
-        if (rule.op === '<=' && number <= v) return rule.color;
-        if (rule.op === '==' && number === v) return rule.color;
+        const numericValue = parseFloat(rule.value);
+        if (isNaN(numericValue)) continue;
+        if (rule.op === '>'  && number >  numericValue) return rule.color;
+        if (rule.op === '>=' && number >= numericValue) return rule.color;
+        if (rule.op === '<'  && number <  numericValue) return rule.color;
+        if (rule.op === '<=' && number <= numericValue) return rule.color;
+        if (rule.op === '==' && number === numericValue) return rule.color;
     }
     return null;
 }
@@ -38,25 +38,25 @@ const VIEW_FN_KEYS = { sum: 'views.fn_sum', avg: 'views.fn_avg', min: 'views.fn_
 
 function summaryConditionMatch(row, condition) {
     const raw = row[condition.column];
-    const op  = condition.op ?? '==';
-    if (op === 'contains') {
+    const operator  = condition.op ?? '==';
+    if (operator === 'contains') {
         return String(raw ?? '').toLowerCase().includes(String(condition.value ?? '').toLowerCase());
     }
-    if (op === '==' || op === '!=') {
-        const a  = parseFloat(raw);
-        const b  = parseFloat(condition.value);
-        const equals = (!isNaN(a) && !isNaN(b) && String(raw).trim() !== '' )
-            ? a === b
+    if (operator === '==' || operator === '!=') {
+        const leftNumber  = parseFloat(raw);
+        const rightNumber  = parseFloat(condition.value);
+        const equals = (!isNaN(leftNumber) && !isNaN(rightNumber) && String(raw).trim() !== '' )
+            ? leftNumber === rightNumber
             : String(raw ?? '') === String(condition.value ?? '');
-        return op === '==' ? equals : !equals;
+        return operator === '==' ? equals : !equals;
     }
-    const n = parseFloat(raw);
-    const v = parseFloat(condition.value);
-    if (isNaN(n) || isNaN(v)) return false;
-    if (op === '>')  return n > v;
-    if (op === '>=') return n >= v;
-    if (op === '<')  return n < v;
-    if (op === '<=') return n <= v;
+    const rowNumber = parseFloat(raw);
+    const numericValue = parseFloat(condition.value);
+    if (isNaN(rowNumber) || isNaN(numericValue)) return false;
+    if (operator === '>')  return rowNumber > numericValue;
+    if (operator === '>=') return rowNumber >= numericValue;
+    if (operator === '<')  return rowNumber < numericValue;
+    if (operator === '<=') return rowNumber <= numericValue;
     return false;
 }
 
@@ -94,36 +94,36 @@ if (clearFiltersElement && searchElement) {
     });
 }
 
-function detectColumnType(col) {
-    const vals = _curRows.map(r => r[col]).filter(v => v !== null && v !== undefined && v !== '');
+function detectColumnType(columnId) {
+    const vals = _curRows.map(sampleRow => sampleRow[columnId]).filter(numericValue => numericValue !== null && numericValue !== undefined && numericValue !== '');
     if (vals.length === 0) return 'dict';
     const boolSet = new Set(['true', 'false', 't', 'f']);
-    if (vals.every(v => typeof v === 'boolean' || boolSet.has(String(v).toLowerCase()))) return 'bool';
-    if (vals.every(v => !isNaN(parseFloat(v)) && isFinite(v))) return 'number';
-    if (vals.every(v => /^\d{4}-\d{2}-\d{2}/.test(String(v)))) return 'date';
+    if (vals.every(numericValue => typeof numericValue === 'boolean' || boolSet.has(String(numericValue).toLowerCase()))) return 'bool';
+    if (vals.every(numericValue => !isNaN(parseFloat(numericValue)) && isFinite(numericValue))) return 'number';
+    if (vals.every(numericValue => /^\d{4}-\d{2}-\d{2}/.test(String(numericValue)))) return 'date';
     return 'dict';
 }
 
-function columnDisplayName(col) {
-    return _curColumns[col]?.display_name ?? col;
+function columnDisplayName(columnId) {
+    return _curColumns[columnId]?.display_name ?? columnId;
 }
 
-function updateColumnFilterState(col, type, data) {
+function updateColumnFilterState(columnId, type, data) {
     if (!data || data.empty) {
-        delete columnFilters[col];
+        delete columnFilters[columnId];
     } else {
-        columnFilters[col] = { type, ...data };
+        columnFilters[columnId] = { type, ...data };
     }
 }
 
 function handleColumnFilterChange() {
     if (!filterBarElement) return;
     filterBarElement.replaceChildren();
-    const col = columnFilterElement ? columnFilterElement.value : '';
-    if (!col) return;
+    const columnId = columnFilterElement ? columnFilterElement.value : '';
+    if (!columnId) return;
 
-    const type     = detectColumnType(col);
-    const existing = columnFilters[col] || {};
+    const type     = detectColumnType(columnId);
+    const existing = columnFilters[columnId] || {};
     const apply    = () => { if (_applyFilters) _applyFilters(); };
 
     if (type === 'dict') {
@@ -132,23 +132,23 @@ function handleColumnFilterChange() {
 
         const optionAll = document.createElement('option');
         optionAll.value = '';
-        optionAll.textContent = `${columnDisplayName(col)}: ${I18n.t('filter.all')}`;
+        optionAll.textContent = `${columnDisplayName(columnId)}: ${I18n.t('filter.all')}`;
         select.appendChild(optionAll);
 
         const uniqueValues = [...new Set(
-            _curRows.map(r => r[col]).filter(v => v !== null && v !== undefined && v !== '')
+            _curRows.map(sampleRow => sampleRow[columnId]).filter(numericValue => numericValue !== null && numericValue !== undefined && numericValue !== '')
         )].sort();
-        uniqueValues.forEach(val => {
-            const o = document.createElement('option');
-            o.value = String(val);
-            o.textContent = String(val);
-            if (existing.val !== undefined && String(existing.val) === String(val)) o.selected = true;
-            select.appendChild(o);
+        uniqueValues.forEach(value => {
+            const optionElement = document.createElement('option');
+            optionElement.value = String(value);
+            optionElement.textContent = String(value);
+            if (existing.val !== undefined && String(existing.val) === String(value)) optionElement.selected = true;
+            select.appendChild(optionElement);
         });
 
         select.addEventListener('change', () => {
             const selectedText = select.options[select.selectedIndex].text;
-            updateColumnFilterState(col, 'dict', { val: select.value, label: selectedText, empty: select.value === '' });
+            updateColumnFilterState(columnId, 'dict', { val: select.value, label: selectedText, empty: select.value === '' });
             apply();
         });
         filterBarElement.appendChild(select);
@@ -171,7 +171,7 @@ function handleColumnFilterChange() {
         if (existing.to) inputTo.value = existing.to;
 
         const updateDateState = () => {
-            updateColumnFilterState(col, 'date', {
+            updateColumnFilterState(columnId, 'date', {
                 from: inputFrom.value,
                 to: inputTo.value,
                 empty: !inputFrom.value && !inputTo.value,
@@ -205,7 +205,7 @@ function handleColumnFilterChange() {
         if (existing.max !== undefined) inputMax.value = existing.max;
 
         const updateNumberState = () => {
-            updateColumnFilterState(col, 'number', {
+            updateColumnFilterState(columnId, 'number', {
                 min: inputMin.value,
                 max: inputMax.value,
                 empty: inputMin.value === '' && inputMax.value === '',
@@ -240,7 +240,7 @@ function handleColumnFilterChange() {
 
         select.addEventListener('change', () => {
             const selectedText = select.options[select.selectedIndex].text;
-            updateColumnFilterState(col, 'bool', { val: select.value, label: selectedText, empty: select.value === '' });
+            updateColumnFilterState(columnId, 'bool', { val: select.value, label: selectedText, empty: select.value === '' });
             apply();
         });
         filterBarElement.appendChild(select);
@@ -264,10 +264,10 @@ function populateGroupBy(allKeys) {
     defaultOption.value = '';
     defaultOption.textContent = I18n.t('views.group_by');
     groupByElement.appendChild(defaultOption);
-    allKeys.forEach(col => {
+    allKeys.forEach(columnId => {
         const option = document.createElement('option');
-        option.value = col;
-        option.textContent = columnDisplayName(col);
+        option.value = columnId;
+        option.textContent = columnDisplayName(columnId);
         groupByElement.appendChild(option);
     });
     groupByElement.value  = viewGroupBy;
@@ -308,8 +308,8 @@ function renderFilterPills() {
         });
     }
 
-    for (const [col, filter] of Object.entries(columnFilters)) {
-        const columnName = columnDisplayName(col);
+    for (const [columnId, filter] of Object.entries(columnFilters)) {
+        const columnName = columnDisplayName(columnId);
         let label = '';
         if (filter.type === 'dict' || filter.type === 'bool') {
             label = `${columnName}: ${filter.label}`;
@@ -325,8 +325,8 @@ function renderFilterPills() {
 
         if (label) {
             createPill(label, () => {
-                delete columnFilters[col];
-                if (columnFilterElement && columnFilterElement.value === col) {
+                delete columnFilters[columnId];
+                if (columnFilterElement && columnFilterElement.value === columnId) {
                     if (filterBarElement) filterBarElement.replaceChildren();
                     columnFilterElement.value = '';
                 }
@@ -338,20 +338,20 @@ function renderFilterPills() {
 }
 
 function rowPassesColumnFilters(row) {
-    for (const [col, filter] of Object.entries(columnFilters)) {
+    for (const [columnId, filter] of Object.entries(columnFilters)) {
         if (filter.type === 'dict') {
-            if (String(row[col]) !== String(filter.val)) return false;
+            if (String(row[columnId]) !== String(filter.val)) return false;
         } else if (filter.type === 'bool') {
-            const rowBool = (row[col] === true || row[col] === 't' || row[col] === 'true' || row[col] === 1);
+            const rowBool = (row[columnId] === true || row[columnId] === 't' || row[columnId] === 'true' || row[columnId] === 1);
             if (rowBool !== (filter.val === 'true')) return false;
         } else if (filter.type === 'date') {
-            const rowDateString = String(row[col] || '').substring(0, 10);
+            const rowDateString = String(row[columnId] || '').substring(0, 10);
             if (!rowDateString) return false;
             const rowTime = new Date(rowDateString).getTime();
             if (filter.from && rowTime < new Date(filter.from).getTime()) return false;
             if (filter.to && rowTime > new Date(filter.to).getTime()) return false;
         } else if (filter.type === 'number') {
-            const rowNumber = Number(row[col]);
+            const rowNumber = Number(row[columnId]);
             if (isNaN(rowNumber)) return false;
             if (filter.min !== '' && rowNumber < Number(filter.min)) return false;
             if (filter.max !== '' && rowNumber > Number(filter.max)) return false;
@@ -367,10 +367,10 @@ function populateColumnFilter(allKeys) {
     defaultOption.value = '';
     defaultOption.textContent = I18n.t('grid.select_column');
     columnFilterElement.appendChild(defaultOption);
-    allKeys.forEach(col => {
+    allKeys.forEach(columnId => {
         const option = document.createElement('option');
-        option.value = col;
-        option.textContent = columnDisplayName(col);
+        option.value = columnId;
+        option.textContent = columnDisplayName(columnId);
         columnFilterElement.appendChild(option);
     });
     columnFilterElement.hidden = false;
@@ -468,11 +468,11 @@ function renderView(data) {
     function updateThLabels() {
         headerRow.childNodes.forEach(th => {
             if (th.nodeType !== Node.ELEMENT_NODE) return;
-            const k       = th.dataset.col;
-            const lbl     = columns[k]?.display_name ?? k;
-            const ind     = viewSortState.column === k ? (viewSortState.asc ? ' ↑' : ' ↓') : '';
+            const columnKey       = th.dataset.col;
+            const labelText     = columns[columnKey]?.display_name ?? columnKey;
+            const sortIndicator     = viewSortState.column === columnKey ? (viewSortState.asc ? ' ↑' : ' ↓') : '';
             const thLabel = th.querySelector('.th-label');
-            if (thLabel) thLabel.textContent = lbl + ind;
+            if (thLabel) thLabel.textContent = labelText + sortIndicator;
         });
     }
 
@@ -512,29 +512,29 @@ function renderView(data) {
     const summaryFns   = {};
     const summaryConds = {};
     allKeys.forEach(key => {
-        const fn = (columns[key]?.summary ?? '').toLowerCase();
-        if (fn && fn !== 'none') summaryFns[key] = fn;
+        const handler = (columns[key]?.summary ?? '').toLowerCase();
+        if (handler && handler !== 'none') summaryFns[key] = handler;
         const condition = columns[key]?.summary_if;
         if (condition && condition.column && allKeys.includes(condition.column)) summaryConds[key] = condition;
     });
     const hasSummary = Object.keys(summaryFns).length > 0;
 
-    function summaryValue(fn, rowsArr, key) {
+    function summaryValue(handler, rowsArr, key) {
         const condition = summaryConds[key];
-        if (condition) rowsArr = rowsArr.filter(r => summaryConditionMatch(r, condition));
-        if (fn === 'count') return rowsArr.length;
-        const nums = rowsArr.map(r => parseFloat(r[key])).filter(n => !isNaN(n));
+        if (condition) rowsArr = rowsArr.filter(sampleRow => summaryConditionMatch(sampleRow, condition));
+        if (handler === 'count') return rowsArr.length;
+        const nums = rowsArr.map(sampleRow => parseFloat(sampleRow[key])).filter(rowNumber => !isNaN(rowNumber));
         if (!nums.length) return null;
-        if (fn === 'sum') return nums.reduce((a, b) => a + b, 0);
-        if (fn === 'avg') return nums.reduce((a, b) => a + b, 0) / nums.length;
-        if (fn === 'min') return Math.min(...nums);
-        if (fn === 'max') return Math.max(...nums);
+        if (handler === 'sum') return nums.reduce((leftNumber, rightNumber) => leftNumber + rightNumber, 0);
+        if (handler === 'avg') return nums.reduce((leftNumber, rightNumber) => leftNumber + rightNumber, 0) / nums.length;
+        if (handler === 'min') return Math.min(...nums);
+        if (handler === 'max') return Math.max(...nums);
         return null;
     }
 
-    function fillSummaryCell(td, fn, rowsArr, key) {
+    function fillSummaryCell(td, handler, rowsArr, key) {
         td.replaceChildren();
-        const value = summaryValue(fn, rowsArr, key);
+        const value = summaryValue(handler, rowsArr, key);
         if (value === null) {
             td.textContent = '—';
             return;
@@ -543,7 +543,7 @@ function renderView(data) {
         strong.textContent = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
         const badge = document.createElement('span');
         badge.className   = 'vw-summary-fn';
-        badge.textContent = VIEW_FN_KEYS[fn] ? I18n.t(VIEW_FN_KEYS[fn]) : (fn.charAt(0).toUpperCase() + fn.slice(1));
+        badge.textContent = VIEW_FN_KEYS[handler] ? I18n.t(VIEW_FN_KEYS[handler]) : (handler.charAt(0).toUpperCase() + handler.slice(1));
         const condition = summaryConds[key];
         if (condition) {
             badge.classList.add('cond');
@@ -568,11 +568,11 @@ function renderView(data) {
 
     allKeys.forEach((key, columnIndex) => {
         const td = document.createElement('td');
-        const fn = summaryFns[key];
+        const handler = summaryFns[key];
 
-        if (fn) {
+        if (handler) {
             td.className = 'vw-summary-cell';
-            summaryUpdaters[key] = (filteredRows) => fillSummaryCell(td, fn, filteredRows, key);
+            summaryUpdaters[key] = (filteredRows) => fillSummaryCell(td, handler, filteredRows, key);
         } else if (columnIndex === 0 && !canDrillDown) {
             td.className   = 'vw-summary-label-cell';
             td.textContent = 'Σ';
@@ -603,7 +603,7 @@ function renderView(data) {
         if (viewSearchTerm) {
             const term = viewSearchTerm.toLowerCase();
             result = result.filter(row =>
-                Object.values(row).some(v => String(v ?? '').toLowerCase().includes(term))
+                Object.values(row).some(numericValue => String(numericValue ?? '').toLowerCase().includes(term))
             );
         }
         if (Object.keys(columnFilters).length > 0) result = result.filter(rowPassesColumnFilters);
@@ -611,7 +611,7 @@ function renderView(data) {
         syncClearButton();
         result = sortRows(result, viewSortState);
         currentFilteredRows = result;
-        Object.values(summaryUpdaters).forEach(fn => fn(result));
+        Object.values(summaryUpdaters).forEach(handler => handler(result));
 
         tbody.innerHTML = '';
 
@@ -664,9 +664,9 @@ function renderView(data) {
 
         const groups = new Map();
         result.forEach(row => {
-            const k = String(row[viewGroupBy] ?? '');
-            if (!groups.has(k)) groups.set(k, []);
-            groups.get(k).push(row);
+            const columnKey = String(row[viewGroupBy] ?? '');
+            if (!groups.has(columnKey)) groups.set(columnKey, []);
+            groups.get(columnKey).push(row);
         });
 
         const groupKeys = [...groups.keys()];
@@ -724,10 +724,10 @@ function renderView(data) {
             }
             allKeys.forEach((key, columnIndex) => {
                 const td = document.createElement('td');
-                const fn = summaryFns[key];
-                if (fn) {
+                const handler = summaryFns[key];
+                if (handler) {
                     td.className = 'vw-summary-cell';
-                    fillSummaryCell(td, fn, groupRows, key);
+                    fillSummaryCell(td, handler, groupRows, key);
                 } else if (columnIndex === 0 && !canDrillDown) {
                     td.className   = 'vw-summary-label-cell';
                     td.textContent = 'Σ';
@@ -752,16 +752,16 @@ function renderView(data) {
 
     if (exportButton) {
         exportButton.onclick = () => {
-            const headers = allKeys.map(k => columns[k]?.display_name ?? k);
-            const escape  = v => JSON.stringify(String(v ?? ''));
+            const headers = allKeys.map(columnKey => columns[columnKey]?.display_name ?? columnKey);
+            const escape  = numericValue => JSON.stringify(String(numericValue ?? ''));
             const lines   = [
                 headers.map(escape).join(','),
-                ...currentFilteredRows.map(row => allKeys.map(k => escape(row[k])).join(',')),
+                ...currentFilteredRows.map(row => allKeys.map(columnKey => escape(row[columnKey])).join(',')),
             ];
             const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
             const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href = url; a.download = `${view}.csv`; a.click();
+            const leftNumber    = document.createElement('a');
+            leftNumber.href = url; leftNumber.download = `${view}.csv`; leftNumber.click();
             URL.revokeObjectURL(url);
         };
     }
@@ -916,7 +916,7 @@ function renderSelector(views) {
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:24px; padding:24px;';
 
-    views.forEach(v => {
+    views.forEach(numericValue => {
         const card = document.createElement('div');
         card.className = 'vw-selector-card';
 
@@ -925,9 +925,9 @@ function renderSelector(views) {
 
         const iconWrapper = document.createElement('div');
         iconWrapper.style.cssText = 'display:flex; align-items:center; justify-content:center; width:42px; height:42px; background:var(--accent-light); border-radius:8px; flex-shrink:0;';
-        if (v.icon) {
+        if (numericValue.icon) {
             const image = document.createElement('img');
-            image.src = v.icon; image.alt = '';
+            image.src = numericValue.icon; image.alt = '';
             image.style.cssText = 'width:22px; height:22px; object-fit:contain;';
             iconWrapper.appendChild(image);
         } else {
@@ -938,14 +938,14 @@ function renderSelector(views) {
 
         const cardTitle = document.createElement('h3');
         cardTitle.style.cssText = 'margin:0; color:var(--accent-dark); font-size:1.1rem; font-weight:600;';
-        cardTitle.textContent = v.display_name ?? v.name;
+        cardTitle.textContent = numericValue.display_name ?? numericValue.name;
 
         header.appendChild(iconWrapper);
         header.appendChild(cardTitle);
 
         const cardDescription = document.createElement('p');
         cardDescription.style.cssText = 'color:var(--muted); font-size:14px; margin:0 0 20px; line-height:1.5; flex-grow:1;';
-        cardDescription.textContent = v.description || I18n.t('views.click_open');
+        cardDescription.textContent = numericValue.description || I18n.t('views.click_open');
 
         const footer = document.createElement('div');
         footer.style.cssText = 'display:flex; align-items:center; justify-content:flex-end; margin-top:auto; padding-top:16px; border-top:1px solid var(--border-light);';
@@ -958,7 +958,7 @@ function renderSelector(views) {
         card.appendChild(cardDescription);
         card.appendChild(footer);
 
-        card.addEventListener('click', () => initView(v.name));
+        card.addEventListener('click', () => initView(numericValue.name));
         grid.appendChild(card);
     });
 

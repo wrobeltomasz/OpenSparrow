@@ -9,12 +9,12 @@ import { formatCellValue } from '../../util/format-value.js';
 export function renderBars(widget, orientation) {
     const data = widget.data || [];
     if (data.length === 0) {
-        const p = document.createElement('p');
-        p.textContent = window.I18n.t('dashboard.no_data');
-        return p;
+        const paragraph = document.createElement('p');
+        paragraph.textContent = window.I18n.t('dashboard.no_data');
+        return paragraph;
     }
 
-    const maxValue = Math.max(...data.map(d => parseFloat(d.value)));
+    const maxValue = Math.max(...data.map(dataPoint => parseFloat(dataPoint.value)));
     const groupColumn = widget.query?.group_column;
     const columnType = widget.column_type;
     const wrapper = orientation === 'horizontal'
@@ -34,15 +34,15 @@ export function renderBars(widget, orientation) {
 }
 
 function createHorizontalWrapper() {
-    const div = document.createElement('div');
-    div.className = 'bar-chart';
-    return div;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bar-chart';
+    return wrapper;
 }
 
 function createVerticalWrapper() {
-    const div = document.createElement('div');
-    div.className = 'dash-vbar-chart';
-    return div;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'dash-vbar-chart';
+    return wrapper;
 }
 
 function buildHorizontalBar(row, percent, color, columnType) {
@@ -62,12 +62,12 @@ function buildHorizontalBar(row, percent, color, columnType) {
     if (color) bar.style.backgroundColor = color;
     setTimeout(() => { bar.style.width = `${percent}%`; }, 50);
 
-    const val = document.createElement('div');
-    val.className = 'bar-value';
-    val.textContent = row.value;
+    const value = document.createElement('div');
+    value.className = 'bar-value';
+    value.textContent = row.value;
 
     track.appendChild(bar);
-    rowElement.append(label, track, val);
+    rowElement.append(label, track, value);
     return rowElement;
 }
 
@@ -75,9 +75,9 @@ function buildVerticalBar(row, percent, color, columnType) {
     const columnElement = document.createElement('div');
     columnElement.className = 'dash-vbar-col';
 
-    const val = document.createElement('div');
-    val.className = 'dash-vbar-value';
-    val.textContent = row.value;
+    const value = document.createElement('div');
+    value.className = 'dash-vbar-value';
+    value.textContent = row.value;
 
     const track = document.createElement('div');
     track.className = 'dash-vbar-track';
@@ -93,6 +93,6 @@ function buildVerticalBar(row, percent, color, columnType) {
     label.textContent = displayLabel;
 
     track.appendChild(bar);
-    columnElement.append(val, track, label);
+    columnElement.append(value, track, label);
     return columnElement;
 }

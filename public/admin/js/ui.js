@@ -612,8 +612,8 @@ export function createFullMenuPreview(config) {
         wrap.appendChild(nav);
     }
 
-    function update(cfg) {
-        if (!cfg) {
+    function update(menuConfig) {
+        if (!menuConfig) {
             wrap.innerHTML = '';
             const paragraph = document.createElement('p');
             paragraph.className = 'menu-preview-info';
@@ -621,7 +621,7 @@ export function createFullMenuPreview(config) {
             wrap.appendChild(paragraph);
             return;
         }
-        state = { items: (cfg.items || []).map(item => ({ ...i, children: item.children || [] })) };
+        state = { items: (menuConfig.items || []).map(item => ({ ...i, children: item.children || [] })) };
         rebuildDOM();
     }
 
@@ -814,9 +814,9 @@ export function buildModal({ title, subtitleLabel = '', subtitleValue = '', save
     box.appendChild(el('h3', 'adm-modal-title', title));
 
     if (subtitleLabel || subtitleValue) {
-        const sub = el('p', 'adm-modal-sub', subtitleLabel);
-        sub.appendChild(el('strong', '', subtitleValue));
-        box.appendChild(sub);
+        const subtitleElement = el('p', 'adm-modal-sub', subtitleLabel);
+        subtitleElement.appendChild(el('strong', '', subtitleValue));
+        box.appendChild(subtitleElement);
     }
 
     const body = el('div');

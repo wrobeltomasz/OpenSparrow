@@ -29,24 +29,24 @@ function createColumnMultiSelect(labelText, options, selectedValues, onChange) {
         container.innerHTML = '<span style=" ">No columns available</span>';
     } else {
         options.forEach(option => {
-            const lbl = document.createElement('label');
-            lbl.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
+            const labelElement = document.createElement('label');
+            labelElement.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
 
-            const chk = document.createElement('input');
-            chk.type = 'checkbox';
-            chk.value = option.value;
-            chk.checked = selected.includes(option.value);
-            chk.style.marginRight = '8px';
-            chk.addEventListener('change', () => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = option.value;
+            checkbox.checked = selected.includes(option.value);
+            checkbox.style.marginRight = '8px';
+            checkbox.addEventListener('change', () => {
                 const index = selected.indexOf(option.value);
-                if (chk.checked && index === -1) selected.push(option.value);
-                else if (!chk.checked && index !== -1) selected.splice(index, 1);
+                if (checkbox.checked && index === -1) selected.push(option.value);
+                else if (!checkbox.checked && index !== -1) selected.splice(index, 1);
                 onChange([...selected]);
             });
 
-            lbl.appendChild(chk);
-            lbl.appendChild(document.createTextNode(option.label));
-            container.appendChild(lbl);
+            labelElement.appendChild(checkbox);
+            labelElement.appendChild(document.createTextNode(option.label));
+            container.appendChild(labelElement);
         });
     }
 
@@ -66,8 +66,8 @@ export function renderBoardEditor(key, itemData, isArray, context) {
 
     if (!Array.isArray(itemData.card_columns)) itemData.card_columns = [];
 
-    workspaceElement.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), itemData.table || '', v => {
-        itemData.table = v;
+    workspaceElement.appendChild(createSelectInput('table', 'Source Table', getTableOptions(), itemData.table || '', value => {
+        itemData.table = value;
         itemData.status_column = '';
         itemData.title_column = '';
         itemData.card_columns = [];
@@ -79,10 +79,10 @@ export function renderBoardEditor(key, itemData, isArray, context) {
         const hasEnum = enumColumns.length > 0;
 
         const statusOptions = [{ value: '', label: '-- Select Status Column --' }]
-            .concat(hasEnum ? enumColumns : getColumnOptionsForTable(itemData.table).filter(o => o.value !== ''));
+            .concat(hasEnum ? enumColumns : getColumnOptionsForTable(itemData.table).filter(columnOption => columnOption.value !== ''));
 
-        workspaceElement.appendChild(createSelectInput('status_column', 'Status Column (defines lanes)', statusOptions, itemData.status_column || '', v => {
-            itemData.status_column = v;
+        workspaceElement.appendChild(createSelectInput('status_column', 'Status Column (defines lanes)', statusOptions, itemData.status_column || '', value => {
+            itemData.status_column = value;
             renderEditor(key, itemData, isArray);
         }));
 
@@ -100,10 +100,10 @@ export function renderBoardEditor(key, itemData, isArray, context) {
             if (meta && (meta.type || '').toLowerCase() === 'enum' && Array.isArray(meta.options)) {
                 const previewWrap = document.createElement('div');
                 previewWrap.style.cssText = 'margin:-4px 0 18px;';
-                const lbl = document.createElement('label');
-                lbl.style.cssText = 'display:block; font-weight:600; margin-bottom:6px; color:var(--text);';
-                lbl.textContent = 'Lane preview';
-                previewWrap.appendChild(lbl);
+                const labelElement = document.createElement('label');
+                labelElement.style.cssText = 'display:block; font-weight:600; margin-bottom:6px; color:var(--text);';
+                labelElement.textContent = 'Lane preview';
+                previewWrap.appendChild(labelElement);
 
                 const chips = document.createElement('div');
                 chips.style.cssText = 'display:flex; flex-wrap:wrap; gap:8px;';
@@ -123,18 +123,18 @@ export function renderBoardEditor(key, itemData, isArray, context) {
             }
         }
 
-        workspaceElement.appendChild(createSelectInput('title_column', 'Card Title Column', getColumnOptionsForTable(itemData.table), itemData.title_column || '', v => {
-            itemData.title_column = v;
+        workspaceElement.appendChild(createSelectInput('title_column', 'Card Title Column', getColumnOptionsForTable(itemData.table), itemData.title_column || '', value => {
+            itemData.title_column = value;
         }));
 
         const fieldOptions = getColumnOptionsForTable(itemData.table)
-            .filter(o => o.value !== '' && o.value !== itemData.status_column);
-        workspaceElement.appendChild(createColumnMultiSelect('Card Detail Fields (shown on each card)', fieldOptions, itemData.card_columns || [], v => {
-            itemData.card_columns = v;
+            .filter(columnOption => columnOption.value !== '' && columnOption.value !== itemData.status_column);
+        workspaceElement.appendChild(createColumnMultiSelect('Card Detail Fields (shown on each card)', fieldOptions, itemData.card_columns || [], value => {
+            itemData.card_columns = value;
         }));
 
-        workspaceElement.appendChild(createColorInput('color', 'Default Lane / Card Color', itemData.color || '#003366', v => {
-            itemData.color = v;
+        workspaceElement.appendChild(createColorInput('color', 'Default Lane / Card Color', itemData.color || '#003366', value => {
+            itemData.color = value;
         }));
     }
 
@@ -142,17 +142,17 @@ export function renderBoardEditor(key, itemData, isArray, context) {
     hr.style.cssText = 'border:none; border-top:1px solid var(--border); margin:18px 0 14px;';
     workspaceElement.appendChild(hr);
 
-    workspaceElement.appendChild(createTextInput('menu_name', 'Menu Display Name', itemData.menu_name || `Board ${key}`, v => {
-        itemData.menu_name = v;
+    workspaceElement.appendChild(createTextInput('menu_name', 'Menu Display Name', itemData.menu_name || `Board ${key}`, value => {
+        itemData.menu_name = value;
     }));
 
-    workspaceElement.appendChild(createIconPicker('menu_icon', 'Menu Icon', itemData.menu_icon || '', v => {
-        if (v && v.trim() !== '') itemData.menu_icon = v;
+    workspaceElement.appendChild(createIconPicker('menu_icon', 'Menu Icon', itemData.menu_icon || '', value => {
+        if (value && value.trim() !== '') itemData.menu_icon = value;
         else delete itemData.menu_icon;
     }));
 
-    workspaceElement.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu', itemData.hidden, v => {
-        if (v) itemData.hidden = true;
+    workspaceElement.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu', itemData.hidden, value => {
+        if (value) itemData.hidden = true;
         else delete itemData.hidden;
     }, false));
 

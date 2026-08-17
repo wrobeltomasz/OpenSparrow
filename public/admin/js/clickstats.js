@@ -18,9 +18,9 @@ export async function renderClickstatsPage(context) {
 
     let data;
     try {
-        const res = await apiFetch('api.php?action=clickstats_load');
-        data = await res.json();
-    } catch (e) {
+        const response = await apiFetch('api.php?action=clickstats_load');
+        data = await response.json();
+    } catch (error) {
         if (workspaceElement._renderId !== myId) return;
         workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading click statistics. Check server logs.</h3>';
         return;
@@ -137,7 +137,7 @@ function renderSettings(panel, state) {
         }
         button.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=clickstats_save', {
+            const response = await apiFetch('api.php?action=clickstats_save', {
                 method: 'POST',
                 body: JSON.stringify({
                     enabled: enabled.input.checked,
@@ -146,7 +146,7 @@ function renderSettings(panel, state) {
                     version: state.version,
                 }),
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 state.config.enabled = enabled.input.checked;
                 state.config.track_records = records.input.checked;
@@ -157,7 +157,7 @@ function renderSettings(panel, state) {
             } else {
                 showStatusPill(pillAnchor, result.error || 'Error saving settings', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(pillAnchor, 'Request failed', 'error');
         }
         button.disabled = false;
@@ -247,9 +247,9 @@ function renderLog(panel, state) {
 
         let data;
         try {
-            const res = await apiFetch('api.php?' + parameters.toString());
-            data = await res.json();
-        } catch (e) {
+            const response = await apiFetch('api.php?' + parameters.toString());
+            data = await response.json();
+        } catch (error) {
             rowsHost.innerHTML = '<p style="color:var(--error);">Request failed.</p>';
             return;
         }
@@ -295,11 +295,11 @@ function renderLog(panel, state) {
     async function purge(button, pill, payload) {
         button.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=clickstats_purge_log', {
+            const response = await apiFetch('api.php?action=clickstats_purge_log', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 showStatusPill(pill, result.note || `Deleted ${result.deleted ?? 0} row(s)`, 'success');
                 state.page = 1;
@@ -307,7 +307,7 @@ function renderLog(panel, state) {
             } else {
                 showStatusPill(pill, result.error || 'Could not clear the log', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(pill, 'Request failed', 'error');
         }
         button.disabled = false;

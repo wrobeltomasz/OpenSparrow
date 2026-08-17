@@ -388,7 +388,7 @@ function renderSetMap(bodyElement, action, getTable, getColumns, valuePlaceholde
 
     function renderSetRows() {
         setRows.innerHTML = '';
-        Object.entries(action.set ?? {}).forEach(([column, val]) => {
+        Object.entries(action.set ?? {}).forEach(([column, inputValue]) => {
             const row = document.createElement('div');
             row.className = 'auto-row';
 
@@ -407,7 +407,7 @@ function renderSetMap(bodyElement, action, getTable, getColumns, valuePlaceholde
             valueInput.type        = 'text';
             valueInput.className   = 'auto-row-wide';
             valueInput.placeholder = valuePlaceholder;
-            valueInput.value       = val || '';
+            valueInput.value       = inputValue || '';
             valueInput.addEventListener('input', () => { action.set[column] = valueInput.value; });
 
             row.appendChild(fieldSelect);
@@ -577,7 +577,7 @@ function autoMapEditor(bodyElement, map, opts) {
 
     function renderRows() {
         mapRows.innerHTML = '';
-        Object.entries(map).forEach(([key, val]) => {
+        Object.entries(map).forEach(([key, inputValue]) => {
             const row = document.createElement('div');
             row.className = 'auto-row';
 
@@ -619,7 +619,7 @@ function autoMapEditor(bodyElement, map, opts) {
             valueInput.type        = 'text';
             valueInput.className   = 'auto-row-wide';
             valueInput.placeholder = isStored ? 'saved — type a new value to replace it' : opts.valuePlaceholder;
-            valueInput.value       = val || '';
+            valueInput.value       = inputValue || '';
             valueInput.addEventListener('input', () => { map[key] = valueInput.value; });
 
             row.appendChild(keyInput);
@@ -872,7 +872,7 @@ function buildAutomationsTab(panel, mode, shared) {
             const tableMeta = document.createElement('span');
             tableMeta.className   = 'auto-meta';
             tableMeta.textContent = (schemaObject[rule.trigger_table]?.display_name || rule.trigger_table)
-                + ' · ' + (AUTO_EVENTS.find(e => e.value === rule.trigger_event)?.label ?? rule.trigger_event);
+                + ' · ' + (AUTO_EVENTS.find(event => event.value === rule.trigger_event)?.label ?? rule.trigger_event);
 
             const badge = document.createElement('span');
             badge.className   = (rule.enabled ? 'adm-badge adm-badge-ok' : 'adm-badge adm-badge-muted')
@@ -880,8 +880,8 @@ function buildAutomationsTab(panel, mode, shared) {
             badge.textContent = rule.enabled ? 'Active' : 'Disabled';
             badge.style.cursor = 'pointer';
             badge.title = rule.enabled ? 'Click to disable' : 'Click to enable';
-            badge.addEventListener('click', e => {
-                e.stopPropagation();
+            badge.addEventListener('click', event => {
+                event.stopPropagation();
                 saveRulePayload(rulePayload(rule, { enabled: !rule.enabled }), badge);
             });
 
@@ -890,8 +890,8 @@ function buildAutomationsTab(panel, mode, shared) {
             buttonDup.className   = 'btn btn-sm auto-shrink';
             buttonDup.textContent = 'Duplicate';
             buttonDup.title       = 'Create a disabled copy of this rule';
-            buttonDup.addEventListener('click', e => {
-                e.stopPropagation();
+            buttonDup.addEventListener('click', event => {
+                event.stopPropagation();
                 saveRulePayload(
                     rulePayload(rule, { id: null, name: rule.name + ' (copy)', enabled: false }),
                     buttonDup
@@ -902,14 +902,14 @@ function buildAutomationsTab(panel, mode, shared) {
             buttonHist.type        = 'button';
             buttonHist.className   = 'btn btn-sm auto-shrink';
             buttonHist.textContent = 'History';
-            buttonHist.addEventListener('click', e => { e.stopPropagation(); showRunHistory(rule); });
+            buttonHist.addEventListener('click', event => { event.stopPropagation(); showRunHistory(rule); });
 
             const buttonDel = document.createElement('button');
             buttonDel.type        = 'button';
             buttonDel.title       = 'Delete';
             buttonDel.textContent = '✕';
             buttonDel.className   = 'icon-btn icon-btn-danger';
-            buttonDel.addEventListener('click', e => { e.stopPropagation(); deleteRule(rule.id, buttonDel); });
+            buttonDel.addEventListener('click', event => { event.stopPropagation(); deleteRule(rule.id, buttonDel); });
 
             header.appendChild(chevron);
             header.appendChild(nameSpan);
@@ -940,8 +940,8 @@ function buildAutomationsTab(panel, mode, shared) {
                 }
             }
 
-            header.addEventListener('click', e => {
-                if (e.target.closest('button, input, label')) return;
+            header.addEventListener('click', event => {
+                if (event.target.closest('button, input, label')) return;
                 if (card.classList.contains('collapsed')) openCard();
                 else card.classList.add('collapsed');
             });

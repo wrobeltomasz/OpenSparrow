@@ -36,14 +36,14 @@ async function renderUserAccess(panel) {
 
     let users;
     try {
-        const res  = await apiFetch('api.php?action=users_list');
-        const data = await res.json();
+        const response  = await apiFetch('api.php?action=users_list');
+        const data = await response.json();
         if (data.status !== 'success') {
             panel.innerHTML = `<p class="help-text">${escHtml(data.error || 'Failed to load users.')}</p>`;
             return;
         }
-        users = data.users.filter(u => u.role !== 'admin');
-    } catch (err) {
+        users = data.users.filter(user => user.role !== 'admin');
+    } catch (error) {
         panel.innerHTML = '<p class="help-text">Network error while loading users.</p>';
         return;
     }
@@ -60,7 +60,7 @@ async function renderUserAccess(panel) {
         <div class="adm-sec-card">
             <label class="adm-field-label" for="taUser">User</label>
             <select id="taUser" class="adm-input w-260">
-                ${users.map(u => `<option value="${u.id}">${escHtml(u.username)}${u.is_active ? '' : ' (inactive)'}</option>`).join('')}
+                ${users.map(user => `<option value="${user.id}">${escHtml(user.username)}${user.is_active ? '' : ' (inactive)'}</option>`).join('')}
             </select>
             <div id="taScopes" style="margin-top:16px;"></div>
         </div>
@@ -81,7 +81,7 @@ async function renderUserAccess(panel) {
 
 function renderScopeSection(container, scope, allItems, selected, hiddenChildren = {}) {
     const names = Object.keys(allItems)
-        .sort((a, b) => (allItems[a] || a).localeCompare(allItems[b] || b));
+        .sort((a, checkbox) => (allItems[a] || a).localeCompare(allItems[checkbox] || checkbox));
 
     const section = document.createElement('div');
     section.style.marginBottom = '22px';
@@ -104,14 +104,14 @@ function renderScopeSection(container, scope, allItems, selected, hiddenChildren
                 </tr>
             </thead>
             <tbody>
-                ${names.map(n => `
+                ${names.map(selectedCount => `
                     <tr>
                         <td class="adm-td">
-                            <input type="checkbox" class="adm-check ta-item" value="${escHtml(n)}"
-                                   ${selected.has(n) ? 'checked' : ''}>
+                            <input type="checkbox" class="adm-check ta-item" value="${escHtml(selectedCount)}"
+                                   ${selected.has(selectedCount) ? 'checked' : ''}>
                         </td>
-                        <td class="adm-td"><strong>${escHtml(allItems[n] || n)}</strong></td>
-                        <td class="adm-td"><code>${escHtml(n)}</code></td>
+                        <td class="adm-td"><strong>${escHtml(allItems[selectedCount] || selectedCount)}</strong></td>
+                        <td class="adm-td"><code>${escHtml(selectedCount)}</code></td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -129,16 +129,16 @@ function renderScopeSection(container, scope, allItems, selected, hiddenChildren
     const note  = section.querySelector('.ta-note');
 
     const refreshBadge = () => {
-        const n = boxes.filter(b => b.checked).length;
-        badge.innerHTML = n === 0
+        const selectedCount = boxes.filter(checkbox => checkbox.checked).length;
+        badge.innerHTML = selectedCount === 0
             ? '<span class="adm-badge adm-badge-ok">Full access (no restriction)</span>'
-            : `<span class="adm-badge">Restricted to ${n} of ${boxes.length} ${escHtml(scope.noun)}</span>`;
+            : `<span class="adm-badge">Restricted to ${selectedCount} of ${boxes.length} ${escHtml(scope.noun)}</span>`;
     };
 
     const refreshNote = () => {
         const extra = [...new Set(
-            boxes.filter(b => b.checked)
-                .flatMap(b => (Array.isArray(hiddenChildren[b.value]) ? hiddenChildren[b.value] : []))
+            boxes.filter(checkbox => checkbox.checked)
+                .flatMap(checkbox => (Array.isArray(hiddenChildren[checkbox.value]) ? hiddenChildren[checkbox.value] : []))
         )].sort();
         note.textContent = extra.length === 0
             ? ''
@@ -146,19 +146,19 @@ function renderScopeSection(container, scope, allItems, selected, hiddenChildren
     };
 
     const refresh = () => { refreshBadge(); refreshNote(); };
-    boxes.forEach(b => b.addEventListener('change', refresh));
+    boxes.forEach(checkbox => checkbox.addEventListener('change', refresh));
     refresh();
 
     section.querySelector('.ta-all').addEventListener('click', () => {
-        boxes.forEach(b => { b.checked = true; });
+        boxes.forEach(checkbox => { checkbox.checked = true; });
         refresh();
     });
     section.querySelector('.ta-none').addEventListener('click', () => {
-        boxes.forEach(b => { b.checked = false; });
+        boxes.forEach(checkbox => { checkbox.checked = false; });
         refresh();
     });
 
-    return () => boxes.filter(b => b.checked).map(b => b.value);
+    return () => boxes.filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
 }
 
 async function loadUserAccess(listElement, userId) {
@@ -166,9 +166,9 @@ async function loadUserAccess(listElement, userId) {
 
     let data;
     try {
-        const res = await apiFetch(`api.php?action=user_tables_get&user_id=${encodeURIComponent(userId)}`);
-        data = await res.json();
-    } catch (err) {
+        const response = await apiFetch(`api.php?action=user_tables_get&user_id=${encodeURIComponent(userId)}`);
+        data = await response.json();
+    } catch (error) {
         listElement.innerHTML = '<p class="help-text">Network error while loading access.</p>';
         return;
     }
@@ -200,17 +200,17 @@ async function loadUserAccess(listElement, userId) {
         const payload = { user_id: parseInt(userId, 10) };
         scopes.forEach(scope => { payload[scope.key] = readers[scope.key](); });
         try {
-            const res = await apiFetch('api.php?action=user_tables_save', {
+            const response = await apiFetch('api.php?action=user_tables_save', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            const out = await res.json();
-            if (out.status === 'success') {
+            const saveResult = await response.json();
+            if (saveResult.status === 'success') {
                 showStatusPill(saveElement, 'Access saved.', 'success');
             } else {
-                showStatusPill(saveElement, out.error || 'Save failed.', 'error');
+                showStatusPill(saveElement, saveResult.error || 'Save failed.', 'error');
             }
-        } catch (err) {
+        } catch (error) {
             showStatusPill(saveElement, 'Network error.', 'error');
         }
     });
@@ -263,41 +263,41 @@ async function renderManageUsers(panel, context) {
                 <tbody>
         `;
 
-        const cell = (v) => (v ?? '').trim()
-            ? escHtml(v)
+        const cell = (cellValue) => (cellValue ?? '').trim()
+            ? escHtml(cellValue)
             : '<span class="adm-td-empty">&mdash;</span>';
-        const fullName = (u) => [u.first_name ?? '', u.last_name ?? ''].join(' ').trim();
+        const fullName = (user) => [user.first_name ?? '', user.last_name ?? ''].join(' ').trim();
 
-        data.users.forEach(u => {
+        data.users.forEach(user => {
             html += `
                 <tr>
-                    <td class="adm-td">${escHtml(u.id)}</td>
-                    <td class="adm-td"><strong>${escHtml(u.username)}</strong></td>
-                    ${hasContact ? `<td class="adm-td">${cell(fullName(u))}</td>
-                    <td class="adm-td">${cell(u.email)}</td>
-                    <td class="adm-td">${cell(u.phone)}</td>` : ''}
+                    <td class="adm-td">${escHtml(user.id)}</td>
+                    <td class="adm-td"><strong>${escHtml(user.username)}</strong></td>
+                    ${hasContact ? `<td class="adm-td">${cell(fullName(user))}</td>
+                    <td class="adm-td">${cell(user.email)}</td>
+                    <td class="adm-td">${cell(user.phone)}</td>` : ''}
                     <td class="adm-td">
-                        <span class="adm-badge ${u.is_active ? 'adm-badge-ok' : 'adm-badge-danger'}">
-                            ${u.is_active ? 'Active' : 'Inactive'}
+                        <span class="adm-badge ${user.is_active ? 'adm-badge-ok' : 'adm-badge-danger'}">
+                            ${user.is_active ? 'Active' : 'Inactive'}
                         </span>
                     </td>
                     <td class="adm-td">
-                        <select class="select-user-role adm-input" data-id="${u.id}">
-                            <option value="admin"  ${u.role === 'admin'  ? 'selected' : ''}>Admin</option>
-                            <option value="editor" ${u.role === 'editor' || !u.role ? 'selected' : ''}>Editor</option>
-                            <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                        <select class="select-user-role adm-input" data-id="${user.id}">
+                            <option value="admin"  ${user.role === 'admin'  ? 'selected' : ''}>Admin</option>
+                            <option value="editor" ${user.role === 'editor' || !user.role ? 'selected' : ''}>Editor</option>
+                            <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Viewer</option>
                         </select>
                     </td>
                     <td class="adm-td" style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="btn btn-xs btn-toggle-user ${u.is_active ? 'btn-warning' : 'btn-secondary'}" data-id="${u.id}" data-active="${u.is_active}">
-                            ${u.is_active ? 'Deactivate' : 'Activate'}
+                        <button class="btn btn-xs btn-toggle-user ${user.is_active ? 'btn-warning' : 'btn-secondary'}" data-id="${user.id}" data-active="${user.is_active}">
+                            ${user.is_active ? 'Deactivate' : 'Activate'}
                         </button>
-                        <button class="btn btn-xs btn-secondary btn-change-pwd" data-id="${u.id}" data-username="${escHtml(u.username)}">
+                        <button class="btn btn-xs btn-secondary btn-change-pwd" data-id="${user.id}" data-username="${escHtml(user.username)}">
                             Change pwd
                         </button>
-                        ${hasContact ? `<button class="btn btn-xs btn-secondary btn-edit-contact" data-id="${u.id}" data-username="${escHtml(u.username)}"
-                            data-first-name="${escHtml(u.first_name ?? '')}" data-last-name="${escHtml(u.last_name ?? '')}"
-                            data-email="${escHtml(u.email ?? '')}" data-phone="${escHtml(u.phone ?? '')}">
+                        ${hasContact ? `<button class="btn btn-xs btn-secondary btn-edit-contact" data-id="${user.id}" data-username="${escHtml(user.username)}"
+                            data-first-name="${escHtml(user.first_name ?? '')}" data-last-name="${escHtml(user.last_name ?? '')}"
+                            data-email="${escHtml(user.email ?? '')}" data-phone="${escHtml(user.phone ?? '')}">
                             Edit Details
                         </button>` : ''}
                     </td>
@@ -354,9 +354,9 @@ async function renderManageUsers(panel, context) {
         panel.innerHTML = html;
 
         panel.querySelectorAll('.btn-toggle-user').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const id = e.target.getAttribute('data-id');
-                const currentlyActive = e.target.getAttribute('data-active') === 'true';
+            button.addEventListener('click', async (event) => {
+                const id = event.target.getAttribute('data-id');
+                const currentlyActive = event.target.getAttribute('data-active') === 'true';
                 if (!confirm(`Are you sure you want to ${currentlyActive ? 'deactivate' : 'activate'} this user?`)) return;
 
                 try {
@@ -369,18 +369,18 @@ async function renderManageUsers(panel, context) {
                     if (resultData.status === 'success') {
                         renderManageUsers(panel, context);
                     } else {
-                        showStatusPill(e.target, resultData.error || 'Update failed.', 'error');
+                        showStatusPill(event.target, resultData.error || 'Update failed.', 'error');
                     }
-                } catch (err) {
-                    showStatusPill(e.target, 'Network error.', 'error');
+                } catch (error) {
+                    showStatusPill(event.target, 'Network error.', 'error');
                 }
             });
         });
 
         panel.querySelectorAll('.select-user-role').forEach(select => {
-            select.addEventListener('change', async (e) => {
-                const id = e.target.getAttribute('data-id');
-                const role = e.target.value;
+            select.addEventListener('change', async (event) => {
+                const id = event.target.getAttribute('data-id');
+                const role = event.target.value;
 
                 try {
                     const request = await apiFetch('api.php?action=users_update_role', {
@@ -390,11 +390,11 @@ async function renderManageUsers(panel, context) {
 
                     const resultData = await request.json();
                     if (resultData.status !== 'success') {
-                        showStatusPill(e.target, resultData.error || 'Role change failed.', 'error');
+                        showStatusPill(event.target, resultData.error || 'Role change failed.', 'error');
                         renderManageUsers(panel, context);
                     }
-                } catch (err) {
-                    showStatusPill(e.target, 'Network error.', 'error');
+                } catch (error) {
+                    showStatusPill(event.target, 'Network error.', 'error');
                     renderManageUsers(panel, context);
                 }
             });
@@ -449,39 +449,39 @@ async function renderManageUsers(panel, context) {
                 (box.querySelector('#cpw-current') ?? newInput).focus();
 
                 saveButton.addEventListener('click', async () => {
-                    const pwd     = newInput.value;
+                    const newPassword     = newInput.value;
                     const confirm = box.querySelector('#cpw-confirm').value;
                     if (isSelf && !box.querySelector('#cpw-current').value) {
                         messageElement.style.color = 'var(--error)';
                         messageElement.textContent = 'Current password is required.';
                         return;
                     }
-                    if (pwd.length < minPasswordLength) {
+                    if (newPassword.length < minPasswordLength) {
                         messageElement.style.color = 'var(--error)';
                         messageElement.textContent = `Password must be at least ${minPasswordLength} characters.`;
                         return;
                     }
-                    if (pwd !== confirm) {
+                    if (newPassword !== confirm) {
                         messageElement.style.color = 'var(--error)';
                         messageElement.textContent = 'Passwords do not match.';
                         return;
                     }
                     messageElement.textContent = 'Saving…';
                     try {
-                        let res, data;
+                        let response, data;
                         if (isSelf) {
-                            res  = await apiFetch('../api.php?action=change_password', {
+                            response  = await apiFetch('../api.php?action=change_password', {
                                 method: 'POST',
-                                body: JSON.stringify({ current_password: box.querySelector('#cpw-current').value, new_password: pwd }),
+                                body: JSON.stringify({ current_password: box.querySelector('#cpw-current').value, new_password: newPassword }),
                             });
-                            data = await res.json();
+                            data = await response.json();
                             if (data.ok) { close(); return; }
                         } else {
-                            res  = await apiFetch('api.php?action=users_change_password', {
+                            response  = await apiFetch('api.php?action=users_change_password', {
                                 method: 'POST',
-                                body: JSON.stringify({ id, password: pwd }),
+                                body: JSON.stringify({ id, password: newPassword }),
                             });
-                            data = await res.json();
+                            data = await response.json();
                             if (data.status === 'success') { close(); return; }
                         }
                         messageElement.style.color = 'var(--error)';
@@ -511,20 +511,20 @@ async function renderManageUsers(panel, context) {
                     { key: 'phone',      attr: 'data-phone',      label: 'Phone',      type: 'text',  max: 32  },
                 ];
                 const inputs = {};
-                fields.forEach(f => {
+                fields.forEach(fieldElement => {
                     const label = document.createElement('label');
                     label.className = 'adm-field-label';
-                    label.textContent = f.label;
+                    label.textContent = fieldElement.label;
                     body.appendChild(label);
 
                     const input = document.createElement('input');
-                    input.type = f.type;
+                    input.type = fieldElement.type;
                     input.className = 'adm-input w-full';
-                    input.maxLength = f.max;
-                    input.value = button.getAttribute(f.attr) || '';
+                    input.maxLength = fieldElement.max;
+                    input.value = button.getAttribute(fieldElement.attr) || '';
                     input.style.marginBottom = '8px';
                     body.appendChild(input);
-                    inputs[f.key] = input;
+                    inputs[fieldElement.key] = input;
                 });
 
                 inputs.first_name.focus();
@@ -532,13 +532,13 @@ async function renderManageUsers(panel, context) {
                 saveButton.addEventListener('click', async () => {
                     messageElement.textContent = 'Saving…';
                     const payload = { id };
-                    fields.forEach(f => { payload[f.key] = inputs[f.key].value; });
+                    fields.forEach(fieldElement => { payload[fieldElement.key] = inputs[fieldElement.key].value; });
                     try {
-                        const res = await apiFetch('api.php?action=users_update_contact', {
+                        const response = await apiFetch('api.php?action=users_update_contact', {
                             method: 'POST',
                             body: JSON.stringify(payload),
                         });
-                        const resultData = await res.json();
+                        const resultData = await response.json();
                         if (resultData.status === 'success') {
                             close();
                             renderManageUsers(panel, context);
@@ -558,16 +558,16 @@ async function renderManageUsers(panel, context) {
         const strengthFill = panel.querySelector('#passwordStrengthFill');
         const strengthLabel = panel.querySelector('#passwordStrengthLabel');
 
-        function evaluatePassword(pwd) {
+        function evaluatePassword(newPassword) {
             let score = 0;
-            if (pwd.length >= 6) score++;
-            if (pwd.length >= 8) score++;
-            if (pwd.length >= 10) score++;
-            if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
-            if (/\d/.test(pwd)) score++;
-            if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+            if (newPassword.length >= 6) score++;
+            if (newPassword.length >= 8) score++;
+            if (newPassword.length >= 10) score++;
+            if (/[a-z]/.test(newPassword) && /[A-Z]/.test(newPassword)) score++;
+            if (/\d/.test(newPassword)) score++;
+            if (/[^a-zA-Z0-9]/.test(newPassword)) score++;
 
-            if (pwd.length < minPasswordLength) return { level: 'weak', percent: 25, label: 'Too short', color: 'var(--error)' };
+            if (newPassword.length < minPasswordLength) return { level: 'weak', percent: 25, label: 'Too short', color: 'var(--error)' };
             if (score <= 2) return { level: 'weak', percent: 25, label: 'Weak', color: 'var(--error)' };
             if (score <= 3) return { level: 'fair', percent: 50, label: 'Fair', color: 'var(--warn)' };
             if (score <= 4) return { level: 'good', percent: 75, label: 'Good', color: 'var(--muted)' };
@@ -575,21 +575,21 @@ async function renderManageUsers(panel, context) {
         }
 
         passwordInput.addEventListener('input', () => {
-            const pwd = passwordInput.value;
-            if (!pwd) {
+            const newPassword = passwordInput.value;
+            if (!newPassword) {
                 strengthFill.style.width = '0%';
                 strengthLabel.textContent = '';
                 return;
             }
-            const result = evaluatePassword(pwd);
+            const result = evaluatePassword(newPassword);
             strengthFill.style.width = result.percent + '%';
             strengthFill.style.background = result.color;
             strengthLabel.textContent = result.label;
             strengthLabel.style.color = result.color;
         });
 
-        panel.querySelector('#btnAddUser').addEventListener('click', async (e) => {
-            const addButton   = e.currentTarget;
+        panel.querySelector('#btnAddUser').addEventListener('click', async (event) => {
+            const addButton   = event.currentTarget;
             const username = panel.querySelector('#newUsername').value;
             const password = panel.querySelector('#newPassword').value;
             const role = panel.querySelector('#newRole').value;
@@ -618,12 +618,12 @@ async function renderManageUsers(panel, context) {
                 } else {
                     showStatusPill(addButton, resultData.error || 'Could not create the user.', 'error');
                 }
-            } catch (err) {
+            } catch (error) {
                 showStatusPill(addButton, 'Network error.', 'error');
             }
         });
-    } catch (e) {
-        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(e.message)}</p>`;
+    } catch (event) {
+        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(event.message)}</p>`;
     }
 }
 
@@ -631,8 +631,8 @@ async function renderUserStatistics(panel) {
     panel.innerHTML = `<p>Loading statistics...</p>`;
 
     try {
-        const res = await apiFetch('api.php?action=users_stats');
-        const data = await res.json();
+        const response = await apiFetch('api.php?action=users_stats');
+        const data = await response.json();
 
         if (data.status !== 'success') {
             panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
@@ -683,12 +683,12 @@ async function renderUserStatistics(panel) {
         if (data.recent.length === 0) {
             html += `<tr><td class="adm-td" colspan="3">No recent activity.</td></tr>`;
         } else {
-            data.recent.forEach(r => {
+            data.recent.forEach(recentEntry => {
                 html += `
                     <tr>
-                        <td class="adm-td">${escHtml(r.action)}</td>
-                        <td class="adm-td">${escHtml(r.username || '—')}</td>
-                        <td class="adm-td">${escHtml(r.created_at)}</td>
+                        <td class="adm-td">${escHtml(recentEntry.action)}</td>
+                        <td class="adm-td">${escHtml(recentEntry.username || '—')}</td>
+                        <td class="adm-td">${escHtml(recentEntry.created_at)}</td>
                     </tr>
                 `;
             });
@@ -700,8 +700,8 @@ async function renderUserStatistics(panel) {
         `;
 
         panel.innerHTML = html;
-    } catch (e) {
-        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(e.message)}</p>`;
+    } catch (event) {
+        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(event.message)}</p>`;
     }
 }
 
@@ -709,8 +709,8 @@ async function renderUserSettings(panel, context) {
     panel.innerHTML = `<p>Loading settings...</p>`;
 
     try {
-        const res = await apiFetch('api.php?action=user_policy_get');
-        const data = await res.json();
+        const response = await apiFetch('api.php?action=user_policy_get');
+        const data = await response.json();
 
         if (data.status !== 'success') {
             panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
@@ -737,8 +737,8 @@ async function renderUserSettings(panel, context) {
             </div>
         `;
 
-        panel.querySelector('#btnSaveUserPolicy').addEventListener('click', async (e) => {
-            const saveButton = e.currentTarget;
+        panel.querySelector('#btnSaveUserPolicy').addEventListener('click', async (event) => {
+            const saveButton = event.currentTarget;
             const min_password_length = parseInt(panel.querySelector('#policyMinPasswordLength').value, 10);
             const default_role = panel.querySelector('#policyDefaultRole').value;
 
@@ -755,11 +755,11 @@ async function renderUserSettings(panel, context) {
                 } else {
                     showStatusPill(saveButton, resultData.error || 'Save failed.', 'error');
                 }
-            } catch (err) {
+            } catch (error) {
                 showStatusPill(saveButton, 'Network error.', 'error');
             }
         });
-    } catch (e) {
-        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(e.message)}</p>`;
+    } catch (event) {
+        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(event.message)}</p>`;
     }
 }

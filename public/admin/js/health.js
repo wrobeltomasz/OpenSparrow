@@ -117,7 +117,7 @@ export async function renderHealthDashboard(context) {
                 if (tab) tab.click();
             });
         }
-    } catch (e) {
+    } catch (error) {
         if (workspaceElement._renderId !== myId) return;
         workspaceElement.innerHTML = `<h3 style="color:var(--error);">Error loading diagnostics. Check server logs.</h3>`;
     }

@@ -25,7 +25,7 @@ function post(action, body) {
     return apiFetch('api.php?action=' + action, {
         method: 'POST',
         body: JSON.stringify(body),
-    }).then(r => r.json());
+    }).then(response => response.json());
 }
 
 function buildAllColumns(state) {
@@ -73,7 +73,7 @@ export function renderAddTableEditor(context) {
         state.tableName = nameInput.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
         nameInput.value = state.tableName;
         if (!displayNameTouched) {
-            state.displayName = state.tableName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            state.displayName = state.tableName.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
             displayNameInput.value = state.displayName;
         }
     });
@@ -180,7 +180,7 @@ export function renderAddTableEditor(context) {
         idRow.innerHTML = '<strong style="min-width:80px;">id</strong><span style="">serial PRIMARY KEY — added automatically</span>';
         columnsWrap.appendChild(idRow);
 
-        state.columns.forEach((col, index) => {
+        state.columns.forEach((columnName, index) => {
             const block = document.createElement('div');
             block.className = 'column-block';
             block.style.borderLeft = '4px solid var(--accent)';
@@ -189,7 +189,7 @@ export function renderAddTableEditor(context) {
             blockHead.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;';
             const columnNumber = document.createElement('h4');
             columnNumber.style.margin = '0';
-            columnNumber.textContent = col.name ? `Column: ${col.name}` : `Column ${index + 1}`;
+            columnNumber.textContent = columnName.name ? `Column: ${columnName.name}` : `Column ${index + 1}`;
             const removeButton = document.createElement('button');
             removeButton.textContent = 'Remove';
             removeButton.className = 'btn btn-secondary btn-sm';
@@ -201,28 +201,28 @@ export function renderAddTableEditor(context) {
             appendField(block, 'Column Name', () => {
                 const input = document.createElement('input');
                 input.type = 'text';
-                input.value = col.name;
+                input.value = columnName.name;
                 input.placeholder = 'e.g. email';
                 input.style.maxWidth = '280px';
                 input.addEventListener('input', () => {
-                    col.name = input.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                    input.value = col.name;
-                    columnNumber.textContent = col.name ? `Column: ${col.name}` : `Column ${index + 1}`;
+                    columnName.name = input.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    input.value = columnName.name;
+                    columnNumber.textContent = columnName.name ? `Column: ${columnName.name}` : `Column ${index + 1}`;
                 });
                 return input;
             });
 
             appendField(block, 'Type', () => {
-                const sel = document.createElement('select');
-                sel.style.maxWidth = '300px';
+                const selectElement = document.createElement('select');
+                selectElement.style.maxWidth = '300px';
                 COLUMN_TYPES.forEach(({ value, label }) => {
                     const option = document.createElement('option');
                     option.value = value; option.textContent = label;
-                    if (value === col.type) option.selected = true;
-                    sel.appendChild(option);
+                    if (value === columnName.type) option.selected = true;
+                    selectElement.appendChild(option);
                 });
-                sel.addEventListener('change', () => { col.type = sel.value; });
-                return sel;
+                selectElement.addEventListener('change', () => { columnName.type = selectElement.value; });
+                return selectElement;
             });
 
             appendField(block, 'Not Null', () => {
@@ -230,29 +230,29 @@ export function renderAddTableEditor(context) {
                 wrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
                 const callback = document.createElement('input');
                 callback.type = 'checkbox';
-                callback.checked = !!col.not_null;
-                callback.addEventListener('change', () => { col.not_null = callback.checked; });
-                const lbl = document.createElement('span');
-                lbl.style.cssText = '';
-                lbl.textContent = 'Requires a Default value if the table already has rows.';
+                callback.checked = !!columnName.not_null;
+                callback.addEventListener('change', () => { columnName.not_null = callback.checked; });
+                const labelElement = document.createElement('span');
+                labelElement.style.cssText = '';
+                labelElement.textContent = 'Requires a Default value if the table already has rows.';
                 wrap.appendChild(callback);
-                wrap.appendChild(lbl);
+                wrap.appendChild(labelElement);
                 return wrap;
             });
 
             appendField(block, 'Default', () => {
                 const input = document.createElement('input');
                 input.type = 'text';
-                input.value = col.default || '';
+                input.value = columnName.default || '';
                 input.placeholder = 'e.g. 0, now(), true, \'active\'';
                 input.style.maxWidth = '280px';
-                input.addEventListener('input', () => { col.default = input.value; });
+                input.addEventListener('input', () => { columnName.default = input.value; });
                 return input;
             }, 'Expressions: now(), current_timestamp, true, false, null. Numbers and quoted strings also accepted.');
 
             appendField(block, 'Index', () => {
-                const sel = document.createElement('select');
-                sel.style.maxWidth = '260px';
+                const selectElement = document.createElement('select');
+                selectElement.style.maxWidth = '260px';
                 [
                     { value: '',       label: 'none' },
                     { value: 'btree',  label: 'btree — standard (=, <, >, LIKE prefix)' },
@@ -261,19 +261,19 @@ export function renderAddTableEditor(context) {
                 ].forEach(({ value, label }) => {
                     const option = document.createElement('option');
                     option.value = value; option.textContent = label;
-                    if (value === (col.index || '')) option.selected = true;
-                    sel.appendChild(option);
+                    if (value === (columnName.index || '')) option.selected = true;
+                    selectElement.appendChild(option);
                 });
-                sel.addEventListener('change', () => { col.index = sel.value; });
-                return sel;
+                selectElement.addEventListener('change', () => { columnName.index = selectElement.value; });
+                return selectElement;
             });
 
             appendField(block, 'Comment', () => {
                 const input = document.createElement('input');
                 input.type = 'text';
-                input.value = col.comment || '';
+                input.value = columnName.comment || '';
                 input.placeholder = 'Optional — stored as COMMENT ON COLUMN';
-                input.addEventListener('input', () => { col.comment = input.value; });
+                input.addEventListener('input', () => { columnName.comment = input.value; });
                 return input;
             });
 
@@ -287,7 +287,7 @@ export function renderAddTableEditor(context) {
                 tableOptions.forEach(({ value, label }) => {
                     const option = document.createElement('option');
                     option.value = value; option.textContent = label;
-                    if (value === (col.fk_table || '')) option.selected = true;
+                    if (value === (columnName.fk_table || '')) option.selected = true;
                     fkTableSelect.appendChild(option);
                 });
 
@@ -300,18 +300,18 @@ export function renderAddTableEditor(context) {
                     options.forEach(({ value, label }) => {
                         const option = document.createElement('option');
                         option.value = value; option.textContent = label;
-                        if (value === (col.fk_column || '')) option.selected = true;
+                        if (value === (columnName.fk_column || '')) option.selected = true;
                         fkColumnSelect.appendChild(option);
                     });
                 }
-                populateFkColumns(col.fk_table || '');
+                populateFkColumns(columnName.fk_table || '');
 
                 fkTableSelect.addEventListener('change', () => {
-                    col.fk_table = fkTableSelect.value;
-                    col.fk_column = '';
-                    populateFkColumns(col.fk_table);
+                    columnName.fk_table = fkTableSelect.value;
+                    columnName.fk_column = '';
+                    populateFkColumns(columnName.fk_table);
                 });
-                fkColumnSelect.addEventListener('change', () => { col.fk_column = fkColumnSelect.value; });
+                fkColumnSelect.addEventListener('change', () => { columnName.fk_column = fkColumnSelect.value; });
 
                 row.appendChild(fkTableSelect);
                 row.appendChild(fkColumnSelect);
@@ -392,17 +392,17 @@ export function renderAddTableEditor(context) {
                 return;
             }
 
-            for (const col of buildAllColumns(state)) {
-                const payload = { schema: state.schema, table: state.tableName, column: col.name, type: col.type };
-                if (col.not_null)                    payload.not_null  = true;
-                if (col.default)                     payload.default   = col.default;
-                if (col.index)                       payload.index     = col.index;
-                if (col.comment)                     payload.comment   = col.comment;
-                if (col.fk_table && col.fk_column) { payload.fk_table = col.fk_table; payload.fk_column = col.fk_column; }
+            for (const columnName of buildAllColumns(state)) {
+                const payload = { schema: state.schema, table: state.tableName, column: columnName.name, type: columnName.type };
+                if (columnName.not_null)                    payload.not_null  = true;
+                if (columnName.default)                     payload.default   = columnName.default;
+                if (columnName.index)                       payload.index     = columnName.index;
+                if (columnName.comment)                     payload.comment   = columnName.comment;
+                if (columnName.fk_table && columnName.fk_column) { payload.fk_table = columnName.fk_table; payload.fk_column = columnName.fk_column; }
 
                 const columnData = await post('add_column', payload);
                 if (columnData.status !== 'success') {
-                    showStatusPill(statusAnchor, `Table created but column "${col.name}" failed: ${columnData.error}`, 'error');
+                    showStatusPill(statusAnchor, `Table created but column "${columnName.name}" failed: ${columnData.error}`, 'error');
                     return;
                 }
             }
@@ -412,14 +412,14 @@ export function renderAddTableEditor(context) {
                     table:        state.tableName,
                     schema:       state.schema,
                     display_name: state.displayName || state.tableName,
-                    columns:      buildAllColumns(state).map(col => ({
-                        name:        col.name,
-                        type:        col.type,
-                        not_null:    col.not_null || false,
-                        display_name: col.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-                        description: col.comment || '',
-                        fk_table:    col.fk_table  || '',
-                        fk_column:   col.fk_column || '',
+                    columns:      buildAllColumns(state).map(columnName => ({
+                        name:        columnName.name,
+                        type:        columnName.type,
+                        not_null:    columnName.not_null || false,
+                        display_name: columnName.name.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+                        description: columnName.comment || '',
+                        fk_table:    columnName.fk_table  || '',
+                        fk_column:   columnName.fk_column || '',
                     })),
                 });
                 if (regData.status !== 'success') {
@@ -439,8 +439,8 @@ export function renderAddTableEditor(context) {
             displayNameInput.value = '';
             schemaInput.value = state.schema;
             renderColumns();
-        } catch (err) {
-            showStatusPill(statusAnchor, 'Network error: ' + err.message, 'error');
+        } catch (error) {
+            showStatusPill(statusAnchor, 'Network error: ' + error.message, 'error');
         } finally {
             submitButton.disabled = false;
             submitButton.textContent = 'Create Table';
@@ -449,17 +449,17 @@ export function renderAddTableEditor(context) {
 }
 
 function appendField(parent, labelText, buildControl, hintText) {
-    const grp = document.createElement('div');
-    grp.className = 'form-group';
-    const lbl = document.createElement('label');
-    lbl.textContent = labelText;
-    grp.appendChild(lbl);
-    grp.appendChild(buildControl());
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    const labelElement = document.createElement('label');
+    labelElement.textContent = labelText;
+    group.appendChild(labelElement);
+    group.appendChild(buildControl());
     if (hintText) {
         const hint = document.createElement('span');
         hint.className = 'help-text';
         hint.textContent = hintText;
-        grp.appendChild(hint);
+        group.appendChild(hint);
     }
-    parent.appendChild(grp);
+    parent.appendChild(group);
 }

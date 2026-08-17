@@ -84,17 +84,17 @@ async function buildSubtableBlock(sub, row) {
 
         if (data.rows?.length > 0) {
             const columns = sub.columns_to_show?.length ? sub.columns_to_show : ['id'];
-            data.rows.forEach(r => {
+            data.rows.forEach(childRow => {
                 const li = document.createElement('li');
                 const textSpan = document.createElement('span');
-                textSpan.textContent = columns.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || I18n.t('grid.drilldown_no_title');
+                textSpan.textContent = columns.map(columnName => childRow[columnName + '__display'] ?? childRow[columnName] ?? '').join(' - ') || I18n.t('grid.drilldown_no_title');
                 const badge = document.createElement('span');
                 badge.className = 'badge';
-                badge.textContent = I18n.t('grid.id_badge', { id: r.id });
+                badge.textContent = I18n.t('grid.id_badge', { id: childRow.id });
                 li.appendChild(textSpan);
                 li.appendChild(badge);
                 li.addEventListener('click', () => {
-                    window.location.href = `edit.php?table=${sub.table}&id=${r.id}`;
+                    window.location.href = `edit.php?table=${sub.table}&id=${childRow.id}`;
                 });
                 ul.appendChild(li);
             });

@@ -11,13 +11,13 @@ import { makeInlineLink } from '../dom.js';
 
 function renderTextCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
     const td = document.createElement('td');
-    const value = row[col + '__display'] ?? row[col] ?? '';
+    const value = row[columnName + '__display'] ?? row[columnName] ?? '';
 
     if (!columnConfig.readonly && !isReadOnly) {
         td.contentEditable = 'true';
         td.classList.add('editable');
     }
-    td.dataset.column = col;
+    td.dataset.column = columnName;
     td.dataset.id = row['id'];
 
     if (columnConfig.validation_regexp) {
@@ -30,11 +30,11 @@ function renderTextCell({ row, col: column, colCfg: columnConfig, isReadOnly }) 
     if (/^https?:\/\//i.test(stringValue)) {
         td.appendChild(makeInlineLink(stringValue, stringValue, {
             newTab: true,
-            onClick: e => { e.preventDefault(); window.open(stringValue, '_blank'); },
+            onClick: event => { event.preventDefault(); window.open(stringValue, '_blank'); },
         }));
     } else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(stringValue)) {
         td.appendChild(makeInlineLink(`mailto:${stringValue}`, stringValue, {
-            onClick: e => e.stopPropagation(),
+            onClick: event => event.stopPropagation(),
         }));
     } else {
         highlightInto(td, value, state.searchTerm);
@@ -42,12 +42,12 @@ function renderTextCell({ row, col: column, colCfg: columnConfig, isReadOnly }) 
 
     if (!isReadOnly) attachCellEvents(td);
 
-    td.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); td.blur(); }
+    td.addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); td.blur(); }
     });
-    td.addEventListener('paste', e => {
-        e.preventDefault();
-        const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+    td.addEventListener('paste', event => {
+        event.preventDefault();
+        const text = (event.originalEvent || event).clipboardData.getData('text/plain');
         document.execCommand('insertText', false, text);
     });
 

@@ -26,7 +26,7 @@ function procedureKey(proc) {
 }
 
 function procedureLabel(proc) {
-    const argumentList = (proc.params || []).map(p => `${p.name} ${p.type}`).join(', ');
+    const argumentList = (proc.params || []).map(procedure => `${procedure.name} ${procedure.type}`).join(', ');
     return `${procedureKey(proc)}(${argumentList})`;
 }
 
@@ -35,10 +35,10 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
 
     if (!itemData.steps) itemData.steps = [];
 
-    workspaceElement.appendChild(createTextInput('title', 'Workflow Title', itemData.title, v => itemData.title = v));
-    workspaceElement.appendChild(createTextInput('description', 'Short Description', itemData.description || '', v => itemData.description = v));
-    workspaceElement.appendChild(createIconPicker('icon', 'Workflow Icon', itemData.icon || '', v => {
-        if (v && v.trim() !== '') itemData.icon = v; else delete itemData.icon;
+    workspaceElement.appendChild(createTextInput('title', 'Workflow Title', itemData.title, value => itemData.title = value));
+    workspaceElement.appendChild(createTextInput('description', 'Short Description', itemData.description || '', value => itemData.description = value));
+    workspaceElement.appendChild(createIconPicker('icon', 'Workflow Icon', itemData.icon || '', value => {
+        if (value && value.trim() !== '') itemData.icon = value; else delete itemData.icon;
     }));
 
     const stepsContainer = document.createElement('div');
@@ -56,8 +56,8 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
 
             const header = document.createElement('div');
             header.className = 'block-header';
-            header.addEventListener('click', (e) => {
-                if (e.target.closest('button')) return;
+            header.addEventListener('click', (event) => {
+                if (event.target.closest('button')) return;
                 block.classList.toggle('collapsed');
             });
 
@@ -84,12 +84,12 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
             header.appendChild(delButton);
             block.appendChild(header);
 
-            block.appendChild(createTextInput('step_title', 'Step Name', step.title, v => step.title = v));
+            block.appendChild(createTextInput('step_title', 'Step Name', step.title, value => step.title = value));
 
-            block.appendChild(createTextInput('step_description', 'Step Description', step.description || '', v => step.description = v));
+            block.appendChild(createTextInput('step_description', 'Step Description', step.description || '', value => step.description = value));
 
-            block.appendChild(createSelectInput('step_table', 'Target Table', getTableOptions(), step.table || '', v => {
-                step.table = v;
+            block.appendChild(createSelectInput('step_table', 'Target Table', getTableOptions(), step.table || '', value => {
+                step.table = value;
                 step.foreign_key = '';
                 renderSteps();
             }));
@@ -99,20 +99,20 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
                 { value: 'true', label: 'Yes (Multiple records)' }
             ];
             const currentMulti = step.allow_multiple ? 'true' : 'false';
-            block.appendChild(createSelectInput('allow_multiple', 'Allow adding multiple records?', multiOptions, currentMulti, v => {
-                step.allow_multiple = (v === 'true');
+            block.appendChild(createSelectInput('allow_multiple', 'Allow adding multiple records?', multiOptions, currentMulti, value => {
+                step.allow_multiple = (value === 'true');
             }));
 
             if (index > 0 && step.table) {
                 const columnOptions = getColumnOptionsForTable(step.table);
-                block.appendChild(createSelectInput('step_fk', 'Foreign Key (link to previous step)', columnOptions, step.foreign_key || '', v => step.foreign_key = v));
+                block.appendChild(createSelectInput('step_fk', 'Foreign Key (link to previous step)', columnOptions, step.foreign_key || '', value => step.foreign_key = value));
 
                 const previousSteps = [{value: '', label: '-- Select Previous Step --'}];
                 for (let i = 0; i < index; i++) {
                     previousSteps.push({value: i.toString(), label: `Step ${i + 1}: ${itemData.steps[i].title || 'Unnamed'}`});
                 }
 
-                block.appendChild(createSelectInput('link_to_step', 'Link to ID from Step', previousSteps, (step.link_to_step !== undefined ? step.link_to_step.toString() : ''), v => step.link_to_step = parseInt(v)));
+                block.appendChild(createSelectInput('link_to_step', 'Link to ID from Step', previousSteps, (step.link_to_step !== undefined ? step.link_to_step.toString() : ''), value => step.link_to_step = parseInt(value)));
             }
 
             const proc = step.procedure || {};
@@ -125,8 +125,8 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
                 'Call a PostgreSQL procedure on Next step?',
                 procedureEnabledOptions,
                 proc.enabled ? 'true' : 'false',
-                v => {
-                    if (v === 'true') {
+                value => {
+                    if (value === 'true') {
                         step.procedure = { enabled: true, schema: '', name: '', params: [] };
                     } else {
                         delete step.procedure;
@@ -137,13 +137,13 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
 
             if (proc.enabled) {
                 const procedureOptions = [{ value: '', label: '-- Select Procedure --' }];
-                (procedureCache || []).forEach(p => {
-                    procedureOptions.push({ value: procedureKey(p), label: procedureLabel(p) });
+                (procedureCache || []).forEach(procedure => {
+                    procedureOptions.push({ value: procedureKey(procedure), label: procedureLabel(procedure) });
                 });
 
                 const selectedKey = (proc.schema && proc.name) ? `${proc.schema}.${proc.name}` : '';
-                block.appendChild(createSelectInput('proc_name', 'Procedure', procedureOptions, selectedKey, v => {
-                    const picked = (procedureCache || []).find(p => procedureKey(p) === v);
+                block.appendChild(createSelectInput('proc_name', 'Procedure', procedureOptions, selectedKey, value => {
+                    const picked = (procedureCache || []).find(procedure => procedureKey(procedure) === value);
                     if (picked) {
                         step.procedure.schema = picked.schema;
                         step.procedure.name = picked.name;
@@ -157,7 +157,7 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
                     renderSteps();
                 }));
 
-                const selectedProcedure = (procedureCache || []).find(p => procedureKey(p) === selectedKey);
+                const selectedProcedure = (procedureCache || []).find(procedure => procedureKey(procedure) === selectedKey);
                 if (selectedProcedure) {
                     (selectedProcedure.params || []).forEach((declared, pi) => {
                         if (!step.procedure.params[pi]) {
@@ -174,8 +174,8 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
                                 { value: 'literal', label: 'Fixed value' }
                             ],
                             parameterConfig.source || 'field',
-                            v => {
-                                step.procedure.params[pi] = v === 'literal'
+                            value => {
+                                step.procedure.params[pi] = value === 'literal'
                                     ? { source: 'literal', value: '' }
                                     : { source: 'field', step: index, field: '' };
                                 renderSteps();
@@ -187,7 +187,7 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
                                 `param_val_${pi}`,
                                 `— value for ${parameterLabel}`,
                                 parameterConfig.value || '',
-                                v => parameterConfig.value = v
+                                value => parameterConfig.value = value
                             ));
                         } else {
                             const stepOptions = [];
@@ -205,8 +205,8 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
                                 `— source step for ${parameterLabel}`,
                                 stepOptions,
                                 sourceStep,
-                                v => {
-                                    parameterConfig.step = parseInt(v, 10);
+                                value => {
+                                    parameterConfig.step = parseInt(value, 10);
                                     parameterConfig.field = '';
                                     renderSteps();
                                 }
@@ -220,7 +220,7 @@ export function renderWorkflowsEditor(key, itemData, isArray, context) {
                                 `— source field for ${parameterLabel}`,
                                 fieldOptions,
                                 parameterConfig.field || '',
-                                v => parameterConfig.field = v
+                                value => parameterConfig.field = value
                             ));
                         }
                     });

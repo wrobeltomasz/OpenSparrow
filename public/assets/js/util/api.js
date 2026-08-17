@@ -7,13 +7,13 @@ import { getCsrfToken } from './csrf.js';
 
 export function apiFetch(url, options = {}) {
     const { method = 'GET', body, headers = {}, ...rest } = options;
-    const h = { 'X-CSRF-Token': getCsrfToken(), ...headers };
+    const requestHeaders = { 'X-CSRF-Token': getCsrfToken(), ...headers };
     let payload = body;
     if (body !== undefined && !(body instanceof FormData)) {
-        h['Content-Type'] = 'application/json';
+        requestHeaders['Content-Type'] = 'application/json';
         if (typeof body !== 'string') payload = JSON.stringify(body);
     }
-    return fetch(url, { method, headers: h, body: payload, ...rest });
+    return fetch(url, { method, headers: requestHeaders, body: payload, ...rest });
 }
 
 export async function apiJson(url, options = {}) {

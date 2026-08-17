@@ -20,55 +20,55 @@ function inlineFormat(s) {
 
 function renderBlocks(s, restoreInline) {
     const lines = s.split('\n');
-    const out   = [];
-    let i = 0;
+    const htmlParts   = [];
+    let lineIndex = 0;
 
-    while (i < lines.length) {
-        const ln = lines[i];
+    while (lineIndex < lines.length) {
+        const line = lines[lineIndex];
 
-        if (/^\x00B(\d+)\x00$/.test(ln)) { out.push(ln); i++; continue; }
+        if (/^\x00B(\d+)\x00$/.test(line)) { htmlParts.push(line); lineIndex++; continue; }
 
-        const hm = ln.match(/^(#{1,3}) (.+)/);
-        if (hm) {
-            const tag = ['h3', 'h4', 'h5'][hm[1].length - 1];
-            out.push('<' + tag + ' class="rag-md-h">' + restoreInline(inlineFormat(escHtml(hm[2]))) + '</' + tag + '>');
-            i++; continue;
+        const headingMatch = line.match(/^(#{1,3}) (.+)/);
+        if (headingMatch) {
+            const tag = ['h3', 'h4', 'h5'][headingMatch[1].length - 1];
+            htmlParts.push('<' + tag + ' class="rag-md-h">' + restoreInline(inlineFormat(escHtml(headingMatch[2]))) + '</' + tag + '>');
+            lineIndex++; continue;
         }
 
-        if (/^[-*] /.test(ln)) {
+        if (/^[-*] /.test(line)) {
             const items = [];
-            while (i < lines.length && /^[-*] /.test(lines[i]))
-                items.push('<li>' + restoreInline(inlineFormat(escHtml(lines[i++].replace(/^[-*] /, '')))) + '</li>');
-            out.push('<ul class="rag-md-list">' + items.join('') + '</ul>');
+            while (lineIndex < lines.length && /^[-*] /.test(lines[lineIndex]))
+                items.push('<li>' + restoreInline(inlineFormat(escHtml(lines[lineIndex++].replace(/^[-*] /, '')))) + '</li>');
+            htmlParts.push('<ul class="rag-md-list">' + items.join('') + '</ul>');
             continue;
         }
 
-        if (/^\d+\. /.test(ln)) {
+        if (/^\d+\. /.test(line)) {
             const items = [];
-            while (i < lines.length && /^\d+\. /.test(lines[i]))
-                items.push('<li>' + restoreInline(inlineFormat(escHtml(lines[i++].replace(/^\d+\. /, '')))) + '</li>');
-            out.push('<ol class="rag-md-list">' + items.join('') + '</ol>');
+            while (lineIndex < lines.length && /^\d+\. /.test(lines[lineIndex]))
+                items.push('<li>' + restoreInline(inlineFormat(escHtml(lines[lineIndex++].replace(/^\d+\. /, '')))) + '</li>');
+            htmlParts.push('<ol class="rag-md-list">' + items.join('') + '</ol>');
             continue;
         }
 
-        if (ln.trim() === '') { i++; continue; }
+        if (line.trim() === '') { lineIndex++; continue; }
 
         const paragraph = [];
         while (
-            i < lines.length &&
-            lines[i].trim() !== '' &&
-            !/^[-*] /.test(lines[i]) &&
-            !/^\d+\. /.test(lines[i]) &&
-            !/^\x00B/.test(lines[i]) &&
-            !/^#{1,3} /.test(lines[i])
+            lineIndex < lines.length &&
+            lines[lineIndex].trim() !== '' &&
+            !/^[-*] /.test(lines[lineIndex]) &&
+            !/^\d+\. /.test(lines[lineIndex]) &&
+            !/^\x00B/.test(lines[lineIndex]) &&
+            !/^#{1,3} /.test(lines[lineIndex])
         ) {
-            paragraph.push(restoreInline(inlineFormat(escHtml(lines[i]))));
-            i++;
+            paragraph.push(restoreInline(inlineFormat(escHtml(lines[lineIndex]))));
+            lineIndex++;
         }
-        if (paragraph.length) out.push('<p class="rag-md-p">' + paragraph.join('<br>') + '</p>');
+        if (paragraph.length) htmlParts.push('<p class="rag-md-p">' + paragraph.join('<br>') + '</p>');
     }
 
-    return out.join('');
+    return htmlParts.join('');
 }
 
 export function renderAnswer(raw, options = {}) {
@@ -78,7 +78,7 @@ export function renderAnswer(raw, options = {}) {
 
     const blocks = [];
     const inline = [];
-    const restoreInline = string => string.replace(/\x00I(\d+)\x00/g, (_, i) => inline[+i]);
+    const restoreInline = string => string.replace(/\x00I(\d+)\x00/g, (_, lineIndex) => inline[+lineIndex]);
 
     let s = String(raw ?? '');
 
@@ -107,6 +107,6 @@ export function renderAnswer(raw, options = {}) {
     }
 
     let html = renderBlocks(s, restoreInline);
-    html = html.replace(/\x00B(\d+)\x00/g, (_, i) => '<pre class="rag-md-pre"><code>' + blocks[+i] + '</code></pre>');
+    html = html.replace(/\x00B(\d+)\x00/g, (_, lineIndex) => '<pre class="rag-md-pre"><code>' + blocks[+lineIndex] + '</code></pre>');
     return html;
 }

@@ -11,25 +11,25 @@ import { apiFetch } from './util/api.js';
 async function fetchWorkflowsConfig() {
     try {
         const csrfToken = getCsrfToken();
-        const res = await fetch('api.php?api=workflows', {
+        const response = await fetch('api.php?api=workflows', {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-Token': csrfToken
             }
         });
-        if (!res.ok) throw new Error('Network response was not ok');
-        return await res.json();
-    } catch (e) {
-        console.warn('Could not load workflows config', e);
+        if (!response.ok) throw new Error('Network response was not ok');
+        return await response.json();
+    } catch (error) {
+        console.warn('Could not load workflows config', error);
         return null;
     }
 }
 
 function createIconElement(iconPath, fallbackColor = 'var(--accent)') {
     if (!iconPath) {
-        const div = document.createElement('div');
-        div.style.cssText = `width:20px; height:20px; background:${fallbackColor}; border-radius:50%; margin-right:8px; display:inline-block; vertical-align:middle;`;
-        return div;
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `width:20px; height:20px; background:${fallbackColor}; border-radius:50%; margin-right:8px; display:inline-block; vertical-align:middle;`;
+        return wrapper;
     }
     const image = document.createElement('img');
     image.src = iconPath;
@@ -68,13 +68,13 @@ export async function initWorkflows(menuListElement, containerElement, titleElem
     };
 
     const activateLink = (link) => {
-        menuRoot.querySelectorAll('a').forEach(l => l.classList.remove('active'));
+        menuRoot.querySelectorAll('a').forEach(menuLink => menuLink.classList.remove('active'));
         if (link) link.classList.add('active');
     };
 
     if (workflowLink) {
-        workflowLink.addEventListener('click', (e) => {
-            e.preventDefault();
+        workflowLink.addEventListener('click', (error) => {
+            error.preventDefault();
             activateLink(workflowLink);
             hideGridUi();
             renderWorkflowsList(config.workflows, containerElement, titleElement, menuName, appSchema);
@@ -83,29 +83,29 @@ export async function initWorkflows(menuListElement, containerElement, titleElem
 
     const workflowChildLinks = menuRoot.querySelectorAll('a[data-workflow-id]');
     workflowChildLinks.forEach((link) => {
-        link.addEventListener('click', (e) => {
-            const wf = config.workflows.find(w => w.id === link.dataset.workflowId);
-            if (!wf) return;
-            e.preventDefault();
+        link.addEventListener('click', (error) => {
+            const workflowEntry = config.workflows.find(candidateWorkflow => candidateWorkflow.id === link.dataset.workflowId);
+            if (!workflowEntry) return;
+            error.preventDefault();
             activateLink(link);
             hideGridUi();
-            startWorkflow(wf, containerElement, titleElement, appSchema, config.workflows, menuName);
+            startWorkflow(workflowEntry, containerElement, titleElement, appSchema, config.workflows, menuName);
         });
     });
 
     const urlParameters = new URLSearchParameters(window.location.search);
     if (urlParameters.has('workflows')) {
         const workflowId = urlParameters.get('workflow') || '';
-        const wf = workflowId ? config.workflows.find(w => w.id === workflowId) : null;
-        const matchingChildLink = wf
-            ? menuRoot.querySelector(`a[data-workflow-id="${CSS.escape(wf.id)}"]`)
+        const workflowEntry = workflowId ? config.workflows.find(candidateWorkflow => candidateWorkflow.id === workflowId) : null;
+        const matchingChildLink = workflowEntry
+            ? menuRoot.querySelector(`a[data-workflow-id="${CSS.escape(workflowEntry.id)}"]`)
             : null;
 
         activateLink(matchingChildLink || workflowLink);
         hideGridUi();
 
-        if (wf) {
-            startWorkflow(wf, containerElement, titleElement, appSchema, config.workflows, menuName);
+        if (workflowEntry) {
+            startWorkflow(workflowEntry, containerElement, titleElement, appSchema, config.workflows, menuName);
         } else {
             renderWorkflowsList(config.workflows, containerElement, titleElement, menuName, appSchema);
         }
@@ -128,7 +128,7 @@ function renderWorkflowsList(workflows, containerElement, titleElement, menuName
     listContainer.style.gap = '24px';
     listContainer.style.padding = '24px';
 
-    workflows.forEach(wf => {
+    workflows.forEach(workflowEntry => {
         const card = document.createElement('div');
 
         card.style.cssText = `
@@ -172,16 +172,16 @@ function renderWorkflowsList(workflows, containerElement, titleElement, menuName
             border-radius: 8px;
         `;
 
-        if (wf.icon) {
+        if (workflowEntry.icon) {
             const image = document.createElement('img');
-            image.src = wf.icon;
+            image.src = workflowEntry.icon;
             image.alt = '';
             image.style.cssText = 'width:22px; height:22px; object-fit:contain;';
             iconWrapper.appendChild(image);
         } else {
-            const div = document.createElement('div');
-            div.style.cssText = 'width:22px; height:22px; background:var(--accent); border-radius:50%;';
-            iconWrapper.appendChild(div);
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'width:22px; height:22px; background:var(--accent); border-radius:50%;';
+            iconWrapper.appendChild(wrapper);
         }
 
         const cardTitle = document.createElement('h3');
@@ -189,7 +189,7 @@ function renderWorkflowsList(workflows, containerElement, titleElement, menuName
         cardTitle.style.color = 'var(--accent-dark)';
         cardTitle.style.fontSize = '1.15rem';
         cardTitle.style.fontWeight = '600';
-        cardTitle.textContent = wf.title;
+        cardTitle.textContent = workflowEntry.title;
 
         header.appendChild(iconWrapper);
         header.appendChild(cardTitle);
@@ -200,7 +200,7 @@ function renderWorkflowsList(workflows, containerElement, titleElement, menuName
         cardDescription.style.margin = '0 0 20px 0';
         cardDescription.style.lineHeight = '1.5';
         cardDescription.style.flexGrow = '1';
-        cardDescription.textContent = wf.description || I18n.t('workflow.no_description');
+        cardDescription.textContent = workflowEntry.description || I18n.t('workflow.no_description');
 
         const footer = document.createElement('div');
         footer.style.display = 'flex';
@@ -216,7 +216,7 @@ function renderWorkflowsList(workflows, containerElement, titleElement, menuName
         stepCount.style.fontWeight = '600';
         stepCount.style.textTransform = 'uppercase';
         stepCount.style.letterSpacing = '0.5px';
-        const validStepCount = (wf.steps || []).filter(s => s && s.table).length;
+        const validStepCount = (workflowEntry.steps || []).filter(stepEntry => stepEntry && stepEntry.table).length;
         stepCount.textContent = I18n.t('workflow.steps', { count: validStepCount }, validStepCount);
 
         const startButton = document.createElement('span');
@@ -232,7 +232,7 @@ function renderWorkflowsList(workflows, containerElement, titleElement, menuName
         card.appendChild(cardDescription);
         card.appendChild(footer);
 
-        card.addEventListener('click', () => startWorkflow(wf, containerElement, titleElement, appSchema, workflows, menuName));
+        card.addEventListener('click', () => startWorkflow(workflowEntry, containerElement, titleElement, appSchema, workflows, menuName));
 
         listContainer.appendChild(card);
     });
@@ -241,7 +241,7 @@ function renderWorkflowsList(workflows, containerElement, titleElement, menuName
 }
 
 function startWorkflow(workflow, containerElement, titleElement, appSchema, allWorkflows, menuName) {
-    workflow = { ...workflow, steps: (workflow.steps || []).filter(s => s && s.table) };
+    workflow = { ...workflow, steps: (workflow.steps || []).filter(stepEntry => stepEntry && stepEntry.table) };
 
     let currentStepIndex = 0;
 
@@ -271,11 +271,11 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
 
     function writeForm(form, snap) {
         if (!snap) return;
-        Object.entries(snap).forEach(([name, val]) => {
+        Object.entries(snap).forEach(([name, value]) => {
             const element = form.querySelector(`[name="${CSS.escape(name)}"]`);
             if (!element) return;
-            if (element.type === 'checkbox') element.checked = !!val;
-            else element.value = val ?? '';
+            if (element.type === 'checkbox') element.checked = !!value;
+            else element.value = value ?? '';
         });
     }
 
@@ -307,10 +307,10 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
         }
         bar.textContent = '';
 
-        workflow.steps.forEach((s, i) => {
+        workflow.steps.forEach((stepEntry, i) => {
             const done      = i < currentStepIndex;
             const current   = i === currentStepIndex;
-            const labelText = s.title || `Step ${i + 1}`;
+            const labelText = stepEntry.title || `Step ${i + 1}`;
 
             const pill = document.createElement('div');
             pill.style.cssText = [
@@ -322,10 +322,10 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
 
             const dot = document.createElement('span');
             dot.style.cssText = `width:8px; height:8px; border-radius:50%; background:${done ? 'var(--ok)' : current ? '#fff' : 'var(--border)'};`;
-            const lbl = document.createElement('span');
-            lbl.textContent = labelText;
+            const labelElement = document.createElement('span');
+            labelElement.textContent = labelText;
 
-            pill.append(dot, lbl);
+            pill.append(dot, labelElement);
             bar.appendChild(pill);
 
             if (i < workflow.steps.length - 1) {
@@ -358,21 +358,21 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
         if (!activeSchema) {
             try {
                 const csrfToken = getCsrfToken();
-                const res = await fetch('api.php?api=schema', {
+                const response = await fetch('api.php?api=schema', {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-Token': csrfToken
                     }
                 });
-                if (res.ok) activeSchema = await res.json();
-            } catch (err) {
-                console.warn('Could not fetch schema dynamically', err);
+                if (response.ok) activeSchema = await response.json();
+            } catch (schemaError) {
+                console.warn('Could not fetch schema dynamically', schemaError);
             }
         }
 
         let tableSchema = activeSchema?.tables?.[step.table];
         if (!tableSchema && activeSchema?.tables) {
-            const key = Object.keys(activeSchema.tables).find(k => k.toLowerCase() === step.table.toLowerCase());
+            const key = Object.keys(activeSchema.tables).find(tableKey => tableKey.toLowerCase() === step.table.toLowerCase());
             if (key) tableSchema = activeSchema.tables[key];
         }
 
@@ -380,14 +380,14 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
 
         if (!tableSchema) {
             try {
-                const res = await fetch('api/schema.php?include_hidden=1', {
+                const response = await fetch('api/schema.php?include_hidden=1', {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
-                const full = await res.json();
+                const full = await response.json();
                 fullSchema = full;
                 tableSchema = full.tables?.[step.table];
                 if (!tableSchema && full.tables) {
-                    const key = Object.keys(full.tables).find(k => k.toLowerCase() === step.table.toLowerCase());
+                    const key = Object.keys(full.tables).find(tableKey => tableKey.toLowerCase() === step.table.toLowerCase());
                     if (key) tableSchema = full.tables[key];
                 }
             } catch {  }
@@ -421,18 +421,18 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                     ? fkDef.display_columns : (fkDef.display_column ?? '');
                 const dispColumns = Array.isArray(rawDisp)
                     ? rawDisp
-                    : String(rawDisp).split(',').map(s => s.trim()).filter(Boolean);
+                    : String(rawDisp).split(',').map(stepEntry => stepEntry.trim()).filter(Boolean);
 
                 try {
-                    const res = await fetch(
+                    const response = await fetch(
                         `api/fk.php?table=${encodeURIComponent(step.table)}&col=${encodeURIComponent(columnName)}`,
                         { headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrfForFk } }
                     );
-                    const data = await res.json();
+                    const data = await response.json();
                     const rows = data.rows || [];
                     fkOptionMap[columnName] = rows.map(row => {
                         const label = dispColumns.length
-                            ? dispColumns.map(c => row[c] ?? '').filter(Boolean).join(' ')
+                            ? dispColumns.map(displayColumn => row[displayColumn] ?? '').filter(Boolean).join(' ')
                             : String(row[referenceColumn] ?? row.id ?? '');
                         return { value: row[referenceColumn] ?? row.id, label: label || String(row[referenceColumn] ?? row.id) };
                     });
@@ -449,17 +449,17 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                 url += `&filter_col=${encodeURIComponent(filterColumn)}&filter_val=${encodeURIComponent(filterValue)}`;
             }
             try {
-                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrf } });
-                const data = await res.json();
+                const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': csrf } });
+                const data = await response.json();
                 const rows = data.rows || [];
                 const fkDef = fkConfigMap[columnName] || {};
                 const referenceColumn = fkDef.reference_column || 'id';
                 const rawDisp = (Array.isArray(fkDef.display_columns) && fkDef.display_columns.length > 0)
                     ? fkDef.display_columns : (fkDef.display_column ?? '');
-                const dispColumns = Array.isArray(rawDisp) ? rawDisp : String(rawDisp).split(',').map(s => s.trim()).filter(Boolean);
+                const dispColumns = Array.isArray(rawDisp) ? rawDisp : String(rawDisp).split(',').map(stepEntry => stepEntry.trim()).filter(Boolean);
                 return rows.map(row => {
                     const label = dispColumns.length
-                        ? dispColumns.map(c => row[c] ?? '').filter(Boolean).join(' ')
+                        ? dispColumns.map(displayColumn => row[displayColumn] ?? '').filter(Boolean).join(' ')
                         : String(row[referenceColumn] ?? row.id ?? '');
                     return { value: row[referenceColumn] ?? row.id, label: label || String(row[referenceColumn] ?? row.id) };
                 });
@@ -481,7 +481,7 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                 option.textContent = label;
                 selectElement.appendChild(option);
             });
-            selectElement.value = options.some(o => String(o.value) === previous) ? previous : '';
+            selectElement.value = options.some(optionEntry => String(optionEntry.value) === previous) ? previous : '';
         }
 
         const page = document.createElement('div');
@@ -529,15 +529,15 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
         const virtualFields = {};
 
         function calcVirtualValue(formula) {
-            const ops = formula.cols || [];
-            const vals = ops.map(c => {
-                const element = form.querySelector(`[name="${c}"]`);
+            const formulaColumns = formula.cols || [];
+            const vals = formulaColumns.map(displayColumn => {
+                const element = form.querySelector(`[name="${displayColumn}"]`);
                 return parseFloat(element?.value ?? 0) || 0;
             });
             switch (formula.op) {
-                case 'multiply':  return vals.reduce((a, b) => a * b, 1);
-                case 'add':       return vals.reduce((a, b) => a + b, 0);
-                case 'subtract':  return vals.length >= 2 ? vals[0] - vals.slice(1).reduce((a, b) => a + b, 0) : 0;
+                case 'multiply':  return vals.reduce((total, operand) => total * operand, 1);
+                case 'add':       return vals.reduce((total, operand) => total + operand, 0);
+                case 'subtract':  return vals.length >= 2 ? vals[0] - vals.slice(1).reduce((total, operand) => total + operand, 0) : 0;
                 case 'divide':    return vals.length >= 2 && vals[1] !== 0 ? vals[0] / vals[1] : 0;
                 default:          return 0;
             }
@@ -680,8 +680,8 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
             if (!referenceTableName) continue;
             let referenceSchema = fullSchema?.tables?.[referenceTableName];
             if (!referenceSchema && fullSchema?.tables) {
-                const k = Object.keys(fullSchema.tables).find(t => t.toLowerCase() === referenceTableName.toLowerCase());
-                if (k) referenceSchema = fullSchema.tables[k];
+                const tableKey = Object.keys(fullSchema.tables).find(columnType => columnType.toLowerCase() === referenceTableName.toLowerCase());
+                if (tableKey) referenceSchema = fullSchema.tables[tableKey];
             }
             if (!referenceSchema?.foreign_keys) continue;
             for (const referenceFkColumn of Object.keys(referenceSchema.foreign_keys)) {
@@ -736,10 +736,10 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
         function labelForRecord(snap) {
             const parts = [];
             for (const [columnName, columnDef] of Object.entries(tableSchema.columns)) {
-                const t = (columnDef.type || '').toLowerCase();
-                if (columnName === 'id' || t === 'virtual' || t.includes('bool')) continue;
-                const v = snap[columnName];
-                if (v !== undefined && String(v).trim() !== '') parts.push(String(v));
+                const columnType = (columnDef.type || '').toLowerCase();
+                if (columnName === 'id' || columnType === 'virtual' || columnType.includes('bool')) continue;
+                const snapshotValue = snap[columnName];
+                if (snapshotValue !== undefined && String(snapshotValue).trim() !== '') parts.push(String(snapshotValue));
                 if (parts.length >= 2) break;
             }
             return parts.join(' — ') || I18n.t('workflow.select_blank');
@@ -753,24 +753,24 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                 const row = document.createElement('div');
                 row.className = 'wf-buffered-row' + (ri === editingIndex ? ' active' : '');
 
-                const txt = document.createElement('span');
-                txt.className = 'wf-buffered-label';
-                txt.textContent = `${ri + 1}. ${labelForRecord(snap)}`;
-                txt.title = I18n.t('common.edit');
-                txt.addEventListener('click', () => enterEditMode(ri));
-                const rm = document.createElement('button');
-                rm.type = 'button';
-                rm.className = 'icon-btn icon-btn-danger';
-                rm.textContent = '✕';
-                rm.title = I18n.t('common.delete');
-                rm.addEventListener('click', () => {
+                const textElement = document.createElement('span');
+                textElement.className = 'wf-buffered-label';
+                textElement.textContent = `${ri + 1}. ${labelForRecord(snap)}`;
+                textElement.title = I18n.t('common.edit');
+                textElement.addEventListener('click', () => enterEditMode(ri));
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'icon-btn icon-btn-danger';
+                removeButton.textContent = '✕';
+                removeButton.title = I18n.t('common.delete');
+                removeButton.addEventListener('click', () => {
                     stepData[currentStepIndex].splice(ri, 1);
 
                     if (editingIndex !== null) exitEditMode();
                     else renderMultiList();
                 });
-                row.appendChild(txt);
-                row.appendChild(rm);
+                row.appendChild(textElement);
+                row.appendChild(removeButton);
                 multiListElement.appendChild(row);
             });
         }
@@ -887,7 +887,7 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                 stepValues[String(index)] = values;
             });
 
-            const res = await apiFetch('api.php?api=workflow_procedure', {
+            const response = await apiFetch('api.php?api=workflow_procedure', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: {
@@ -897,7 +897,7 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                 }
             });
 
-            const rawText = await res.text();
+            const rawText = await response.text();
             let result;
             try {
                 result = JSON.parse(rawText);
@@ -907,13 +907,13 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                 throw new Error(I18n.t('workflow.server_error', { msg: cleanError.substring(0, 150) }));
             }
 
-            if (!res.ok || result.success !== true) {
+            if (!response.ok || result.success !== true) {
                 throw new Error(result.error || I18n.t('workflow.unknown_save_error'));
             }
         }
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        form.addEventListener('submit', async (error) => {
+            error.preventDefault();
 
             if (step.allow_multiple) {
                 const hasAnyValue = Array.from(form.querySelectorAll('[name]')).some((element) =>
@@ -937,9 +937,9 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                 nextButton.textContent = I18n.t('workflow.procedure_running');
                 try {
                     await callStepProcedure();
-                } catch (err) {
-                    console.error(err);
-                    showToast(I18n.t('workflow.procedure_error', { msg: err.message }), 'error');
+                } catch (schemaError) {
+                    console.error(schemaError);
+                    showToast(I18n.t('workflow.procedure_error', { msg: schemaError.message }), 'error');
                     nextButton.disabled = false;
                     nextButton.textContent = previousLabel;
                     return;
@@ -993,41 +993,41 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
             card.appendChild(head);
 
             if (records.length === 0) {
-                const p = document.createElement('p');
-                p.className = 'wf-review-empty';
-                p.textContent = I18n.t('form.no_records');
-                card.appendChild(p);
+                const paragraph = document.createElement('p');
+                paragraph.className = 'wf-review-empty';
+                paragraph.textContent = I18n.t('form.no_records');
+                card.appendChild(paragraph);
             } else {
                 records.forEach((snap) => {
-                    const dl = document.createElement('dl');
-                    dl.className = 'wf-review-fields';
+                    const definitionList = document.createElement('dl');
+                    definitionList.className = 'wf-review-fields';
                     const cols = meta?.tableSchema?.columns || {};
                     for (const [columnName, columnDef] of Object.entries(cols)) {
                         const type = (columnDef.type || '').toLowerCase();
                         if (columnName === 'id' || columnDef.readonly || type === 'virtual') continue;
                         if (step.foreign_key === columnName && step.link_to_step !== undefined && step.link_to_step !== '') continue;
-                        let val = snap[columnName];
+                        let value = snap[columnName];
                         if (type.includes('bool')) {
-                            val = val ? '✓' : '✗';
-                        } else if (val === undefined || val === '') {
+                            value = value ? '✓' : '✗';
+                        } else if (value === undefined || value === '') {
                             continue;
                         }
                         const dt = document.createElement('dt');
                         dt.textContent = columnDef.display_name || columnName;
                         const dd = document.createElement('dd');
-                        dd.textContent = String(val);
-                        dl.appendChild(dt);
-                        dl.appendChild(dd);
+                        dd.textContent = String(value);
+                        definitionList.appendChild(dt);
+                        definitionList.appendChild(dd);
                     }
                     if (Array.isArray(snap.__images) && snap.__images.length > 0) {
                         const dt = document.createElement('dt');
                         dt.textContent = meta?.tableSchema?.images?.label || I18n.t('images.label');
                         const dd = document.createElement('dd');
                         dd.textContent = I18n.t('workflow.images_selected', { n: snap.__images.length }, snap.__images.length);
-                        dl.appendChild(dt);
-                        dl.appendChild(dd);
+                        definitionList.appendChild(dt);
+                        definitionList.appendChild(dd);
                     }
-                    card.appendChild(dl);
+                    card.appendChild(definitionList);
                 });
             }
             page.appendChild(card);
@@ -1047,15 +1047,15 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
         saveButton.className = 'btn-save';
         saveButton.textContent = I18n.t('form.save');
 
-        const msg = document.createElement('div');
-        msg.className = 'wf-form-msg';
+        const messageParagraph = document.createElement('div');
+        messageParagraph.className = 'wf-form-msg';
 
-        saveButton.addEventListener('click', () => saveAll(saveButton, backButton, msg));
+        saveButton.addEventListener('click', () => saveAll(saveButton, backButton, messageParagraph));
 
         actions.appendChild(backButton);
         actions.appendChild(saveButton);
         page.appendChild(actions);
-        page.appendChild(msg);
+        page.appendChild(messageParagraph);
         containerElement.appendChild(page);
     }
 
@@ -1131,9 +1131,9 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
             const bar = document.getElementById('wf-step-bar');
             if (bar) bar.remove();
             renderSuccessScreen();
-        } catch (err) {
-            console.error(err);
-            showToast(I18n.t('workflow.save_error', { msg: err.message }), 'error');
+        } catch (schemaError) {
+            console.error(schemaError);
+            showToast(I18n.t('workflow.save_error', { msg: schemaError.message }), 'error');
             saveButton.disabled = false;
             if (backButton) backButton.disabled = false;
             saveButton.textContent = I18n.t('form.save');

@@ -12,15 +12,15 @@ export async function loadSubtableCounts(pageRows, schema) {
     const subtables = schema.tables[state.currentTable]?.subtables || [];
     if (!state.currentTable || pageRows.length === 0 || subtables.length === 0) return;
 
-    const ids = pageRows.map(r => r['id']).filter(Boolean).join(',');
+    const ids = pageRows.map(pageRow => pageRow['id']).filter(Boolean).join(',');
     if (!ids) return;
 
     try {
         const counts = await fetchSubtableCounts(state.currentTable, ids);
         for (const row of pageRows) {
             const rowId = String(row['id']);
-            const cnt = counts[rowId] ?? 0;
-            if (cnt === 0) continue;
+            const count = counts[rowId] ?? 0;
+            if (count === 0) continue;
 
             const td = document.querySelector(`[data-expand-row-id="${CSS.escape(rowId)}"]`);
             if (!td) continue;
@@ -29,7 +29,7 @@ export async function loadSubtableCounts(pageRows, schema) {
             if (!button) continue;
 
             button.classList.add('has-records');
-            button.title = I18n.t('grid.drilldown_count', { count: cnt });
+            button.title = I18n.t('grid.drilldown_count', { count: count });
         }
     } catch (error) {
         debugLog('subtable counts failed', error);

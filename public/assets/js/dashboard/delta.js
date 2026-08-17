@@ -17,8 +17,8 @@ function buildDelta(widget) {
     if (previous === 0) {
         element.textContent = difference === 0 ? '0%' : (difference > 0 ? '+' : '') + String(difference);
     } else {
-        const pct = (difference / previous) * 100;
-        const rounded = Math.abs(pct) >= 10 ? Math.round(pct) : Math.round(pct * 10) / 10;
+        const percent = (difference / previous) * 100;
+        const rounded = Math.abs(percent) >= 10 ? Math.round(percent) : Math.round(percent * 10) / 10;
         element.textContent = (difference > 0 ? '+' : '') + rounded + '%';
     }
     element.title = I18n.t('dashboard.vs_prev', { prev: previous });

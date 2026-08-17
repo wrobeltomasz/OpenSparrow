@@ -26,8 +26,8 @@ function renderStatCard(widget) {
     wrapper.append(value, title);
     const delta = buildDelta(widget);
     if (delta) wrapper.appendChild(delta);
-    const fc = firstEqCondition(widget.query?.conditions);
-    applyDrillDown(wrapper, widget.table, fc?.col ?? null, fc?.val ?? null);
+    const firstCondition = firstEqCondition(widget.query?.conditions);
+    applyDrillDown(wrapper, widget.table, firstCondition?.col ?? null, firstCondition?.val ?? null);
     wrapper.addEventListener('mouseenter', () => { wrapper.style.transform = 'translateY(-2px)'; });
     wrapper.addEventListener('mouseleave', () => { wrapper.style.transform = 'none'; });
     return wrapper;

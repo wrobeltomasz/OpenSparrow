@@ -10,18 +10,18 @@ export function isDebugEnabled() {
 const MAX_LOG_LENGTH = 10000;
 
 export function debugLog(message, obj) {
-  let dbg = document.getElementById('debug');
+  let debugElement = document.getElementById('debug');
 
   if (!isDebugEnabled()) {
-    if (dbg) dbg.style.display = 'none';
+    if (debugElement) debugElement.style.display = 'none';
     return;
   }
 
-  if (!dbg) {
-    dbg = document.createElement('pre');
-    dbg.id = 'debug';
+  if (!debugElement) {
+    debugElement = document.createElement('pre');
+    debugElement.id = 'debug';
 
-    dbg.style.cssText = `
+    debugElement.style.cssText = `
       position: fixed;
       bottom: 20px;
       right: 20px;
@@ -37,10 +37,10 @@ export function debugLog(message, obj) {
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       border-radius: 4px;
     `;
-    document.body.appendChild(dbg);
+    document.body.appendChild(debugElement);
   }
 
-  dbg.style.display = 'block';
+  debugElement.style.display = 'block';
 
   let text = `[${new Date().toLocaleTimeString()}] ${message}`;
   if (obj !== undefined) {
@@ -51,14 +51,14 @@ export function debugLog(message, obj) {
     }
   }
 
-  let currentText = dbg.textContent + text + "\n\n";
+  let currentText = debugElement.textContent + text + "\n\n";
   if (currentText.length > MAX_LOG_LENGTH) {
     currentText = "..." + currentText.slice(-MAX_LOG_LENGTH);
   }
 
-  dbg.textContent = currentText;
+  debugElement.textContent = currentText;
 
-  dbg.scrollTop = dbg.scrollHeight;
+  debugElement.scrollTop = debugElement.scrollHeight;
 
   if (obj !== undefined) {
     console.log(message, obj);
@@ -68,6 +68,6 @@ export function debugLog(message, obj) {
 }
 
 export function clearDebug() {
-  const dbg = document.getElementById('debug');
-  if (dbg) dbg.textContent = '';
+  const debugElement = document.getElementById('debug');
+  if (debugElement) debugElement.textContent = '';
 }

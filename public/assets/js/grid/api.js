@@ -26,20 +26,20 @@ export async function fetchTableData(table, urlParameters, { offset = 0, search 
 }
 
 export async function preloadForeignKeys(schema) {
-    const fks = schema.tables[state.currentTable]?.foreign_keys;
-    if (!fks) return;
+    const foreignKeys = schema.tables[state.currentTable]?.foreign_keys;
+    if (!foreignKeys) return;
 
     const fetches = [];
     for (const column of state.displayedColumns) {
-        if (!fks[column]) continue;
+        if (!foreignKeys[column]) continue;
         const key = `${state.currentTable}_${column}`;
         if (!state.fkCache.has(key)) {
             state.fkCache.set(key,
                 fetch(`api/fk.php?table=${encodeURIComponent(state.currentTable)}&col=${encodeURIComponent(column)}`, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 })
-                .then(r => r.json())
-                .then(d => d.rows || [])
+                .then(response => response.json())
+                .then(payload => payload.rows || [])
                 .catch(error => {
                     debugLog('FK fetch failed', { col: column, err: error });
                     return [];

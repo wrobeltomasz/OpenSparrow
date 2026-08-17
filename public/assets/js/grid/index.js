@@ -67,11 +67,11 @@ export async function loadTable(schema, table, gridTitleElement, addRowButton) {
         }
 
         const fetchedColumnSet = new Set(data.columns || []);
-        state.displayedColumns = Object.keys(tableColumns).filter(c => {
-            if (c === 'id') return false;
-            const config = tableColumns[c];
+        state.displayedColumns = Object.keys(tableColumns).filter(columnKey => {
+            if (columnKey === 'id') return false;
+            const config = tableColumns[columnKey];
             if (config.show_in_grid === false) return false;
-            return fetchedColumnSet.has(c) || config.type === 'virtual';
+            return fetchedColumnSet.has(columnKey) || config.type === 'virtual';
         });
         state.filteredData = state.fullData.slice();
         state.unsortedFilteredData = state.filteredData.slice();
@@ -114,9 +114,9 @@ export async function loadTable(schema, table, gridTitleElement, addRowButton) {
 
         await renderGrid(schema);
         document.dispatchEvent(new Event('tableLoaded'));
-    } catch (err) {
-        console.error('Failed to load table data:', err);
-        showToast(I18n.t('grid.cannot_load_table', { table, msg: err.message }), 'error');
+    } catch (error) {
+        console.error('Failed to load table data:', error);
+        showToast(I18n.t('grid.cannot_load_table', { table, msg: error.message }), 'error');
         if (gridTitleElement) gridTitleElement.textContent = I18n.t('grid.error_loading_table', { table });
     }
 }
@@ -186,9 +186,9 @@ export async function appendMoreRows(schema, search = '') {
         state.totalRows = data.total ?? state.fullData.length;
         setFilteredData(state.fullData.slice());
         await renderGrid(schema);
-    } catch (err) {
-        console.error('Failed to load more rows:', err);
-        showToast(I18n.t('grid.cannot_load_more', { msg: err.message }), 'error');
+    } catch (error) {
+        console.error('Failed to load more rows:', error);
+        showToast(I18n.t('grid.cannot_load_more', { msg: error.message }), 'error');
     }
 }
 
@@ -206,9 +206,9 @@ export async function serverSearchRows(schema, search) {
         state.serverSearchActive = true;
         setFilteredData(rows);
         await renderGrid(schema);
-    } catch (err) {
-        console.error('Server search failed:', err);
-        showToast(I18n.t('grid.search_failed', { msg: err.message }), 'error');
+    } catch (error) {
+        console.error('Server search failed:', error);
+        showToast(I18n.t('grid.search_failed', { msg: error.message }), 'error');
     }
 }
 

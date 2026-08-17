@@ -11,22 +11,22 @@ function ragCard(title, description) {
     const card = document.createElement('div');
     card.className = 'adm-sec-card';
 
-    const hdr = document.createElement('div');
-    hdr.className = 'adm-sec-hdr';
-    hdr.style.display = 'block';
+    const headerElement = document.createElement('div');
+    headerElement.className = 'adm-sec-hdr';
+    headerElement.style.display = 'block';
 
     const h3 = document.createElement('h3');
     h3.textContent = title;
     h3.style.cssText = 'margin:0 0 4px;';
-    hdr.appendChild(h3);
+    headerElement.appendChild(h3);
 
     if (description) {
-        const p = document.createElement('p');
-        p.textContent = description;
-        p.style.cssText = 'margin:0;';
-        hdr.appendChild(p);
+        const paragraph = document.createElement('p');
+        paragraph.textContent = description;
+        paragraph.style.cssText = 'margin:0;';
+        headerElement.appendChild(paragraph);
     }
-    card.appendChild(hdr);
+    card.appendChild(headerElement);
 
     const body = document.createElement('div');
     body.className = 'adm-sec-body';
@@ -35,7 +35,7 @@ function ragCard(title, description) {
     return { card, body };
 }
 
-function ragStatusPill(anchor, msg, type = 'success') {
+function ragStatusPill(anchor, messageElement, type = 'success') {
     const previous = anchor.parentNode?.querySelector('.rag-status-pill');
     if (previous) previous.remove();
     const colors = {
@@ -45,7 +45,7 @@ function ragStatusPill(anchor, msg, type = 'success') {
     }[type] ?? { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--accent-mid)' };
     const pill = document.createElement('span');
     pill.className = 'rag-status-pill';
-    pill.textContent = msg;
+    pill.textContent = messageElement;
     pill.style.cssText = `display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:4px 10px;`
         + `background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`
         + `border-radius:999px;font-weight:600;transition:opacity .3s;`;
@@ -73,15 +73,15 @@ function ragParseTags(pgArray) {
     const inner = pgArray.replace(/^\{|\}$/g, '');
     if (!inner) return [];
     const result = [];
-    let cur = '';
+    let currentSegment = '';
     let inQuote = false;
     for (let i = 0; i < inner.length; i++) {
-        const c = inner[i];
-        if (c === '"') { inQuote = !inQuote; }
-        else if (c === ',' && !inQuote) { result.push(cur); cur = ''; }
-        else { cur += c; }
+        const character = inner[i];
+        if (character === '"') { inQuote = !inQuote; }
+        else if (character === ',' && !inQuote) { result.push(currentSegment); currentSegment = ''; }
+        else { currentSegment += character; }
     }
-    if (cur !== '') result.push(cur);
+    if (currentSegment !== '') result.push(currentSegment);
     return result;
 }
 
@@ -118,8 +118,8 @@ function ragBuildTabs(wrap, tabs) {
         Object.entries(btns).forEach(([k, b]) => {
             b.classList.toggle('active', k === id);
         });
-        Object.entries(panels).forEach(([k, p]) => {
-            p.style.display = k === id ? '' : 'none';
+        Object.entries(panels).forEach(([k, paragraph]) => {
+            paragraph.style.display = k === id ? '' : 'none';
         });
     }
 
@@ -144,16 +144,16 @@ function ragBuildDocumentsTab(panel) {
 
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
-        const lbl = document.createElement('label');
-        lbl.htmlFor = id;
-        lbl.textContent = label;
-        lbl.className = 'adm-field-label';
+        const labelElement = document.createElement('label');
+        labelElement.htmlFor = id;
+        labelElement.textContent = label;
+        labelElement.className = 'adm-field-label';
         const input = document.createElement('input');
         input.type = 'text';
         input.id = id;
         input.placeholder = placeholder;
         input.className = 'adm-input w-full';
-        group.appendChild(lbl);
+        group.appendChild(labelElement);
         group.appendChild(input);
         return { group, inp: input };
     }
@@ -191,15 +191,15 @@ function ragBuildDocumentsTab(panel) {
 
     (async () => {
         try {
-            const res  = await apiFetch('api.php?action=get_language_setting');
-            const data = await res.json();
+            const response  = await apiFetch('api.php?action=get_language_setting');
+            const data = await response.json();
             (data.available_languages ?? []).forEach(code => {
                 const option = document.createElement('option');
                 option.value       = code;
                 option.textContent = code.toUpperCase();
                 langUpSelect.appendChild(option);
             });
-        } catch (e) { console.warn('[rag] language list unavailable', e); }
+        } catch (error) { console.warn('[rag] language list unavailable', error); }
     })();
 
     const uploadButton = document.createElement('button');
@@ -267,14 +267,14 @@ function ragBuildDocumentsTab(panel) {
         },
     ];
 
-    guideSections.forEach(sec => {
+    guideSections.forEach(section => {
         const secWrap = document.createElement('div');
         secWrap.style.cssText = 'margin-bottom:10px;';
         const secTitle = document.createElement('div');
         secTitle.style.cssText = 'font-weight:700;margin-bottom:4px;';
-        secTitle.textContent = sec.title;
+        secTitle.textContent = section.title;
         secWrap.appendChild(secTitle);
-        sec.items.forEach(item => {
+        section.items.forEach(item => {
             const line = document.createElement('div');
             line.style.cssText = 'color:var(--text);line-height:1.65;padding-left:10px;';
             line.textContent = '– ' + item;
@@ -303,12 +303,12 @@ function ragBuildDocumentsTab(panel) {
     const table = document.createElement('table');
     table.className = 'adm-tbl';
     const thead = table.createTHead();
-    const hdr   = thead.insertRow();
+    const headerElement   = thead.insertRow();
     ['Filename', 'Tags', 'Size', 'Chunks', 'Uploaded', ''].forEach(column => {
         const th = document.createElement('th');
         th.textContent = column;
         th.className = 'adm-th';
-        hdr.appendChild(th);
+        headerElement.appendChild(th);
     });
     const tbody = document.createElement('tbody');
     table.appendChild(tbody);
@@ -325,19 +325,19 @@ function ragBuildDocumentsTab(panel) {
         if (!confirm('Re-chunk all documents from scratch? Existing chunks will be replaced.')) return;
         rechunkAllButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=rag_rechunk_all', {
+            const response = await apiFetch('api.php?action=rag_rechunk_all', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
-            const data = await res.json();
+            const data = await response.json();
             if (data.status === 'success') {
                 ragStatusPill(rechunkAllButton, `Re-chunked ${data.processed} doc${data.processed !== 1 ? 's' : ''}.`, 'success');
                 await loadFiles();
             } else {
                 ragStatusPill(rechunkAllButton, data.error ?? 'Error.', 'error');
             }
-        } catch (e) {
-            ragStatusPill(rechunkAllButton, 'Request failed: ' + e.message, 'error');
+        } catch (error) {
+            ragStatusPill(rechunkAllButton, 'Request failed: ' + error.message, 'error');
         } finally {
             rechunkAllButton.disabled = false;
         }
@@ -349,25 +349,25 @@ function ragBuildDocumentsTab(panel) {
 
     async function loadFiles() {
         try {
-            const res  = await apiFetch('api.php?action=rag_list');
-            const data = await res.json();
+            const response  = await apiFetch('api.php?action=rag_list');
+            const data = await response.json();
             if (data.status === 'error') {
                 tbody.innerHTML = '';
                 const row = tbody.insertRow();
-                const td  = row.insertCell();
-                td.colSpan = 7;
-                td.textContent = 'Error loading documents: ' + (data.error ?? 'Unknown error');
-                td.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
+                const cell  = row.insertCell();
+                cell.colSpan = 7;
+                cell.textContent = 'Error loading documents: ' + (data.error ?? 'Unknown error');
+                cell.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
                 return;
             }
             renderFiles(data.files ?? []);
-        } catch (e) {
+        } catch (error) {
             tbody.innerHTML = '';
             const row = tbody.insertRow();
-            const td  = row.insertCell();
-            td.colSpan    = 7;
-            td.textContent = 'Failed to load: ' + e.message;
-            td.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
+            const cell  = row.insertCell();
+            cell.colSpan    = 7;
+            cell.textContent = 'Failed to load: ' + error.message;
+            cell.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
         }
     }
 
@@ -376,14 +376,14 @@ function ragBuildDocumentsTab(panel) {
         if (files.length === 0) {
             statisticsBar.textContent = '';
             const row = tbody.insertRow();
-            const td  = row.insertCell();
-            td.colSpan = 6;
-            td.textContent = 'No documents uploaded yet.';
-            td.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
+            const cell  = row.insertCell();
+            cell.colSpan = 6;
+            cell.textContent = 'No documents uploaded yet.';
+            cell.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
             return;
         }
 
-        const totalSize = files.reduce((s, f) => s + (parseInt(f.file_size, 10) || 0), 0);
+        const totalSize = files.reduce((settings, f) => settings + (parseInt(f.file_size, 10) || 0), 0);
         statisticsBar.textContent = files.length + ' document' + (files.length !== 1 ? 's' : '') + ' · ' + ragFormatSize(totalSize) + ' total';
 
         files.forEach(file => {
@@ -438,19 +438,19 @@ function ragBuildDocumentsTab(panel) {
             rechunkButton.addEventListener('click', async () => {
                 rechunkButton.disabled = true;
                 try {
-                    const r = await apiFetch('api.php?action=rag_rechunk', {
+                    const response = await apiFetch('api.php?action=rag_rechunk', {
                         method: 'POST',
                         body: JSON.stringify({ id: file.id }),
                     });
-                    const d = await r.json();
-                    if (d.status === 'success') {
+                    const payload = await response.json();
+                    if (payload.status === 'success') {
                         await loadFiles();
                     } else {
-                        showStatusPill(rechunkButton, 'Re-chunk failed: ' + (d.error ?? 'Unknown error'), 'error');
+                        showStatusPill(rechunkButton, 'Re-chunk failed: ' + (payload.error ?? 'Unknown error'), 'error');
                         rechunkButton.disabled = false;
                     }
-                } catch (e) {
-                    showStatusPill(rechunkButton, 'Request failed: ' + e.message, 'error');
+                } catch (error) {
+                    showStatusPill(rechunkButton, 'Request failed: ' + error.message, 'error');
                     rechunkButton.disabled = false;
                 }
             });
@@ -464,19 +464,19 @@ function ragBuildDocumentsTab(panel) {
                 if (!confirm('Delete "' + escHtml(file.filename) + '"?')) return;
                 delButton.disabled = true;
                 try {
-                    const r = await apiFetch('api.php?action=rag_delete', {
+                    const response = await apiFetch('api.php?action=rag_delete', {
                         method: 'POST',
                         body: JSON.stringify({ id: file.id }),
                     });
-                    const d = await r.json();
-                    if (d.status === 'success') {
+                    const payload = await response.json();
+                    if (payload.status === 'success') {
                         await loadFiles();
                     } else {
-                        showStatusPill(delButton, 'Delete failed: ' + (d.error ?? 'Unknown error'), 'error');
+                        showStatusPill(delButton, 'Delete failed: ' + (payload.error ?? 'Unknown error'), 'error');
                         delButton.disabled = false;
                     }
-                } catch (e) {
-                    showStatusPill(delButton, 'Request failed: ' + e.message, 'error');
+                } catch (error) {
+                    showStatusPill(delButton, 'Request failed: ' + error.message, 'error');
                     delButton.disabled = false;
                 }
             });
@@ -491,18 +491,18 @@ function ragBuildDocumentsTab(panel) {
         if (!file.name.toLowerCase().endsWith('.txt')) { ragStatusPill(uploadButton, 'Only .txt files allowed.', 'error'); return; }
 
         uploadButton.disabled = true;
-        const tags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t !== '');
+        const tags = tagsInput.value.split(',').map(tagName => tagName.trim()).filter(tagName => tagName !== '');
         if (langUpSelect.value) tags.push('lang:' + langUpSelect.value);
         const formData   = new FormData();
         formData.append('file', file);
         formData.append('tags', JSON.stringify(tags));
 
         try {
-            const res  = await apiFetch('api.php?action=rag_upload', {
+            const response  = await apiFetch('api.php?action=rag_upload', {
                 method: 'POST',
                 body: formData,
             });
-            const data = await res.json();
+            const data = await response.json();
             if (data.status === 'success') {
                 ragStatusPill(uploadButton, 'Uploaded.', 'success');
                 fileInput.value = '';
@@ -511,8 +511,8 @@ function ragBuildDocumentsTab(panel) {
             } else {
                 ragStatusPill(uploadButton, data.error ?? 'Upload failed.', 'error');
             }
-        } catch (e) {
-            ragStatusPill(uploadButton, 'Request failed: ' + e.message, 'error');
+        } catch (error) {
+            ragStatusPill(uploadButton, 'Request failed: ' + error.message, 'error');
         } finally {
             uploadButton.disabled = false;
         }
@@ -524,8 +524,8 @@ function ragBuildDocumentsTab(panel) {
 function ragFormatModelSize(bytes) {
     bytes = parseInt(bytes, 10) || 0;
     if (bytes === 0) return '';
-    const gb = bytes / 1073741824;
-    return gb >= 1 ? gb.toFixed(1) + ' GB' : (bytes / 1048576).toFixed(0) + ' MB';
+    const gigabytes = bytes / 1073741824;
+    return gigabytes >= 1 ? gigabytes.toFixed(1) + ' GB' : (bytes / 1048576).toFixed(0) + ' MB';
 }
 
 function ragBuildSettingsTab(panel) {
@@ -719,16 +719,16 @@ function ragBuildSettingsTab(panel) {
 
     function ragField(label, id, placeholder) {
         const group = document.createElement('div');
-        const lbl = document.createElement('label');
-        lbl.htmlFor = id;
-        lbl.textContent = label;
-        lbl.className = 'adm-field-label';
+        const labelElement = document.createElement('label');
+        labelElement.htmlFor = id;
+        labelElement.textContent = label;
+        labelElement.className = 'adm-field-label';
         const input = document.createElement('input');
         input.type = 'text';
         input.id = id;
         input.placeholder = placeholder;
         input.className = 'adm-input w-full';
-        group.appendChild(lbl);
+        group.appendChild(labelElement);
         group.appendChild(input);
         return { group, inp: input };
     }
@@ -793,10 +793,10 @@ function ragBuildSettingsTab(panel) {
     function populateModelSelect(models, currentModel) {
         while (modelSelect.options.length > 1) modelSelect.remove(1);
 
-        models.forEach(m => {
+        models.forEach(model => {
             const option = document.createElement('option');
-            option.value       = m.name;
-            option.textContent = m.name + (m.size ? '  (' + ragFormatModelSize(m.size) + ')' : '');
+            option.value       = model.name;
+            option.textContent = model.name + (model.size ? '  (' + ragFormatModelSize(model.size) + ')' : '');
             modelSelect.appendChild(option);
         });
 
@@ -819,10 +819,10 @@ function ragBuildSettingsTab(panel) {
         modelsTable.innerHTML = '';
         modelsTable.style.display = '';
 
-        const hdr = document.createElement('div');
-        hdr.style.cssText = 'font-weight:700;margin-bottom:8px;';
-        hdr.textContent = 'Available local models' + (version ? ' · Ollama ' + version : '');
-        modelsTable.appendChild(hdr);
+        const headerElement = document.createElement('div');
+        headerElement.style.cssText = 'font-weight:700;margin-bottom:8px;';
+        headerElement.textContent = 'Available local models' + (version ? ' · Ollama ' + version : '');
+        modelsTable.appendChild(headerElement);
 
         if (models.length === 0) {
             const none = document.createElement('div');
@@ -832,34 +832,34 @@ function ragBuildSettingsTab(panel) {
             return;
         }
 
-        const tbl = document.createElement('table');
-        tbl.className = 'adm-tbl';
+        const tableElement = document.createElement('table');
+        tableElement.className = 'adm-tbl';
 
-        const thead = tbl.createTHead();
-        const hr    = thead.insertRow();
+        const thead = tableElement.createTHead();
+        const headerRow    = thead.insertRow();
         ['Model name', 'Size', 'Modified'].forEach(column => {
             const th = document.createElement('th');
             th.textContent = column;
             th.className = 'adm-th adm-th-sm';
-            hr.appendChild(th);
+            headerRow.appendChild(th);
         });
 
-        const tbody = tbl.createTBody();
-        models.forEach(m => {
+        const tbody = tableElement.createTBody();
+        models.forEach(model => {
             const row = tbody.insertRow();
             const tdStyle = 'padding:8px 10px;border-bottom:1px solid var(--border);';
 
             const td1 = row.insertCell();
             td1.style.cssText = tdStyle + 'font-weight:500;';
-            td1.textContent   = m.name;
+            td1.textContent   = model.name;
 
             const td2 = row.insertCell();
             td2.style.cssText = tdStyle + '';
-            td2.textContent   = ragFormatModelSize(m.size) || '—';
+            td2.textContent   = ragFormatModelSize(model.size) || '—';
 
             const td3 = row.insertCell();
             td3.style.cssText = tdStyle + '';
-            td3.textContent   = m.modified ? new Date(m.modified).toLocaleDateString() : '—';
+            td3.textContent   = model.modified ? new Date(model.modified).toLocaleDateString() : '—';
 
             row.style.cursor = 'pointer';
             row.title        = 'Click to select this model';
@@ -867,16 +867,16 @@ function ragBuildSettingsTab(panel) {
             row.addEventListener('mouseout',  () => { row.style.background = ''; });
             row.addEventListener('click', () => {
                 for (const option of modelSelect.options) {
-                    if (option.value === m.name) { option.selected = true; break; }
+                    if (option.value === model.name) { option.selected = true; break; }
                 }
                 if (manualMode) {
-                    modelManualInput.value = m.name;
+                    modelManualInput.value = model.name;
                 }
             });
         });
 
-        tbl.appendChild(tbody);
-        modelsTable.appendChild(tbl);
+        tableElement.appendChild(tbody);
+        modelsTable.appendChild(tableElement);
     }
 
     async function doCheck() {
@@ -890,16 +890,16 @@ function ragBuildSettingsTab(panel) {
         statusLine.textContent   = 'Connecting to ' + url + '…';
 
         try {
-            const res  = await apiFetch('api.php?action=rag_ollama_check', {
+            const response  = await apiFetch('api.php?action=rag_ollama_check', {
                 method: 'POST',
                 body: JSON.stringify({ ollama_url: url, ssl_verify: sslCheckbox.checked }),
             });
-            const data = await res.json();
+            const data = await response.json();
 
             if (data.status === 'success') {
-                const n = (data.models ?? []).length;
+                const modelCount = (data.models ?? []).length;
                 statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;background:var(--ok-light);color:var(--ok);border:1px solid var(--ok);';
-                statusLine.textContent   = '✓ Connected · ' + n + ' model' + (n !== 1 ? 's' : '') + ' available'
+                statusLine.textContent   = '✓ Connected · ' + modelCount + ' model' + (modelCount !== 1 ? 's' : '') + ' available'
                     + (data.version ? ' · Ollama ' + data.version : '');
 
                 const currentModel = manualMode ? modelManualInput.value.trim() : (modelSelect.value || '');
@@ -910,9 +910,9 @@ function ragBuildSettingsTab(panel) {
                 statusLine.textContent   = '✗ ' + (data.error ?? 'Connection failed');
                 modelsTable.style.display = 'none';
             }
-        } catch (e) {
+        } catch (error) {
             statusLine.style.cssText = 'display:block;margin-bottom:16px;padding:10px 14px;border-radius:6px;font-weight:600;background:var(--error-light);color:var(--error);border:1px solid var(--error);';
-            statusLine.textContent   = '✗ Request failed: ' + e.message;
+            statusLine.textContent   = '✗ Request failed: ' + error.message;
             modelsTable.style.display = 'none';
         } finally {
             checkButton.disabled    = false;
@@ -924,31 +924,31 @@ function ragBuildSettingsTab(panel) {
 
     (async () => {
         try {
-            const res  = await apiFetch('api.php?action=rag_settings');
-            const data = await res.json();
+            const response  = await apiFetch('api.php?action=rag_settings');
+            const data = await response.json();
             if (data.status === 'success' && data.settings) {
-                const s = data.settings;
-                if (s.ollama_url)        urlInput.value         = s.ollama_url;
-                if (s.ollama_model)      modelManualInput.value = s.ollama_model;
-                if (s.max_context_files) ctxInput.value         = s.max_context_files;
-                if (s.max_file_size_mb)  sizeInput.value        = s.max_file_size_mb;
-                if (s.ollama_timeout)    timeoutInput.value     = s.ollama_timeout;
-                if (s.ollama_ssl_verify !== undefined) sslCheckbox.checked = !!s.ollama_ssl_verify;
-                if (s.use_chunks !== undefined) chunksCheckbox.checked = !!s.use_chunks;
-                if (s.conversation_turns !== undefined) memInput.value = s.conversation_turns;
-                if (s.aggregate_view_limit !== undefined) aggInput.value = s.aggregate_view_limit;
-                if (s.chat_enabled !== undefined) chatCheckbox.checked = !!s.chat_enabled;
-                renderApiKeyStatus(!!s.ollama_api_key_configured);
+                const settings = data.settings;
+                if (settings.ollama_url)        urlInput.value         = settings.ollama_url;
+                if (settings.ollama_model)      modelManualInput.value = settings.ollama_model;
+                if (settings.max_context_files) ctxInput.value         = settings.max_context_files;
+                if (settings.max_file_size_mb)  sizeInput.value        = settings.max_file_size_mb;
+                if (settings.ollama_timeout)    timeoutInput.value     = settings.ollama_timeout;
+                if (settings.ollama_ssl_verify !== undefined) sslCheckbox.checked = !!settings.ollama_ssl_verify;
+                if (settings.use_chunks !== undefined) chunksCheckbox.checked = !!settings.use_chunks;
+                if (settings.conversation_turns !== undefined) memInput.value = settings.conversation_turns;
+                if (settings.aggregate_view_limit !== undefined) aggInput.value = settings.aggregate_view_limit;
+                if (settings.chat_enabled !== undefined) chatCheckbox.checked = !!settings.chat_enabled;
+                renderApiKeyStatus(!!settings.ollama_api_key_configured);
 
-                if (s.ollama_model) {
+                if (settings.ollama_model) {
                     const option = document.createElement('option');
-                    option.value = s.ollama_model;
-                    option.textContent = s.ollama_model + '  (saved)';
+                    option.value = settings.ollama_model;
+                    option.textContent = settings.ollama_model + '  (saved)';
                     option.selected = true;
                     modelSelect.insertBefore(option, modelSelect.options[1] ?? null);
                 }
             }
-        } catch (e) { console.warn('[rag] settings unavailable, using defaults', e); }
+        } catch (error) { console.warn('[rag] settings unavailable, using defaults', error); }
     })();
 
     saveButton.addEventListener('click', async () => {
@@ -978,11 +978,11 @@ function ragBuildSettingsTab(panel) {
             return;
         }
         try {
-            const res  = await apiFetch('api.php?action=rag_settings_save', {
+            const response  = await apiFetch('api.php?action=rag_settings_save', {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
-            const data = await res.json();
+            const data = await response.json();
             ragStatusPill(saveButton, data.status === 'success' ? 'Saved.' : (data.error ?? 'Error.'), data.status === 'success' ? 'success' : 'error');
             if (data.status === 'success') {
                 apiKeyInput.value = '';
@@ -993,8 +993,8 @@ function ragBuildSettingsTab(panel) {
                 }
                 apiKeyClearRequested = false;
             }
-        } catch (e) {
-            ragStatusPill(saveButton, 'Request failed: ' + e.message, 'error');
+        } catch (error) {
+            ragStatusPill(saveButton, 'Request failed: ' + error.message, 'error');
         }
     });
 
@@ -1068,8 +1068,8 @@ function ragBuildAggregateViewsCard(panel) {
 
     async function loadAndRender() {
         try {
-            const res  = await apiFetch('api.php?action=rag_aggregate_view_list');
-            const data = await res.json();
+            const response  = await apiFetch('api.php?action=rag_aggregate_view_list');
+            const data = await response.json();
             if (data.status !== 'success') {
                 ragStatusPill(addButton, data.error ?? 'Failed to load aggregate views.', 'error');
                 return;
@@ -1077,8 +1077,8 @@ function ragBuildAggregateViewsCard(panel) {
             renderMappings(data.mappings ?? {});
             renderTableOptions(data.tables ?? []);
             renderViewOptions(data.available_views ?? []);
-        } catch (e) {
-            ragStatusPill(addButton, 'Request failed: ' + e.message, 'error');
+        } catch (error) {
+            ragStatusPill(addButton, 'Request failed: ' + error.message, 'error');
         }
     }
 
@@ -1103,12 +1103,12 @@ function ragBuildAggregateViewsCard(panel) {
 
     function renderViewOptions(views) {
         viewList.innerHTML = '';
-        views.forEach(v => {
+        views.forEach(viewEntry => {
             const option = document.createElement('option');
 
-            option.value = v.schema + '.' + v.name;
+            option.value = viewEntry.schema + '.' + viewEntry.name;
 
-            if (v.materialized) option.label = 'materialized';
+            if (viewEntry.materialized) option.label = 'materialized';
             viewList.appendChild(option);
         });
     }
@@ -1118,10 +1118,10 @@ function ragBuildAggregateViewsCard(panel) {
         const entries = Object.entries(mappings);
         if (entries.length === 0) {
             const row = tbody.insertRow();
-            const td  = row.insertCell();
-            td.colSpan = 3;
-            td.textContent = 'No aggregate views attached yet.';
-            td.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
+            const cell  = row.insertCell();
+            cell.colSpan = 3;
+            cell.textContent = 'No aggregate views attached yet.';
+            cell.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
             return;
         }
         entries.forEach(([tableName, viewName]) => {
@@ -1150,11 +1150,11 @@ function ragBuildAggregateViewsCard(panel) {
     async function saveMapping(tableName, viewName, anchorButton) {
         anchorButton.disabled = true;
         try {
-            const res  = await apiFetch('api.php?action=rag_aggregate_view_save', {
+            const response  = await apiFetch('api.php?action=rag_aggregate_view_save', {
                 method: 'POST',
                 body: JSON.stringify({ table: tableName, view: viewName }),
             });
-            const data = await res.json();
+            const data = await response.json();
             if (data.status === 'success') {
                 ragStatusPill(anchorButton, viewName ? 'Attached.' : 'Removed.', 'success');
                 viewInput.value = '';
@@ -1162,8 +1162,8 @@ function ragBuildAggregateViewsCard(panel) {
             } else {
                 ragStatusPill(anchorButton, data.error ?? 'Error.', 'error');
             }
-        } catch (e) {
-            ragStatusPill(anchorButton, 'Request failed: ' + e.message, 'error');
+        } catch (error) {
+            ragStatusPill(anchorButton, 'Request failed: ' + error.message, 'error');
         } finally {
             anchorButton.disabled = false;
         }
@@ -1201,23 +1201,23 @@ function ragBuildTestTab(panel) {
 
     (async () => {
         try {
-            const res  = await apiFetch('../api/rag.php?action=tags');
-            const data = await res.json();
+            const response  = await apiFetch('../api/rag.php?action=tags');
+            const data = await response.json();
             tagChips.innerHTML = '';
             const tags = data.tags ?? [];
             if (tags.length === 0) {
                 tagChips.innerHTML = '<span style="font-style:italic;">No tags yet.</span>';
             } else {
                 tags.forEach(tag => {
-                    const lbl = document.createElement('label');
-                    lbl.style.cssText = 'display:flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;background:#fff;';
+                    const labelElement = document.createElement('label');
+                    labelElement.style.cssText = 'display:flex;align-items:center;gap:5px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;background:#fff;';
                     const callback = document.createElement('input');
                     callback.type  = 'checkbox';
                     callback.value = tag;
                     callback.style.accentColor = 'var(--accent)';
-                    lbl.appendChild(callback);
-                    lbl.appendChild(document.createTextNode(tag));
-                    tagChips.appendChild(lbl);
+                    labelElement.appendChild(callback);
+                    labelElement.appendChild(document.createTextNode(tag));
+                    tagChips.appendChild(labelElement);
                 });
             }
         } catch (_) {
@@ -1242,8 +1242,8 @@ function ragBuildTestTab(panel) {
 
     (async () => {
         try {
-            const res  = await apiFetch('api.php?action=get_language_setting');
-            const data = await res.json();
+            const response  = await apiFetch('api.php?action=get_language_setting');
+            const data = await response.json();
             const available = data.available_languages ?? [];
             const current   = document.documentElement.lang || '';
             available.forEach(code => {
@@ -1253,7 +1253,7 @@ function ragBuildTestTab(panel) {
                 if (code === current) option.selected = true;
                 langSelect.appendChild(option);
             });
-        } catch (e) { console.warn('[rag] language hint unavailable', e); }
+        } catch (error) { console.warn('[rag] language hint unavailable', error); }
     })();
 
     const queryRow = document.createElement('div');
@@ -1318,10 +1318,10 @@ function ragBuildTestTab(panel) {
     });
 
     async function runQuery() {
-        const q = queryInput.value.trim();
-        if (!q) return;
+        const queryText = queryInput.value.trim();
+        if (!queryText) return;
 
-        const tags     = Array.from(tagChips.querySelectorAll('input[type=checkbox]:checked')).map(c => c.value);
+        const tags     = Array.from(tagChips.querySelectorAll('input[type=checkbox]:checked')).map(character => character.value);
         const language = langSelect.value;
 
         testAbortCtrl = new AbortController();
@@ -1333,14 +1333,14 @@ function ragBuildTestTab(panel) {
         sourcesRow.innerHTML     = '';
 
         try {
-            const res  = await apiFetch('api.php?action=rag_test_query', {
+            const response  = await apiFetch('api.php?action=rag_test_query', {
                 method: 'POST',
-                body: JSON.stringify({ query: q, tags, language, return_prompt: true }),
+                body: JSON.stringify({ query: queryText, tags, language, return_prompt: true }),
                 signal: testAbortCtrl.signal,
             });
             let data;
             try {
-                data = await res.json();
+                data = await response.json();
             } catch {
                 answerBox.textContent = 'The server timed out or returned an unexpected response. Please try again.';
                 answerBox.style.color = 'var(--error)';
@@ -1350,16 +1350,16 @@ function ragBuildTestTab(panel) {
                 answerBox.textContent = data.answer ?? '(empty response)';
                 answerBox.style.color = 'var(--text)';
                 sourcesRow.innerHTML  = '';
-                const srcs = data.sources ?? [];
-                if (srcs.length === 0) {
+                const sources = data.sources ?? [];
+                if (sources.length === 0) {
                     const none = document.createElement('span');
                     none.textContent  = 'No documents matched — answered from model knowledge.';
                     none.style.cssText = 'font-style:italic;';
                     sourcesRow.appendChild(none);
                 } else {
-                    srcs.forEach(s => {
+                    sources.forEach(settings => {
                         const chip = document.createElement('span');
-                        chip.textContent = s.filename;
+                        chip.textContent = settings.filename;
                         chip.style.cssText = 'padding:2px 10px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:999px;font-weight:600;color:var(--accent-dark);';
                         sourcesRow.appendChild(chip);
                     });
@@ -1372,11 +1372,11 @@ function ragBuildTestTab(panel) {
                 answerBox.textContent = 'Error: ' + (data.error ?? 'Unknown error');
                 answerBox.style.color = 'var(--error)';
             }
-        } catch (e) {
-            if (e.name === 'AbortError') {
+        } catch (error) {
+            if (error.name === 'AbortError') {
                 answerBox.textContent = 'Query cancelled.';
             } else {
-                answerBox.textContent = 'Request failed: ' + e.message;
+                answerBox.textContent = 'Request failed: ' + error.message;
             }
             answerBox.style.color = 'var(--error)';
         } finally {
@@ -1388,7 +1388,7 @@ function ragBuildTestTab(panel) {
     }
 
     runButton.addEventListener('click', runQuery);
-    queryInput.addEventListener('keydown', e => { if (e.key === 'Enter') runQuery(); });
+    queryInput.addEventListener('keydown', error => { if (error.key === 'Enter') runQuery(); });
 }
 
 function ragBuildStatisticsTab(panel) {
@@ -1405,16 +1405,16 @@ function ragBuildStatisticsTab(panel) {
     function statCard(label) {
         const box = document.createElement('div');
         box.style.cssText = 'text-align:center;padding:16px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);';
-        const v = document.createElement('div');
-        v.style.cssText = 'font-weight:700;margin-bottom:4px;';
-        v.textContent = '—';
-        const l = document.createElement('div');
-        l.style.cssText = 'font-weight:700;';
-        l.textContent = label;
-        box.appendChild(v);
-        box.appendChild(l);
+        const viewEntry = document.createElement('div');
+        viewEntry.style.cssText = 'font-weight:700;margin-bottom:4px;';
+        viewEntry.textContent = '—';
+        const labelDiv = document.createElement('div');
+        labelDiv.style.cssText = 'font-weight:700;';
+        labelDiv.textContent = label;
+        box.appendChild(viewEntry);
+        box.appendChild(labelDiv);
         cardsGrid.appendChild(box);
-        return v;
+        return viewEntry;
     }
 
     const vTotal   = statCard('Total Queries');
@@ -1432,19 +1432,19 @@ function ragBuildStatisticsTab(panel) {
     tableWrap.style.cssText = 'overflow-x:auto;';
     recentBody.appendChild(tableWrap);
 
-    const tbl   = document.createElement('table');
-    tbl.className = 'adm-tbl';
-    const thead = tbl.createTHead();
-    const hr    = thead.insertRow();
+    const tableElement   = document.createElement('table');
+    tableElement.className = 'adm-tbl';
+    const thead = tableElement.createTHead();
+    const headerRow    = thead.insertRow();
     ['Time', 'Query', 'Tags', 'Files', 'Model', 'Prompt T', 'Comp T', 'Time (s)', 'Sources'].forEach(column => {
         const th = document.createElement('th');
         th.textContent = column;
         th.className = 'adm-th adm-th-sm';
-        hr.appendChild(th);
+        headerRow.appendChild(th);
     });
-    const tbody = tbl.createTBody();
-    tbl.appendChild(tbody);
-    tableWrap.appendChild(tbl);
+    const tbody = tableElement.createTBody();
+    tableElement.appendChild(tbody);
+    tableWrap.appendChild(tableElement);
 
     const refreshButton = document.createElement('button');
     refreshButton.type = 'button';
@@ -1456,29 +1456,29 @@ function ragBuildStatisticsTab(panel) {
     async function load() {
         refreshButton.disabled = true;
         try {
-            const res  = await apiFetch('api.php?action=rag_stats');
-            const data = await res.json();
+            const response  = await apiFetch('api.php?action=rag_stats');
+            const data = await response.json();
             if (data.status !== 'success') {
                 throw new Error(data.error ?? 'Load failed.');
             }
-            const s = data.summary ?? {};
-            vTotal.textContent  = s.total_queries ?? '0';
-            vAvgMs.textContent  = s.avg_ms ? (parseInt(s.avg_ms, 10) / 1000).toFixed(2) + 's' : '0s';
-            vAvgPt.textContent  = s.avg_prompt_tokens ? (parseInt(s.avg_prompt_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
-            vAvgCt.textContent  = s.avg_completion_tokens ? (parseInt(s.avg_completion_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
+            const settings = data.summary ?? {};
+            vTotal.textContent  = settings.total_queries ?? '0';
+            vAvgMs.textContent  = settings.avg_ms ? (parseInt(settings.avg_ms, 10) / 1000).toFixed(2) + 's' : '0s';
+            vAvgPt.textContent  = settings.avg_prompt_tokens ? (parseInt(settings.avg_prompt_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
+            vAvgCt.textContent  = settings.avg_completion_tokens ? (parseInt(settings.avg_completion_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
 
             tbody.innerHTML = '';
             const rows = data.recent ?? [];
             if (rows.length === 0) {
                 const row = tbody.insertRow();
-                const td  = row.insertCell();
-                td.colSpan = 9;
-                td.textContent = 'No queries recorded yet.';
-                td.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
+                const cell  = row.insertCell();
+                cell.colSpan = 9;
+                cell.textContent = 'No queries recorded yet.';
+                cell.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
                 return;
             }
             const tdStyle = 'padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;';
-            rows.forEach(r => {
+            rows.forEach(response => {
                 const row = tbody.insertRow();
                 row.style.cursor = 'pointer';
                 row.title = 'Click to view sources and prompt';
@@ -1487,16 +1487,16 @@ function ragBuildStatisticsTab(panel) {
 
                 const td1 = row.insertCell();
                 td1.style.cssText = tdStyle + 'white-space:nowrap;';
-                td1.textContent   = ragFormatDate(r.created_at);
+                td1.textContent   = ragFormatDate(response.created_at);
 
                 const td2 = row.insertCell();
                 td2.style.cssText = tdStyle + 'max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-                td2.title         = r.query;
-                td2.textContent   = r.query.length > 70 ? r.query.slice(0, 70) + '…' : r.query;
+                td2.title         = response.query;
+                td2.textContent   = response.query.length > 70 ? response.query.slice(0, 70) + '…' : response.query;
 
                 const td3 = row.insertCell();
                 td3.style.cssText = tdStyle;
-                const tags = ragParseTags(r.tags ?? '{}');
+                const tags = ragParseTags(response.tags ?? '{}');
                 if (tags.length > 0) {
                     tags.forEach(tag => {
                         const chip = document.createElement('span');
@@ -1510,31 +1510,31 @@ function ragBuildStatisticsTab(panel) {
 
                 const td4 = row.insertCell();
                 td4.style.cssText = tdStyle + 'text-align:center;';
-                td4.textContent   = r.matched_files;
+                td4.textContent   = response.matched_files;
 
                 const td5 = row.insertCell();
                 td5.style.cssText = tdStyle + 'white-space:nowrap;';
-                td5.textContent   = r.model || '—';
+                td5.textContent   = response.model || '—';
 
                 const td6 = row.insertCell();
                 td6.style.cssText = tdStyle + 'text-align:right;';
-                td6.textContent   = r.prompt_tokens ? (parseInt(r.prompt_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
+                td6.textContent   = response.prompt_tokens ? (parseInt(response.prompt_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
 
                 const td7 = row.insertCell();
                 td7.style.cssText = tdStyle + 'text-align:right;';
-                td7.textContent   = r.completion_tokens ? (parseInt(r.completion_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
+                td7.textContent   = response.completion_tokens ? (parseInt(response.completion_tokens, 10) / 1000).toFixed(1) + 'k' : '0';
 
                 const td8 = row.insertCell();
                 td8.style.cssText = tdStyle + 'text-align:right;font-weight:600;';
-                td8.textContent   = r.total_ms ? (parseInt(r.total_ms, 10) / 1000).toFixed(2) + 's' : '0s';
+                td8.textContent   = response.total_ms ? (parseInt(response.total_ms, 10) / 1000).toFixed(2) + 's' : '0s';
 
                 const td9 = row.insertCell();
                 td9.style.cssText = tdStyle + 'text-align:center;';
-                const srcs = r.sources ?? [];
-                if (srcs.length > 0) {
-                    const chunkCount = srcs.filter(s => s.source_type === 'chunk').length;
+                const sources = response.sources ?? [];
+                if (sources.length > 0) {
+                    const chunkCount = sources.filter(settings => settings.source_type === 'chunk').length;
                     const badge = document.createElement('span');
-                    badge.textContent = srcs.length + (chunkCount > 0 ? ' chunk' : ' file') + (srcs.length !== 1 ? 's' : '');
+                    badge.textContent = sources.length + (chunkCount > 0 ? ' chunk' : ' file') + (sources.length !== 1 ? 's' : '');
                     badge.style.cssText = 'display:inline-block;padding:1px 8px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:999px;font-weight:600;color:var(--accent-dark);';
                     td9.appendChild(badge);
                 } else {
@@ -1555,39 +1555,39 @@ function ragBuildStatisticsTab(panel) {
 
                     detailRow = document.createElement('tr');
                     row.insertAdjacentElement('afterend', detailRow);
-                    const dtd = detailRow.insertCell();
-                    dtd.colSpan = 9;
-                    dtd.style.cssText = 'padding:14px 20px;background:var(--accent-light);border-bottom:2px solid var(--border);';
+                    const detailCell = detailRow.insertCell();
+                    detailCell.colSpan = 9;
+                    detailCell.style.cssText = 'padding:14px 20px;background:var(--accent-light);border-bottom:2px solid var(--border);';
 
-                    if (srcs.length > 0) {
+                    if (sources.length > 0) {
                         const sourceHdr = document.createElement('div');
-                        sourceHdr.textContent = 'Sources used (' + srcs.length + ')';
+                        sourceHdr.textContent = 'Sources used (' + sources.length + ')';
                         sourceHdr.style.cssText = 'font-weight:700;margin-bottom:8px;';
-                        dtd.appendChild(sourceHdr);
+                        detailCell.appendChild(sourceHdr);
 
                         const sourceGrid = document.createElement('div');
                         sourceGrid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px;';
-                        srcs.forEach(s => {
+                        sources.forEach(settings => {
                             const card = document.createElement('div');
                             card.style.cssText = 'padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:#fff;';
                             const title = document.createElement('div');
                             title.style.cssText = 'font-weight:600;margin-bottom:4px;';
-                            const chunkLabel = s.source_type === 'chunk' && parseInt(s.chunk_index, 10) >= 0
-                                ? '  [chunk #' + s.chunk_index + ']'
+                            const chunkLabel = settings.source_type === 'chunk' && parseInt(settings.chunk_index, 10) >= 0
+                                ? '  [chunk #' + settings.chunk_index + ']'
                                 : '  [full file]';
-                            title.textContent = (s.filename || '—') + chunkLabel;
+                            title.textContent = (settings.filename || '—') + chunkLabel;
                             const snippet = document.createElement('div');
                             snippet.style.cssText = 'white-space:pre-wrap;word-break:break-word;line-height:1.5;';
-                            const snipText = s.snippet || '';
+                            const snipText = settings.snippet || '';
                             snippet.textContent = snipText.length > 350 ? snipText.slice(0, 350) + '…' : snipText;
                             card.appendChild(title);
                             card.appendChild(snippet);
                             sourceGrid.appendChild(card);
                         });
-                        dtd.appendChild(sourceGrid);
+                        detailCell.appendChild(sourceGrid);
                     }
 
-                    if (r.prompt_snapshot) {
+                    if (response.prompt_snapshot) {
                         const promptToggle = document.createElement('div');
                         promptToggle.style.cssText = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px;user-select:none;';
                         const promptLabel = document.createElement('span');
@@ -1601,32 +1601,32 @@ function ragBuildStatisticsTab(panel) {
 
                         const promptBox = document.createElement('pre');
                         promptBox.style.cssText = 'display:none;margin:0;padding:12px;background:var(--accent-light);border:1px solid var(--border);border-radius:4px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow-y:auto;color:var(--text);';
-                        promptBox.textContent = r.prompt_snapshot;
+                        promptBox.textContent = response.prompt_snapshot;
 
-                        promptToggle.addEventListener('click', e => {
-                            e.stopPropagation();
+                        promptToggle.addEventListener('click', error => {
+                            error.stopPropagation();
                             const open = promptBox.style.display !== 'none';
                             promptBox.style.display = open ? 'none' : 'block';
                             promptArrow.style.transform = open ? '' : 'rotate(-90deg)';
                         });
 
-                        dtd.appendChild(promptToggle);
-                        dtd.appendChild(promptBox);
-                    } else if (srcs.length === 0) {
+                        detailCell.appendChild(promptToggle);
+                        detailCell.appendChild(promptBox);
+                    } else if (sources.length === 0) {
                         const noData = document.createElement('div');
                         noData.textContent = 'No detail data recorded for this query (pre-2.10.0 entry).';
                         noData.style.cssText = 'font-style:italic;';
-                        dtd.appendChild(noData);
+                        detailCell.appendChild(noData);
                     }
                 });
             });
-        } catch (e) {
+        } catch (error) {
             tbody.innerHTML = '';
             const row = tbody.insertRow();
-            const td  = row.insertCell();
-            td.colSpan = 9;
-            td.textContent = 'Failed to load: ' + e.message;
-            td.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
+            const cell  = row.insertCell();
+            cell.colSpan = 9;
+            cell.textContent = 'Failed to load: ' + error.message;
+            cell.style.cssText = 'padding:16px;color:var(--error);text-align:center;';
         } finally {
             refreshButton.disabled = false;
         }

@@ -23,11 +23,11 @@ import '../cells/virtual-cell.js';
 function resolveCellType(columnConfig, hasFk) {
     if (columnConfig.type === 'virtual') return 'virtual';
     if (hasFk) return 'fk';
-    const t = (columnConfig.type || '').toLowerCase();
-    if (t === 'enum') return 'enum';
-    if (t.includes('boolean')) return 'boolean';
-    if (t.includes('timestamp')) return 'timestamp';
-    if (t.includes('date')) return 'date';
+    const columnType = (columnConfig.type || '').toLowerCase();
+    if (columnType === 'enum') return 'enum';
+    if (columnType.includes('boolean')) return 'boolean';
+    if (columnType.includes('timestamp')) return 'timestamp';
+    if (columnType.includes('date')) return 'date';
     return 'text';
 }
 
@@ -65,9 +65,9 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             callback.setAttribute('aria-label', 'Select row');
             callback.dataset.id = String(row.id);
             callback.checked = state.selectedIds.has(row.id);
-            callback.addEventListener('change', e => {
-                e.stopPropagation();
-                if (e.target.checked) state.selectedIds.add(row.id);
+            callback.addEventListener('change', event => {
+                event.stopPropagation();
+                if (event.target.checked) state.selectedIds.add(row.id);
                 else state.selectedIds.delete(row.id);
                 document.dispatchEvent(new CustomEvent('selectionChanged'));
             });
@@ -89,12 +89,12 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
         }
 
         const m2mList = schema.tables[state.currentTable]?.many_to_many || [];
-        for (let mi = 0; mi < m2mList.length; mi++) {
+        for (let m2mIndex = 0; m2mIndex < m2mList.length; m2mIndex++) {
             const tdM2m = document.createElement('td');
             tdM2m.className = 'td-m2m';
             tdM2m.dataset.m2mRowId = String(row['id']);
-            tdM2m.dataset.m2mIndex = String(mi);
-            tdM2m.dataset.m2mLabel = m2mList[mi].label || 'Related';
+            tdM2m.dataset.m2mIndex = String(m2mIndex);
+            tdM2m.dataset.m2mLabel = m2mList[m2mIndex].label || 'Related';
             tr.appendChild(tdM2m);
         }
 
@@ -133,8 +133,8 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
         cy: 'row-actions-toggle',
         title: I18n.t('grid.more_actions'),
         icon: 'assets/icons/more_vert.png',
-        onClick: e => {
-            e.stopPropagation();
+        onClick: event => {
+            event.stopPropagation();
             closeAllActionMenus(menu);
             menu.classList.toggle('open');
         },

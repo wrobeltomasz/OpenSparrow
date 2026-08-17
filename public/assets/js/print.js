@@ -15,22 +15,22 @@ function substitute(text, row) {
 
 function readParametersFromLocation() {
     const values = {};
-    new URLSearchParameters(window.location.search).forEach((val, key) => {
-        if (key.startsWith('p_') && val !== '') values[key.slice(2)] = val;
+    new URLSearchParameters(window.location.search).forEach((value, key) => {
+        if (key.startsWith('p_') && value !== '') values[key.slice(2)] = value;
     });
     return values;
 }
 
 function buildParametersQuery(values) {
     return Object.entries(values)
-        .filter(([, v]) => v !== '' && v != null)
-        .map(([k, v]) => `p_${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .filter(([, parameterValue]) => parameterValue !== '' && parameterValue != null)
+        .map(([k, parameterValue]) => `p_${encodeURIComponent(k)}=${encodeURIComponent(parameterValue)}`)
         .join('&');
 }
 
 function updateUrl(printName, values) {
-    const qs  = buildParametersQuery(values);
-    const url = `print.php?print=${encodeURIComponent(printName)}${qs ? `&${qs}` : ''}`;
+    const queryString  = buildParametersQuery(values);
+    const url = `print.php?print=${encodeURIComponent(printName)}${queryString ? `&${queryString}` : ''}`;
     window.history.replaceState(null, '', url);
 }
 
@@ -84,11 +84,11 @@ async function renderParametersBar(printName, parameterDefs, currentValues) {
 
         const options = await fetchParameterOptions(printName, def.key);
         options.forEach(option => {
-            const o = document.createElement('option');
-            o.value = option.value ?? '';
-            o.textContent = option.label ?? option.value ?? '';
-            if (String(currentValues[def.key] ?? '') === String(option.value ?? '')) o.selected = true;
-            select.appendChild(o);
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value ?? '';
+            optionElement.textContent = option.label ?? option.value ?? '';
+            if (String(currentValues[def.key] ?? '') === String(option.value ?? '')) optionElement.selected = true;
+            select.appendChild(optionElement);
         });
 
         select.addEventListener('change', () => {
@@ -99,7 +99,7 @@ async function renderParametersBar(printName, parameterDefs, currentValues) {
         bar.appendChild(select);
     }
 
-    if (clearButton) clearButton.hidden = Object.values(currentValues).every(v => !v);
+    if (clearButton) clearButton.hidden = Object.values(currentValues).every(parameterValue => !parameterValue);
 }
 
 function showError(message) {
@@ -115,24 +115,24 @@ function renderBlock(block, rows, columns) {
 
     if (block.type === 'header') {
         const level = Math.min(3, Math.max(1, parseInt(block.level, 10) || 1));
-        const h = document.createElement(`h${level}`);
-        h.className = 'pr-block-header';
-        h.textContent = substitute(block.text, firstRow);
-        return h;
+        const headingElement = document.createElement(`h${level}`);
+        headingElement.className = 'pr-block-header';
+        headingElement.textContent = substitute(block.text, firstRow);
+        return headingElement;
     }
 
     if (block.type === 'text') {
-        const p = document.createElement('p');
-        p.className = 'pr-block-text';
-        p.textContent = substitute(block.text, firstRow);
-        return p;
+        const paragraph = document.createElement('p');
+        paragraph.className = 'pr-block-text';
+        paragraph.textContent = substitute(block.text, firstRow);
+        return paragraph;
     }
 
     if (block.type === 'table') {
         const cols = (Array.isArray(block.columns) && block.columns.length > 0
             ? block.columns
             : Object.keys(rows[0] ?? {})
-        ).map(c => (typeof c === 'string' ? { name: c } : c));
+        ).map(columnEntry => (typeof columnEntry === 'string' ? { name: columnEntry } : columnEntry));
 
         if (cols.length === 0 || rows.length === 0) {
             const empty = document.createElement('p');
@@ -225,7 +225,7 @@ function paginateSheet(sheet) {
     pages.forEach((nodes, i) => {
         const pageElement = document.createElement('div');
         pageElement.className = 'pr-page';
-        nodes.forEach(n => pageElement.appendChild(n));
+        nodes.forEach(node => pageElement.appendChild(node));
 
         const footer = document.createElement('div');
         footer.className = 'pr-page-footer';
@@ -245,8 +245,8 @@ async function loadPrint(printName, parameterValues = {}) {
 
     let data;
     try {
-        const qs = buildParametersQuery(parameterValues);
-        data = await apiFetch(`api/print.php?action=data&print=${encodeURIComponent(printName)}${qs ? `&${qs}` : ''}`);
+        const queryString = buildParametersQuery(parameterValues);
+        data = await apiFetch(`api/print.php?action=data&print=${encodeURIComponent(printName)}${queryString ? `&${queryString}` : ''}`);
     } catch (error) {
         showError(error.message);
         return;
@@ -323,7 +323,7 @@ async function loadSelector() {
     const grid = document.createElement('div');
     grid.className = 'pr-selector';
 
-    data.prints.forEach(p => {
+    data.prints.forEach(paragraph => {
         const card = document.createElement('div');
         card.className = 'pr-selector-card';
 
@@ -332,9 +332,9 @@ async function loadSelector() {
 
         const iconWrap = document.createElement('div');
         iconWrap.className = 'pr-card-icon';
-        if (p.icon) {
+        if (paragraph.icon) {
             const image = document.createElement('img');
-            image.src = p.icon;
+            image.src = paragraph.icon;
             image.alt = '';
             iconWrap.appendChild(image);
         } else {
@@ -346,12 +346,12 @@ async function loadSelector() {
 
         const cardTitle = document.createElement('h3');
         cardTitle.className = 'pr-card-title';
-        cardTitle.textContent = p.display_name ?? p.name;
+        cardTitle.textContent = paragraph.display_name ?? paragraph.name;
         header.appendChild(cardTitle);
 
         const desc = document.createElement('p');
         desc.className = 'pr-card-desc';
-        desc.textContent = p.description || '';
+        desc.textContent = paragraph.description || '';
 
         const footer = document.createElement('div');
         footer.className = 'pr-card-footer';
@@ -364,7 +364,7 @@ async function loadSelector() {
         card.appendChild(desc);
         card.appendChild(footer);
         card.addEventListener('click', () => {
-            window.location.href = `print.php?print=${encodeURIComponent(p.name)}`;
+            window.location.href = `print.php?print=${encodeURIComponent(paragraph.name)}`;
         });
         grid.appendChild(card);
     });

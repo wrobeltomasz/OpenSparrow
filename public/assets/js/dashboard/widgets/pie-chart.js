@@ -28,12 +28,12 @@ function renderPieChart(widget) {
     let currentAngle = 0;
 
     data.forEach((row, index) => {
-        const val = parseFloat(row.value);
-        const percent = (val / total) * 100;
-        const deg = (val / total) * 360;
+        const value = parseFloat(row.value);
+        const percent = (value / total) * 100;
+        const degrees = (value / total) * 360;
         const color = COLORS[index % COLORS.length];
-        conicStops.push(`${color} ${currentAngle}deg ${currentAngle + deg}deg`);
-        currentAngle += deg;
+        conicStops.push(`${color} ${currentAngle}deg ${currentAngle + degrees}deg`);
+        currentAngle += degrees;
 
         const item = document.createElement('div');
         item.className = 'dash-pie-legend-item';
@@ -43,19 +43,19 @@ function renderPieChart(widget) {
         box.style.backgroundColor = color;
 
         const displayLabel = formatCellValue(row.label || 'None', columnType);
-        const lbl = document.createElement('span');
-        lbl.textContent = `${displayLabel} - ${val} (${percent.toFixed(1)}%)`;
+        const labelElement = document.createElement('span');
+        labelElement.textContent = `${displayLabel} - ${value} (${percent.toFixed(1)}%)`;
 
-        item.append(box, lbl);
+        item.append(box, labelElement);
         applyDrillDown(item, widget.table, groupColumn, row.label);
         legend.appendChild(item);
     });
 
-    const pie = document.createElement('div');
-    pie.className = 'dash-pie-chart';
-    pie.style.background = `conic-gradient(${conicStops.join(', ')})`;
+    const pieElement = document.createElement('div');
+    pieElement.className = 'dash-pie-chart';
+    pieElement.style.background = `conic-gradient(${conicStops.join(', ')})`;
 
-    wrapper.append(pie, legend);
+    wrapper.append(pieElement, legend);
     return wrapper;
 }
 

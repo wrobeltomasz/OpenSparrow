@@ -12,10 +12,10 @@ export async function renderDatabaseSection(panel) {
 
     let dbConfig;
     try {
-        const res = await apiFetch('api.php?action=get&file=database');
-        dbConfig = await res.json();
+        const response = await apiFetch('api.php?action=get&file=database');
+        dbConfig = await response.json();
         if (!dbConfig.host) dbConfig = { host: 'localhost', port: '5432', dbname: '', user: 'postgres', password: '' };
-    } catch (e) {
+    } catch (error) {
         panel.innerHTML = '<h3 style="color:var(--error);">Error loading database settings. Check server logs.</h3>';
         return;
     }
@@ -31,12 +31,12 @@ export async function renderDatabaseSection(panel) {
     description.innerHTML = 'Configure your database connection. <strong>Click "Save configuration" before testing!</strong>';
     panel.appendChild(description);
 
-    panel.appendChild(createTextInput('host', 'DB Host (e.g. localhost or IP)', dbConfig.host || 'localhost', v => dbConfig.host = v));
-    panel.appendChild(createTextInput('port', 'DB Port (default 5432)', dbConfig.port || '5432', v => dbConfig.port = v));
-    panel.appendChild(createTextInput('dbname', 'Database Name', dbConfig.dbname || '', v => dbConfig.dbname = v));
-    panel.appendChild(createTextInput('user', 'DB User', dbConfig.user || 'postgres', v => dbConfig.user = v));
-    panel.appendChild(createTextInput('password', 'DB Password', dbConfig.password || '', v => dbConfig.password = v));
-    panel.appendChild(createTextInput('schema', 'System Schema (for spw_* tables, default: app)', dbConfig.schema || 'app', v => dbConfig.schema = v));
+    panel.appendChild(createTextInput('host', 'DB Host (e.g. localhost or IP)', dbConfig.host || 'localhost', value => dbConfig.host = value));
+    panel.appendChild(createTextInput('port', 'DB Port (default 5432)', dbConfig.port || '5432', value => dbConfig.port = value));
+    panel.appendChild(createTextInput('dbname', 'Database Name', dbConfig.dbname || '', value => dbConfig.dbname = value));
+    panel.appendChild(createTextInput('user', 'DB User', dbConfig.user || 'postgres', value => dbConfig.user = value));
+    panel.appendChild(createTextInput('password', 'DB Password', dbConfig.password || '', value => dbConfig.password = value));
+    panel.appendChild(createTextInput('schema', 'System Schema (for spw_* tables, default: app)', dbConfig.schema || 'app', value => dbConfig.schema = value));
 
     const saveRow = document.createElement('div');
     saveRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-top:20px;';
@@ -51,17 +51,17 @@ export async function renderDatabaseSection(panel) {
     saveButton.addEventListener('click', async () => {
         saveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=save&file=database', {
+            const response = await apiFetch('api.php?action=save&file=database', {
                 method: 'POST',
                 body: JSON.stringify(dbConfig),
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 showStatusPill(pillAnchor, 'Database settings saved.', 'success');
             } else {
                 showStatusPill(pillAnchor, result.error || 'Error saving settings.', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(pillAnchor, 'Request failed.', 'error');
         }
         saveButton.disabled = false;
@@ -82,8 +82,8 @@ export async function renderDatabaseSection(panel) {
         testButton.style.opacity = '0.7';
 
         try {
-            const res = await apiFetch('api.php?action=health');
-            const data = await res.json();
+            const response = await apiFetch('api.php?action=health');
+            const data = await response.json();
 
             if (data.db_connected) {
                 showStatusPill(testButton, 'Connected to the database.', 'success');
@@ -97,7 +97,7 @@ export async function renderDatabaseSection(panel) {
                 );
                 testButton.style.background = 'var(--error)';
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(testButton, 'Cannot reach the server.', 'error');
         }
 

@@ -5,10 +5,10 @@
 
 document.addEventListener("DOMContentLoaded", () => {
     const mobileActions = document.getElementById("mobileActions");
-    const clickById = id => { const b = document.getElementById(id); if (b) b.click(); };
+    const clickById = id => { const targetButton = document.getElementById(id); if (targetButton) targetButton.click(); };
     if (mobileActions) {
-        mobileActions.addEventListener("change", e => {
-            const action = e.target.value;
+        mobileActions.addEventListener("change", event => {
+            const action = event.target.value;
             if (action === "add") clickById("addRow");
             if (action === "export") clickById("exportCsv");
             if (action === "data-cleanup") clickById("dataCleanupBtn");

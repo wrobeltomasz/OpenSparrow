@@ -19,7 +19,7 @@ let schemasPromise = null;
 function fetchTargetSchemas() {
     if (!schemasPromise) {
         schemasPromise = apiFetch('api.php?action=etl_target_schemas')
-            .then(res => res.json())
+            .then(response => response.json())
             .then(data => (data.status === 'success' ? data.schemas : []))
             .catch(() => []);
     }
@@ -31,7 +31,7 @@ function fetchTargetTables(schema) {
     if (!schema) return Promise.resolve([]);
     if (!tablesCache.has(schema)) {
         tablesCache.set(schema, apiFetch('api.php?action=etl_target_tables&schema=' + encodeURIComponent(schema))
-            .then(res => res.json())
+            .then(response => response.json())
             .then(data => (data.status === 'success' ? data.tables : []))
             .catch(() => []));
     }
@@ -60,12 +60,12 @@ const DRIVER_LABELS = [
 const FILE_DRIVERS = ['sqlite'];
 const REMOTE_FILE_DRIVERS = ['csv_ftp'];
 
-function sourceLabel(src) {
-    if (REMOTE_FILE_DRIVERS.includes(src.driver)) {
-        return (src.name || '(unnamed source)') + ' — ' + (src.protocol || 'ftp') + '://' + (src.host || '?') + '/' + (src.file_name || '?');
+function sourceLabel(sourceConfig) {
+    if (REMOTE_FILE_DRIVERS.includes(sourceConfig.driver)) {
+        return (sourceConfig.name || '(unnamed source)') + ' — ' + (sourceConfig.protocol || 'ftp') + '://' + (sourceConfig.host || '?') + '/' + (sourceConfig.file_name || '?');
     }
-    const where = FILE_DRIVERS.includes(src.driver) ? (src.database || '?') : (src.host || '?');
-    return (src.name || '(unnamed source)') + ' — ' + (src.driver || 'mysql') + '://' + where;
+    const where = FILE_DRIVERS.includes(sourceConfig.driver) ? (sourceConfig.database || '?') : (sourceConfig.host || '?');
+    return (sourceConfig.name || '(unnamed source)') + ' — ' + (sourceConfig.driver || 'mysql') + '://' + where;
 }
 
 function renderSourcesTab(panel) {
@@ -74,7 +74,7 @@ function renderSourcesTab(panel) {
 
     function redraw() {
         list.innerHTML = '';
-        etlConfig.sources.forEach((src, index) => list.appendChild(buildSourceCard(src, index, redraw, status)));
+        etlConfig.sources.forEach((sourceConfig, index) => list.appendChild(buildSourceCard(sourceConfig, index, redraw, status)));
     }
 
     const buttonAdd = document.createElement('button');
@@ -103,66 +103,66 @@ function renderSourcesTab(panel) {
     redraw();
 }
 
-function buildSourceCard(src, index, redraw, status) {
+function buildSourceCard(sourceConfig, index, redraw, status) {
     const { card, body, title } = buildCollapsibleCard({
-        titleText: src.name,
+        titleText: sourceConfig.name,
         placeholder: '(unnamed source)',
-        confirmMsg: `Delete source "${src.name}"? Jobs using it will need a new source assigned.`,
+        confirmMsg: `Delete source "${sourceConfig.name}"? Jobs using it will need a new source assigned.`,
         onDelete: () => { etlConfig.sources.splice(index, 1); redraw(); },
     });
 
-    const name = input(src.name);
-    name.oninput = () => { src.name = name.value; title.textContent = src.name || '(unnamed source)'; };
+    const name = input(sourceConfig.name);
+    name.oninput = () => { sourceConfig.name = name.value; title.textContent = sourceConfig.name || '(unnamed source)'; };
 
     const driver = document.createElement('select');
     driver.className = 'adm-input';
-    DRIVER_LABELS.forEach(([v, lbl]) => {
-        const o = document.createElement('option');
-        o.value = v; o.textContent = lbl;
-        if ((src.driver || 'mysql') === v) o.selected = true;
-        driver.appendChild(o);
+    DRIVER_LABELS.forEach(([v, labelElement]) => {
+        const optionElement = document.createElement('option');
+        optionElement.value = v; optionElement.textContent = labelElement;
+        if ((sourceConfig.driver || 'mysql') === v) optionElement.selected = true;
+        driver.appendChild(optionElement);
     });
 
-    const host = input(src.host);
-    host.oninput = () => { src.host = host.value; };
-    const port = input(String(src.port ?? DRIVER_PORTS[src.driver] ?? 3306), 'number');
-    port.oninput = () => { src.port = parseInt(port.value, 10) || (DRIVER_PORTS[src.driver] ?? 3306); };
-    const db = input(src.database);
-    db.oninput = () => { src.database = db.value; };
-    const user = input(src.user);
-    user.oninput = () => { src.user = user.value; };
-    const pass = input(src.password || '', 'password');
-    pass.placeholder = src.password === '********' ? 'Leave to keep current' : '';
-    pass.oninput = () => { src.password = pass.value; };
+    const host = input(sourceConfig.host);
+    host.oninput = () => { sourceConfig.host = host.value; };
+    const port = input(String(sourceConfig.port ?? DRIVER_PORTS[sourceConfig.driver] ?? 3306), 'number');
+    port.oninput = () => { sourceConfig.port = parseInt(port.value, 10) || (DRIVER_PORTS[sourceConfig.driver] ?? 3306); };
+    const databaseInput = input(sourceConfig.database);
+    databaseInput.oninput = () => { sourceConfig.database = databaseInput.value; };
+    const user = input(sourceConfig.user);
+    user.oninput = () => { sourceConfig.user = user.value; };
+    const pass = input(sourceConfig.password || '', 'password');
+    pass.placeholder = sourceConfig.password === '********' ? 'Leave to keep current' : '';
+    pass.oninput = () => { sourceConfig.password = pass.value; };
 
     const protocol = document.createElement('select');
     protocol.className = 'adm-input';
-    [['ftp', 'FTP'], ['ftps', 'FTPS (FTP over TLS)']].forEach(([v, lbl]) => {
-        const o = document.createElement('option');
-        o.value = v; o.textContent = lbl;
-        if ((src.protocol || 'ftp') === v) o.selected = true;
-        protocol.appendChild(o);
+    [['ftp', 'FTP'], ['ftps', 'FTPS (FTP over TLS)']].forEach(([v, labelElement]) => {
+        const optionElement = document.createElement('option');
+        optionElement.value = v; optionElement.textContent = labelElement;
+        if ((sourceConfig.protocol || 'ftp') === v) optionElement.selected = true;
+        protocol.appendChild(optionElement);
     });
-    protocol.onchange = () => { src.protocol = protocol.value; };
+    protocol.onchange = () => { sourceConfig.protocol = protocol.value; };
 
-    const remoteDirectory = input(src.remote_dir || '');
+    const remoteDirectory = input(sourceConfig.remote_dir || '');
     remoteDirectory.placeholder = '/exports (leave empty for the login directory)';
-    remoteDirectory.oninput = () => { src.remote_dir = remoteDirectory.value; };
+    remoteDirectory.oninput = () => { sourceConfig.remote_dir = remoteDirectory.value; };
 
-    const fileName = input(src.file_name || '');
+    const fileName = input(sourceConfig.file_name || '');
     fileName.placeholder = 'export.csv';
-    fileName.oninput = () => { src.file_name = fileName.value; };
+    fileName.oninput = () => { sourceConfig.file_name = fileName.value; };
 
-    const csvDelimiter = input(src.csv_delimiter || ',');
+    const csvDelimiter = input(sourceConfig.csv_delimiter || ',');
     csvDelimiter.maxLength = 1;
-    csvDelimiter.oninput = () => { src.csv_delimiter = csvDelimiter.value.slice(0, 1) || ','; };
+    csvDelimiter.oninput = () => { sourceConfig.csv_delimiter = csvDelimiter.value.slice(0, 1) || ','; };
 
-    const csvHasHeaderLabel = checkbox('First row is a header row', src.csv_has_header !== false, (v) => { src.csv_has_header = v; }).label;
-    const passiveModeLabel = checkbox('Passive mode (usually required behind NAT/firewalls)', src.passive_mode !== false, (v) => { src.passive_mode = v; }).label;
+    const csvHasHeaderLabel = checkbox('First row is a header row', sourceConfig.csv_has_header !== false, (v) => { sourceConfig.csv_has_header = v; }).label;
+    const passiveModeLabel = checkbox('Passive mode (usually required behind NAT/firewalls)', sourceConfig.passive_mode !== false, (v) => { sourceConfig.passive_mode = v; }).label;
 
     const hostGroup          = fg('Host', host);
     const portGroup           = fg('Port', port);
-    const dbGroup              = fg('Database', db);
+    const dbGroup              = fg('Database', databaseInput);
     const userGroup           = fg('User', user);
     const passGroup           = fg('Password', pass);
     const protocolGroup       = fg('Protocol', protocol);
@@ -173,8 +173,8 @@ function buildSourceCard(src, index, redraw, status) {
     const passiveModeGroup    = fg('', passiveModeLabel);
 
     function applyDriverVisibility() {
-        const isFile   = FILE_DRIVERS.includes(src.driver);
-        const isRemote = REMOTE_FILE_DRIVERS.includes(src.driver);
+        const isFile   = FILE_DRIVERS.includes(sourceConfig.driver);
+        const isRemote = REMOTE_FILE_DRIVERS.includes(sourceConfig.driver);
         hostGroup.style.display = isFile ? 'none' : '';
         portGroup.style.display = isFile ? 'none' : '';
         userGroup.style.display = isFile ? 'none' : '';
@@ -187,15 +187,15 @@ function buildSourceCard(src, index, redraw, status) {
         csvHasHeaderGroup.style.display = isRemote ? '' : 'none';
         passiveModeGroup.style.display  = isRemote ? '' : 'none';
         dbGroup.querySelector('label').textContent = isFile ? 'Database file path' : 'Database';
-        db.placeholder = isFile ? '/path/to/database.sqlite' : '';
+        databaseInput.placeholder = isFile ? '/path/to/database.sqlite' : '';
     }
 
     driver.onchange = () => {
-        const oldDefault = DRIVER_PORTS[src.driver];
-        src.driver = driver.value;
+        const oldDefault = DRIVER_PORTS[sourceConfig.driver];
+        sourceConfig.driver = driver.value;
         if (!port.value || parseInt(port.value, 10) === oldDefault) {
-            port.value = String(DRIVER_PORTS[src.driver] ?? '');
-            src.port = DRIVER_PORTS[src.driver];
+            port.value = String(DRIVER_PORTS[sourceConfig.driver] ?? '');
+            sourceConfig.port = DRIVER_PORTS[sourceConfig.driver];
         }
         applyDriverVisibility();
     };
@@ -224,11 +224,11 @@ function buildSourceCard(src, index, redraw, status) {
     buttonTest.onclick = async () => {
         showStatus(testStatus, 'Testing…', true);
         try {
-            const res  = await apiFetch('api.php?action=etl_test_connection', {
+            const response  = await apiFetch('api.php?action=etl_test_connection', {
                 method: 'POST',
-                body: JSON.stringify({ connection: src }),
+                body: JSON.stringify({ connection: sourceConfig }),
             });
-            const data = await res.json();
+            const data = await response.json();
             showStatus(testStatus, data.status === 'success' ? (data.message || 'Connection OK.') : (data.error || 'Failed.'), data.status === 'success');
         } catch (_) {
             showStatus(testStatus, 'Network error.', false);
@@ -291,15 +291,15 @@ function buildJobCard(job, index, redraw, status) {
     const source = document.createElement('select');
     source.className = 'adm-input';
     if (etlConfig.sources.length === 0) {
-        const o = document.createElement('option');
-        o.value = ''; o.textContent = '(no sources configured — add one in the Sources tab)';
-        source.appendChild(o);
+        const optionElement = document.createElement('option');
+        optionElement.value = ''; optionElement.textContent = '(no sources configured — add one in the Sources tab)';
+        source.appendChild(optionElement);
     }
-    etlConfig.sources.forEach((src) => {
-        const o = document.createElement('option');
-        o.value = src.id; o.textContent = sourceLabel(src);
-        if (job.source_id === src.id) o.selected = true;
-        source.appendChild(o);
+    etlConfig.sources.forEach((sourceConfig) => {
+        const optionElement = document.createElement('option');
+        optionElement.value = sourceConfig.id; optionElement.textContent = sourceLabel(sourceConfig);
+        if (job.source_id === sourceConfig.id) optionElement.selected = true;
+        source.appendChild(optionElement);
     });
     const query = document.createElement('textarea');
     query.className = 'adm-input';
@@ -315,8 +315,8 @@ function buildJobCard(job, index, redraw, status) {
     queryNote.textContent = 'This source reads a CSV file — the whole file is imported on every run, no query needed.';
 
     function isRemoteFileSource() {
-        const src = etlConfig.sources.find(s => s.id === job.source_id);
-        return !!src && REMOTE_FILE_DRIVERS.includes(src.driver);
+        const sourceConfig = etlConfig.sources.find(candidateSource => candidateSource.id === job.source_id);
+        return !!sourceConfig && REMOTE_FILE_DRIVERS.includes(sourceConfig.driver);
     }
     function applySourceKindVisibility() {
         const isRemote = isRemoteFileSource();
@@ -339,16 +339,16 @@ function buildJobCard(job, index, redraw, status) {
     function populateTableOptions(tables) {
         targetTable.innerHTML = '';
         if (tables.length === 0) {
-            const o = document.createElement('option');
-            o.value = ''; o.textContent = '(no tables found in this schema)';
-            targetTable.appendChild(o);
+            const optionElement = document.createElement('option');
+            optionElement.value = ''; optionElement.textContent = '(no tables found in this schema)';
+            targetTable.appendChild(optionElement);
             return;
         }
         tables.forEach((t) => {
-            const o = document.createElement('option');
-            o.value = t; o.textContent = t;
-            if (job.target_table === t) o.selected = true;
-            targetTable.appendChild(o);
+            const optionElement = document.createElement('option');
+            optionElement.value = t; optionElement.textContent = t;
+            if (job.target_table === t) optionElement.selected = true;
+            targetTable.appendChild(optionElement);
         });
 
         if (!tables.includes(job.target_table)) {
@@ -367,11 +367,11 @@ function buildJobCard(job, index, redraw, status) {
 
     fetchTargetSchemas().then((schemas) => {
         targetSchema.innerHTML = '';
-        schemas.forEach((s) => {
-            const o = document.createElement('option');
-            o.value = s; o.textContent = s;
-            if (job.target_schema === s) o.selected = true;
-            targetSchema.appendChild(o);
+        schemas.forEach((candidateSource) => {
+            const optionElement = document.createElement('option');
+            optionElement.value = candidateSource; optionElement.textContent = candidateSource;
+            if (job.target_schema === candidateSource) optionElement.selected = true;
+            targetSchema.appendChild(optionElement);
         });
         if (!schemas.includes(job.target_schema)) {
             job.target_schema = schemas[0] || '';
@@ -383,17 +383,17 @@ function buildJobCard(job, index, redraw, status) {
     const mode = document.createElement('select');
     mode.className = 'adm-input';
     [['full_refresh', 'Full refresh (truncate + insert)'], ['append', 'Append'], ['upsert', 'Upsert (by key)']]
-        .forEach(([v, lbl]) => {
-            const o = document.createElement('option');
-            o.value = v; o.textContent = lbl;
-            if (job.load_mode === v) o.selected = true;
-            mode.appendChild(o);
+        .forEach(([v, labelElement]) => {
+            const optionElement = document.createElement('option');
+            optionElement.value = v; optionElement.textContent = labelElement;
+            if (job.load_mode === v) optionElement.selected = true;
+            mode.appendChild(optionElement);
         });
 
     const keyGroup = fg('Upsert key column(s), comma-separated', (() => {
-        const k = input((job.upsert_key || []).join(', '));
-        k.oninput = () => { job.upsert_key = k.value.split(',').map(s => s.trim()).filter(Boolean); };
-        return k;
+        const upsertKeyInput = input((job.upsert_key || []).join(', '));
+        upsertKeyInput.oninput = () => { job.upsert_key = upsertKeyInput.value.split(',').map(candidateSource => candidateSource.trim()).filter(Boolean); };
+        return upsertKeyInput;
     })());
     keyGroup.style.display = job.load_mode === 'upsert' ? '' : 'none';
     mode.onchange = () => { job.load_mode = mode.value; keyGroup.style.display = mode.value === 'upsert' ? '' : 'none'; };
@@ -420,13 +420,13 @@ function buildJobCard(job, index, redraw, status) {
     incHint.style.cssText = 'margin:4px 0 0; font-size:12px;';
     incHint.textContent = 'Use the {{watermark}} placeholder in the source query, e.g. "WHERE updated_at > {{watermark}}". The watermark auto-advances to the max value seen after each successful run.';
 
-    const columnMap = input((job.column_map || []).map(m => `${m.source}:${m.target}`).join(', '));
+    const columnMap = input((job.column_map || []).map(columnPair => `${columnPair.source}:${columnPair.target}`).join(', '));
     columnMap.placeholder = 'source_col:target_col, source_col2:target_col2';
     columnMap.oninput = () => {
-        job.column_map = columnMap.value.split(',').map(s => s.trim()).filter(Boolean).map(pair => {
-            const [source, target] = pair.split(':').map(x => (x || '').trim());
+        job.column_map = columnMap.value.split(',').map(candidateSource => candidateSource.trim()).filter(Boolean).map(pair => {
+            const [source, target] = pair.split(':').map(part => (part || '').trim());
             return { source, target: target || source };
-        }).filter(m => m.source);
+        }).filter(columnPair => columnPair.source);
     };
     const columnMapHint = document.createElement('p');
     columnMapHint.className = 'c-muted';
@@ -452,27 +452,27 @@ function buildJobCard(job, index, redraw, status) {
     );
     applySourceKindVisibility();
 
-    const out = document.createElement('pre');
-    out.className = 'adm-input';
-    out.style.cssText = 'white-space:pre-wrap; max-height:220px; overflow:auto; display:none;';
+    const outputElement = document.createElement('pre');
+    outputElement.className = 'adm-input';
+    outputElement.style.cssText = 'white-space:pre-wrap; max-height:220px; overflow:auto; display:none;';
 
     const buttonPreview = document.createElement('button');
     buttonPreview.className = 'btn';
     buttonPreview.textContent = 'Preview';
     buttonPreview.onclick = async () => {
-        const src = etlConfig.sources.find(s => s.id === job.source_id);
-        if (!src) { out.style.display = ''; out.textContent = 'No source assigned to this job.'; return; }
-        out.style.display = '';
-        out.textContent = 'Loading preview…';
+        const sourceConfig = etlConfig.sources.find(candidateSource => candidateSource.id === job.source_id);
+        if (!sourceConfig) { outputElement.style.display = ''; outputElement.textContent = 'No source assigned to this job.'; return; }
+        outputElement.style.display = '';
+        outputElement.textContent = 'Loading preview…';
         try {
-            const res  = await apiFetch('api.php?action=etl_preview', {
+            const response  = await apiFetch('api.php?action=etl_preview', {
                 method: 'POST',
-                body: JSON.stringify({ connection: src, source_query: job.source_query }),
+                body: JSON.stringify({ connection: sourceConfig, source_query: job.source_query }),
             });
-            const data = await res.json();
-            if (data.status !== 'success') { out.textContent = 'Error: ' + (data.error || 'preview failed'); return; }
-            out.textContent = renderPreview(data.columns, data.rows);
-        } catch (_) { out.textContent = 'Network error.'; }
+            const data = await response.json();
+            if (data.status !== 'success') { outputElement.textContent = 'Error: ' + (data.error || 'preview failed'); return; }
+            outputElement.textContent = renderPreview(data.columns, data.rows);
+        } catch (_) { outputElement.textContent = 'Network error.'; }
     };
 
     const buttonRun = document.createElement('button');
@@ -481,13 +481,13 @@ function buildJobCard(job, index, redraw, status) {
     buttonRun.style.marginLeft = '8px';
     buttonRun.onclick = async () => {
         if (!(await saveConfig(status))) return;
-        await runCronAction('run_etl', { job_id: job.id }, out);
+        await runCronAction('run_etl', { job_id: job.id }, outputElement);
     };
 
     const buttonBar = document.createElement('div');
     buttonBar.style.marginTop = '10px';
     buttonBar.append(buttonPreview, buttonRun);
-    body.append(buttonBar, out);
+    body.append(buttonBar, outputElement);
 
     return card;
 }
@@ -495,7 +495,7 @@ function buildJobCard(job, index, redraw, status) {
 function renderPreview(columns, rows) {
     if (!rows || rows.length === 0) return 'No rows.';
     const head = columns.join(' | ');
-    const lines = rows.slice(0, 20).map(r => columns.map(c => String(r[c] ?? '')).join(' | '));
+    const lines = rows.slice(0, 20).map(previewRow => columns.map(columnName => String(previewRow[columnName] ?? '')).join(' | '));
     return head + '\n' + '-'.repeat(head.length) + '\n' + lines.join('\n');
 }
 
@@ -507,11 +507,11 @@ function renderScheduleTab(panel) {
     const freq = document.createElement('select');
     freq.className = 'adm-input';
     [['manual', 'Manual only'], ['daily', 'Daily'], ['weekly', 'Weekly'], ['monthly', 'Monthly']]
-        .forEach(([v, lbl]) => {
-            const o = document.createElement('option');
-            o.value = v; o.textContent = lbl;
-            if ((etlConfig.frequency || 'daily') === v) o.selected = true;
-            freq.appendChild(o);
+        .forEach(([v, labelElement]) => {
+            const optionElement = document.createElement('option');
+            optionElement.value = v; optionElement.textContent = labelElement;
+            if ((etlConfig.frequency || 'daily') === v) optionElement.selected = true;
+            freq.appendChild(optionElement);
         });
     freq.onchange = () => { etlConfig.frequency = freq.value; };
 
@@ -540,10 +540,10 @@ async function renderHistoryTab(panel) {
     buttonPurge.onclick = async () => {
         if (!confirm('Delete ETL log entries older than 90 days?')) return;
         try {
-            const res  = await apiFetch('api.php?action=etl_purge_log', {
+            const response  = await apiFetch('api.php?action=etl_purge_log', {
                 method: 'POST', body: JSON.stringify({ days: 90 }),
             });
-            const data = await res.json();
+            const data = await response.json();
             showStatus(status, data.status === 'success' ? `Deleted ${data.deleted} row(s).` : (data.error || 'Failed.'), data.status === 'success');
             load();
         } catch (_) { showStatus(status, 'Network error.', false); }
@@ -554,8 +554,8 @@ async function renderHistoryTab(panel) {
     async function load() {
         tableWrap.textContent = 'Loading…';
         try {
-            const res  = await apiFetch('api.php?action=etl_log');
-            const data = await res.json();
+            const response  = await apiFetch('api.php?action=etl_log');
+            const data = await response.json();
             if (data.status !== 'success') { tableWrap.textContent = data.error || 'Failed to load.'; return; }
             if (data.note && (!data.rows || data.rows.length === 0)) { tableWrap.textContent = data.note; return; }
             if (!data.rows || data.rows.length === 0) { tableWrap.textContent = 'No runs yet.'; return; }
@@ -570,15 +570,15 @@ function buildJobHistory(rows) {
     return buildHistoryTable(
         ['Started', 'Job', 'Trigger', 'Status', 'Read', 'Written', 'Duration (s)', 'Error'],
         rows,
-        (r, h) => [
-            h.td(r.started_at || ''),
-            h.td(r.job_name || ''),
-            h.td(r.triggered_by || ''),
-            h.statusCell(r.status),
-            h.td(r.rows_read || '0'),
-            h.td(r.rows_written || '0'),
-            h.td(r.duration_sec != null ? Math.round(parseFloat(r.duration_sec)) : ''),
-            h.errorCell(r.error_message),
+        (previewRow, h) => [
+            h.td(previewRow.started_at || ''),
+            h.td(previewRow.job_name || ''),
+            h.td(previewRow.triggered_by || ''),
+            h.statusCell(previewRow.status),
+            h.td(previewRow.rows_read || '0'),
+            h.td(previewRow.rows_written || '0'),
+            h.td(previewRow.duration_sec != null ? Math.round(parseFloat(previewRow.duration_sec)) : ''),
+            h.errorCell(previewRow.error_message),
         ]
     );
 }
@@ -591,8 +591,8 @@ export async function renderEtlPage(context) {
     tablesCache.clear();
 
     try {
-        const res  = await apiFetch('api.php?action=etl_load');
-        const data = await res.json();
+        const response  = await apiFetch('api.php?action=etl_load');
+        const data = await response.json();
         if (data.status !== 'success') {
             workspaceElement.innerHTML = `<p style="color:var(--error); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
             return;

@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabPanels = document.querySelectorAll('.tab-panel');
 
     function activateTab(tabId) {
-        tabBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
-        tabPanels.forEach(p => p.classList.remove('active'));
+        tabBtns.forEach(tabButton => { tabButton.classList.remove('active'); tabButton.setAttribute('aria-selected', 'false'); });
+        tabPanels.forEach(tabPanel => tabPanel.classList.remove('active'));
         const button   = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
         const panel = document.getElementById(tabId);
         if (button)   { button.classList.add('active');   button.setAttribute('aria-selected', 'true'); }
@@ -27,8 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelectorAll('[data-save-action]').forEach(button => {
         button.addEventListener('click', () => {
-            const sa = document.getElementById('saveAction');
-            if (sa) { sa.value = button.dataset.saveAction; }
+            const saveActionElement = document.getElementById('saveAction');
+            if (saveActionElement) { saveActionElement.value = button.dataset.saveAction; }
         });
     });
 
@@ -49,14 +49,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({ table: window.EDIT_TABLE, id: window.EDIT_ID })
                 });
                 let payload = null;
-                try { payload = await result.json(); } catch (e) {}
+                try { payload = await result.json(); } catch (error) {}
                 if (!result.ok || (payload && payload.error)) {
                     window.alert((payload && payload.error) || ('Delete failed (' + result.status + ')'));
                     buttonDelete.disabled = false;
                     return;
                 }
                 window.location.href = 'index.php?table=' + encodeURIComponent(window.EDIT_TABLE);
-            } catch (err) {
+            } catch (error) {
                 window.alert('Network error during delete.');
                 buttonDelete.disabled = false;
             }
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusElement.style.color = 'var(--error)';
                     buttonImageUpload.disabled = false;
                 }
-            } catch (err) {
+            } catch (error) {
                 statusElement.textContent = 'Network error during upload.';
                 statusElement.style.color = 'var(--error)';
                 buttonImageUpload.disabled = false;
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     button.disabled = false;
                 }
-            } catch (err) {
+            } catch (error) {
                 button.disabled = false;
             }
         });
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusElement.style.color = 'var(--error)';
                     buttonUpload.disabled   = false;
                 }
-            } catch (err) {
+            } catch (error) {
                 statusElement.textContent = 'Network error during upload.';
                 statusElement.style.color = 'var(--error)';
                 buttonUpload.disabled   = false;

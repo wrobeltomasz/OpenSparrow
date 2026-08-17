@@ -20,8 +20,8 @@ export function renderViewsEditor(context) {
         currentConfig.schemas = [];
     }
 
-    Object.keys(views).forEach(v => {
-        if (!views[v].source) views[v].source = 'postgres';
+    Object.keys(views).forEach(viewName => {
+        if (!views[viewName].source) views[viewName].source = 'postgres';
     });
 
     let currentSource = 'postgres';
@@ -36,9 +36,9 @@ export function renderViewsEditor(context) {
     const pgTab       = document.createElement('button');
     const schemasTab  = document.createElement('button');
     const settingsTab = document.createElement('button');
-    [pgTab, schemasTab, settingsTab].forEach(t => {
-        t.type = 'button';
-        t.className = 'item-btn';
+    [pgTab, schemasTab, settingsTab].forEach(tabElement => {
+        tabElement.type = 'button';
+        tabElement.className = 'item-btn';
     });
     function tabIcon(name) {
         const image = document.createElement('img');
@@ -55,12 +55,12 @@ export function renderViewsEditor(context) {
     tabBar.appendChild(settingsTab);
     wrap.appendChild(tabBar);
 
-    const hdr = document.createElement('div');
-    hdr.innerHTML = `
+    const headerElement = document.createElement('div');
+    headerElement.innerHTML = `
         <h2 class="admin-page-title">Views Configuration</h2>
         <p class="admin-page-desc">Sync to discover PostgreSQL views, configure display names, column colors, and drill-down. Use "Save config" in the top bar to persist.</p>
     `;
-    wrap.appendChild(hdr);
+    wrap.appendChild(headerElement);
 
     function updateTabUi() {
         pgTab.classList.toggle('active', currentSource === 'postgres');
@@ -70,9 +70,9 @@ export function renderViewsEditor(context) {
         syncButton.textContent   = '↻ Sync PostgreSQL Views';
     }
 
-    function switchSource(src) {
-        if (currentSource === src) return;
-        currentSource = src;
+    function switchSource(sourceType) {
+        if (currentSource === sourceType) return;
+        currentSource = sourceType;
         updateTabUi();
         renderList();
     }
@@ -122,13 +122,13 @@ export function renderViewsEditor(context) {
                 const vSchema = viewSchemas[vName];
                 if (!views[vName]) {
                     const cols = {};
-                    Object.keys(dbColumns[vName] ?? {}).forEach(c => { cols[c] = { display_name: c, color_rules: [] }; });
+                    Object.keys(dbColumns[vName] ?? {}).forEach(columnKey => { cols[columnKey] = { display_name: columnKey, color_rules: [] }; });
                     views[vName] = { display_name: vName, menu_name: vName, description: '', icon: 'assets/icons/table_chart_view.png', hidden: false, source: currentSource, columns: cols, drill_down: { enabled: false, levels: [] } };
                 } else {
                     views[vName].source = currentSource;
-                    Object.keys(dbColumns[vName] ?? {}).forEach(c => {
+                    Object.keys(dbColumns[vName] ?? {}).forEach(columnKey => {
                         if (!views[vName].columns) views[vName].columns = {};
-                        if (!views[vName].columns[c]) views[vName].columns[c] = { display_name: c, color_rules: [] };
+                        if (!views[vName].columns[columnKey]) views[vName].columns[columnKey] = { display_name: columnKey, color_rules: [] };
                     });
                 }
                 if (currentSource === 'postgres' && vSchema) {
@@ -146,8 +146,8 @@ export function renderViewsEditor(context) {
         }
     }
 
-    function viewNamesForSource(src) {
-        return Object.keys(views).filter(v => (views[v].source || 'postgres') === src);
+    function viewNamesForSource(sourceType) {
+        return Object.keys(views).filter(viewName => (views[viewName].source || 'postgres') === sourceType);
     }
 
     function renderList() {
@@ -179,10 +179,10 @@ export function renderViewsEditor(context) {
             const data = await result.json();
             if (data.status !== 'ok') {
                 listElement.innerHTML = '';
-                const err = document.createElement('p');
-                err.style.cssText = 'color:var(--error); padding:16px;';
-                err.textContent = 'Failed to load schemas: ' + (data.error ?? 'unknown');
-                listElement.appendChild(err);
+                const errorParagraph = document.createElement('p');
+                errorParagraph.style.cssText = 'color:var(--error); padding:16px;';
+                errorParagraph.textContent = 'Failed to load schemas: ' + (data.error ?? 'unknown');
+                listElement.appendChild(errorParagraph);
                 return;
             }
 
@@ -209,7 +209,7 @@ export function renderViewsEditor(context) {
                     if (callback.checked) {
                         if (!currentConfig.schemas.includes(schemaName)) currentConfig.schemas.push(schemaName);
                     } else {
-                        currentConfig.schemas = currentConfig.schemas.filter(s => s !== schemaName);
+                        currentConfig.schemas = currentConfig.schemas.filter(existingSchema => existingSchema !== schemaName);
                     }
                     markDirty();
                 });
@@ -233,17 +233,17 @@ export function renderViewsEditor(context) {
         listElement.appendChild(heading);
 
         listElement.appendChild(createTextInput('menu_name', 'Menu Display Name',
-            currentConfig.menu_name || 'Views', v => { currentConfig.menu_name = v; }));
+            currentConfig.menu_name || 'Views', viewName => { currentConfig.menu_name = viewName; }));
 
         listElement.appendChild(createIconPicker('menu_icon', 'Menu Icon',
-            currentConfig.menu_icon || '', v => {
-                if (v && v.trim() !== '') currentConfig.menu_icon = v;
+            currentConfig.menu_icon || '', viewName => {
+                if (viewName && viewName.trim() !== '') currentConfig.menu_icon = viewName;
                 else delete currentConfig.menu_icon;
             }));
 
         listElement.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
-            currentConfig.hidden, v => {
-                if (v) currentConfig.hidden = true;
+            currentConfig.hidden, viewName => {
+                if (viewName) currentConfig.hidden = true;
                 else delete currentConfig.hidden;
             }, false));
     }
@@ -284,8 +284,8 @@ export function renderViewsEditor(context) {
         visibleCheckbox.type    = 'checkbox';
         visibleCheckbox.checked = !config.hidden;
         visibleCheckbox.className = 'adm-check';
-        visibleCheckbox.addEventListener('change', e => {
-            views[vName].hidden = !e.target.checked;
+        visibleCheckbox.addEventListener('change', event => {
+            views[vName].hidden = !event.target.checked;
             card.style.opacity = views[vName].hidden ? '0.6' : '1';
         });
         visibleLabel.appendChild(visibleCheckbox);
@@ -296,8 +296,8 @@ export function renderViewsEditor(context) {
         delButton.title = 'Delete';
         delButton.textContent = '✕';
         delButton.className = 'icon-btn icon-btn-danger';
-        delButton.addEventListener('click', (e) => {
-            e.stopPropagation();
+        delButton.addEventListener('click', (event) => {
+            event.stopPropagation();
             if (!confirm(`Remove view "${config.display_name ?? vName}" from the configuration? It reappears on the next sync if it still exists in the database.`)) return;
             delete views[vName];
             markDirty();
@@ -315,8 +315,8 @@ export function renderViewsEditor(context) {
         body.appendChild(buildCardBody(vName, config));
         card.appendChild(body);
 
-        cardHdr.addEventListener('click', (e) => {
-            if (e.target.closest('button, input, label')) return;
+        cardHdr.addEventListener('click', (event) => {
+            if (event.target.closest('button, input, label')) return;
             card.classList.toggle('collapsed');
         });
 
@@ -330,10 +330,10 @@ export function renderViewsEditor(context) {
         genHdr.textContent = 'General';
         frag.appendChild(genHdr);
 
-        frag.appendChild(fg('Display name', 'text', config.display_name ?? vName, v => { views[vName].display_name = v; }));
-        frag.appendChild(fg('Menu name',    'text', config.menu_name    ?? vName, v => { views[vName].menu_name    = v; }));
-        frag.appendChild(fgArea('Description', config.description ?? '', v => { views[vName].description = v; }));
-        frag.appendChild(createIconPicker('icon', 'Icon', config.icon ?? 'assets/icons/table_chart_view.png', v => { views[vName].icon = v; markDirty(); }));
+        frag.appendChild(fg('Display name', 'text', config.display_name ?? vName, viewName => { views[vName].display_name = viewName; }));
+        frag.appendChild(fg('Menu name',    'text', config.menu_name    ?? vName, viewName => { views[vName].menu_name    = viewName; }));
+        frag.appendChild(fgArea('Description', config.description ?? '', viewName => { views[vName].description = viewName; }));
+        frag.appendChild(createIconPicker('icon', 'Icon', config.icon ?? 'assets/icons/table_chart_view.png', viewName => { views[vName].icon = viewName; markDirty(); }));
 
         const divider1 = document.createElement('hr');
         divider1.style.cssText = 'border:none; border-top:1px solid var(--border-light); margin:20px 0;';
@@ -357,30 +357,30 @@ export function renderViewsEditor(context) {
     }
 
     function fg(label, type, value, onChange) {
-        const grp = document.createElement('div');
-        grp.className = 'form-group';
-        const lbl = document.createElement('label');
-        lbl.textContent = label;
-        grp.appendChild(lbl);
+        const group = document.createElement('div');
+        group.className = 'form-group';
+        const labelElement = document.createElement('label');
+        labelElement.textContent = label;
+        group.appendChild(labelElement);
         const input = document.createElement('input');
         input.type = type; input.value = value ?? '';
         input.addEventListener('input', () => onChange(input.value));
-        grp.appendChild(input);
-        return grp;
+        group.appendChild(input);
+        return group;
     }
 
     function fgArea(label, value, onChange) {
-        const grp = document.createElement('div');
-        grp.className = 'form-group';
-        const lbl = document.createElement('label');
-        lbl.textContent = label;
-        grp.appendChild(lbl);
-        const ta = document.createElement('textarea');
-        ta.rows = 3; ta.style.resize = 'vertical';
-        ta.value = value ?? '';
-        ta.addEventListener('input', () => onChange(ta.value));
-        grp.appendChild(ta);
-        return grp;
+        const group = document.createElement('div');
+        group.className = 'form-group';
+        const labelElement = document.createElement('label');
+        labelElement.textContent = label;
+        group.appendChild(labelElement);
+        const textarea = document.createElement('textarea');
+        textarea.rows = 3; textarea.style.resize = 'vertical';
+        textarea.value = value ?? '';
+        textarea.addEventListener('input', () => onChange(textarea.value));
+        group.appendChild(textarea);
+        return group;
     }
 
     function buildColumnsEditor(vName, columnsConfig) {
@@ -416,8 +416,8 @@ export function renderViewsEditor(context) {
             }
             columnBlock.appendChild(columnHdr);
 
-            columnBlock.appendChild(fg('Display name', 'text', columnConfig.display_name ?? columnName, v => {
-                views[vName].columns[columnName].display_name = v;
+            columnBlock.appendChild(fg('Display name', 'text', columnConfig.display_name ?? columnName, viewName => {
+                views[vName].columns[columnName].display_name = viewName;
             }));
 
             const summaryGroup = document.createElement('div');
@@ -426,23 +426,23 @@ export function renderViewsEditor(context) {
             summaryLabel.textContent = 'Summary';
             summaryGroup.appendChild(summaryLabel);
             const summarySelect = document.createElement('select');
-            ['none', 'sum', 'avg', 'count', 'min', 'max'].forEach(fn => {
+            ['none', 'sum', 'avg', 'count', 'min', 'max'].forEach(handler => {
                 const option = document.createElement('option');
-                option.value = fn;
-                option.textContent = fn === 'none' ? 'None' : fn.toUpperCase();
-                if ((columnConfig.summary ?? 'none') === fn) option.selected = true;
+                option.value = handler;
+                option.textContent = handler === 'none' ? 'None' : handler.toUpperCase();
+                if ((columnConfig.summary ?? 'none') === handler) option.selected = true;
                 summarySelect.appendChild(option);
             });
             summarySelect.addEventListener('change', () => {
-                const v = summarySelect.value;
-                if (v === 'none') {
+                const viewName = summarySelect.value;
+                if (viewName === 'none') {
                     delete views[vName].columns[columnName].summary;
                     delete views[vName].columns[columnName].summary_if;
                     syncConditionUi();
                 } else {
-                    views[vName].columns[columnName].summary = v;
+                    views[vName].columns[columnName].summary = viewName;
                 }
-                conditionGroup.style.display = v === 'none' ? 'none' : 'block';
+                conditionGroup.style.display = viewName === 'none' ? 'none' : 'block';
                 markDirty();
             });
             summaryGroup.appendChild(summarySelect);
@@ -465,22 +465,22 @@ export function renderViewsEditor(context) {
             conditionNone.value = '';
             conditionNone.textContent = '— no condition —';
             conditionColumnSelect.appendChild(conditionNone);
-            allColumns.forEach(c => {
-                const o = document.createElement('option');
-                o.value = c;
-                o.textContent = c;
-                if (columnConfig.summary_if?.column === c) o.selected = true;
-                conditionColumnSelect.appendChild(o);
+            allColumns.forEach(columnKey => {
+                const optionElement = document.createElement('option');
+                optionElement.value = columnKey;
+                optionElement.textContent = columnKey;
+                if (columnConfig.summary_if?.column === columnKey) optionElement.selected = true;
+                conditionColumnSelect.appendChild(optionElement);
             });
 
             const conditionOpSelect = document.createElement('select');
             conditionOpSelect.className = 'adm-input w-110';
-            ['==', '!=', '>', '>=', '<', '<=', 'contains'].forEach(op => {
-                const o = document.createElement('option');
-                o.value = op;
-                o.textContent = op;
-                if ((columnConfig.summary_if?.op ?? '==') === op) o.selected = true;
-                conditionOpSelect.appendChild(o);
+            ['==', '!=', '>', '>=', '<', '<=', 'contains'].forEach(operator => {
+                const optionElement = document.createElement('option');
+                optionElement.value = operator;
+                optionElement.textContent = operator;
+                if ((columnConfig.summary_if?.op ?? '==') === operator) optionElement.selected = true;
+                conditionOpSelect.appendChild(optionElement);
             });
 
             const conditionValueInput = document.createElement('input');
@@ -565,11 +565,11 @@ export function renderViewsEditor(context) {
 
         const opSelect = document.createElement('select');
         opSelect.className = 'adm-input w-64';
-        ['>', '>=', '<', '<=', '=='].forEach(op => {
-            const o = document.createElement('option');
-            o.value = op; o.textContent = op;
-            if (rule.op === op) o.selected = true;
-            opSelect.appendChild(o);
+        ['>', '>=', '<', '<=', '=='].forEach(operator => {
+            const optionElement = document.createElement('option');
+            optionElement.value = operator; optionElement.textContent = operator;
+            if (rule.op === operator) optionElement.selected = true;
+            opSelect.appendChild(optionElement);
         });
         opSelect.addEventListener('change', () => { rules[index].op = opSelect.value; });
 
@@ -636,11 +636,11 @@ export function renderViewsEditor(context) {
                 const gbSelect = document.createElement('select');
                 gbSelect.className = 'adm-input';
                 gbSelect.style.flex = '1';
-                allColumns.forEach(c => {
-                    const o = document.createElement('option');
-                    o.value = c; o.textContent = c;
-                    if (lvl.group_by === c) o.selected = true;
-                    gbSelect.appendChild(o);
+                allColumns.forEach(columnKey => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = columnKey; optionElement.textContent = columnKey;
+                    if (lvl.group_by === columnKey) optionElement.selected = true;
+                    gbSelect.appendChild(optionElement);
                 });
                 gbSelect.addEventListener('change', () => { dd.levels[index].group_by = gbSelect.value; });
 
@@ -678,9 +678,9 @@ export function renderViewsEditor(context) {
 
     syncButton.addEventListener('click', syncFromDb);
 
-    Object.keys(views).forEach(v => {
-        dbColumns[v] = {};
-        Object.keys(views[v].columns ?? {}).forEach(c => { dbColumns[v][c] = { data_type: '' }; });
+    Object.keys(views).forEach(viewName => {
+        dbColumns[viewName] = {};
+        Object.keys(views[viewName].columns ?? {}).forEach(columnKey => { dbColumns[viewName][columnKey] = { data_type: '' }; });
     });
 
     updateTabUi();

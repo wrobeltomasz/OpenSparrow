@@ -11,10 +11,10 @@ function normalizeDateValue(value) {
     if (typeof value === 'string') {
         const dbMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
         if (dbMatch) return dbMatch[1];
-        const iso = value.includes('T') ? value.split('T')[0] : value;
-        const m = iso.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-        if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-        return iso;
+        const isoDate = value.includes('T') ? value.split('T')[0] : value;
+        const dateMatch = isoDate.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        if (dateMatch) return `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+        return isoDate;
     }
     return '';
 }

@@ -12,8 +12,8 @@ function renderEnumCell({ row, col: column, colCfg: columnConfig, isReadOnly }) 
         row, col: column, colCfg: columnConfig, isReadOnly,
         makeControl: () => {
             const select = document.createElement('select');
-            const applyColor = val => {
-                select.style.backgroundColor = columnConfig.enum_colors?.[val] ?? '';
+            const applyColor = cellValue => {
+                select.style.backgroundColor = columnConfig.enum_colors?.[cellValue] ?? '';
             };
 
             const emptyOption = document.createElement('option');
@@ -33,7 +33,7 @@ function renderEnumCell({ row, col: column, colCfg: columnConfig, isReadOnly }) 
             }
 
             applyColor(value);
-            select.addEventListener('change', e => applyColor(e.target.value));
+            select.addEventListener('change', event => applyColor(event.target.value));
             return select;
         },
     });

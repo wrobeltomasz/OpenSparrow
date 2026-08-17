@@ -8,26 +8,26 @@ import { state, reorderColumns } from '../state.js';
 export function initColumnDnD(th, column, onReorder) {
     th.draggable = true;
 
-    th.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('text/plain', column);
-        e.dataTransfer.effectAllowed = 'move';
+    th.addEventListener('dragstart', event => {
+        event.dataTransfer.setData('text/plain', column);
+        event.dataTransfer.effectAllowed = 'move';
         setTimeout(() => th.classList.add('dragging'), 0);
     });
 
     th.addEventListener('dragend', () => th.classList.remove('dragging'));
 
-    th.addEventListener('dragover', e => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
+    th.addEventListener('dragover', event => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
         th.classList.add('drag-over');
     });
 
     th.addEventListener('dragleave', () => th.classList.remove('drag-over'));
 
-    th.addEventListener('drop', e => {
-        e.preventDefault();
+    th.addEventListener('drop', event => {
+        event.preventDefault();
         th.classList.remove('drag-over');
-        const draggedColumn = e.dataTransfer.getData('text/plain');
+        const draggedColumn = event.dataTransfer.getData('text/plain');
         if (!draggedColumn || draggedColumn === column) return;
 
         const fromIndex = state.displayedColumns.indexOf(draggedColumn);

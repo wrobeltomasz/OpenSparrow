@@ -16,9 +16,9 @@ export async function renderAuditEditor(context) {
 
     let data;
     try {
-        const res = await apiFetch('api.php?action=get_snapshot_setting');
-        data = await res.json();
-    } catch (e) {
+        const response = await apiFetch('api.php?action=get_snapshot_setting');
+        data = await response.json();
+    } catch (error) {
         if (workspaceElement._renderId !== myId) return;
         workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading audit settings. Check server logs.</h3>';
         return;
@@ -46,8 +46,8 @@ export async function renderAuditEditor(context) {
     grid.style.cssText = 'display:grid; gap:10px; margin-bottom:24px;';
 
     const buildCard = (borderColor, titleColor, prefix, title, message) => {
-        const div = document.createElement('div');
-        div.style.cssText = `padding:12px 16px; border-left:4px solid ${borderColor}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;`;
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `padding:12px 16px; border-left:4px solid ${borderColor}; background:white; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:4px;`;
 
         const strong = document.createElement('strong');
         strong.style.cssText = `display:block; margin-bottom:4px; color:${titleColor};`;
@@ -57,8 +57,8 @@ export async function renderAuditEditor(context) {
         span.style.color = 'var(--muted)';
         span.textContent = message;
 
-        div.append(strong, span);
-        return div;
+        wrapper.append(strong, span);
+        return wrapper;
     };
 
     const statusCard = (title, isOk, message) => buildCard(
@@ -141,11 +141,11 @@ export async function renderAuditEditor(context) {
         const newValue = switchInput.checked;
         switchInput.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_snapshot_setting', {
+            const response = await apiFetch('api.php?action=set_snapshot_setting', {
                 method: 'POST',
                 body: JSON.stringify({ enabled: newValue }),
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 enabled = newValue;
                 switchSlider.style.background = newValue ? 'var(--accent)' : 'var(--border)';
@@ -155,7 +155,7 @@ export async function renderAuditEditor(context) {
                 switchInput.checked = !newValue;
                 showStatusPill(pillAnchor, result.error || 'Error saving setting', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             switchInput.checked = !newValue;
             showStatusPill(pillAnchor, 'Request failed', 'error');
         }

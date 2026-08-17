@@ -78,7 +78,7 @@ function buildAvatarModal(currentId, username) {
     });
 
     box.querySelector('.um-close').addEventListener('click', () => closeModal(overlay));
-    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay); });
+    overlay.addEventListener('click', event => { if (event.target === overlay) closeModal(overlay); });
 
     box.querySelector('#umAvatarClear').addEventListener('click', async () => {
         await saveAvatar(overlay, null);
@@ -88,8 +88,8 @@ function buildAvatarModal(currentId, username) {
         await saveAvatar(overlay, selected);
     });
 
-    overlay.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeModal(overlay);
+    overlay.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closeModal(overlay);
     });
 
     overlay.appendChild(box);
@@ -107,8 +107,8 @@ async function saveAvatar(overlay, avatarId) {
         showToast(I18n.t('header.avatar_updated'), 'success');
         closeModal(overlay);
         updateHeaderAvatar(avatarId);
-    } catch (err) {
-        showToast(err.message, 'error');
+    } catch (error) {
+        showToast(error.message, 'error');
         if (saveButton) saveButton.disabled = false;
     }
 }
@@ -162,11 +162,11 @@ function buildPasswordModal() {
 
     box.querySelector('.um-close').addEventListener('click', () => closeModal(overlay));
     box.querySelector('#umPwdCancel').addEventListener('click', () => closeModal(overlay));
-    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(overlay); });
-    overlay.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(overlay); });
+    overlay.addEventListener('click', event => { if (event.target === overlay) closeModal(overlay); });
+    overlay.addEventListener('keydown', event => { if (event.key === 'Escape') closeModal(overlay); });
 
-    form.addEventListener('submit', async e => {
-        e.preventDefault();
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
         errorElement.classList.remove('visible');
 
         const current = form.querySelector('#umPwdCurrent').value;
@@ -191,8 +191,8 @@ function buildPasswordModal() {
             if (!result.ok || !data.ok) throw new Error(data.error ?? I18n.t('auth.error_changing_password'));
             showToast(I18n.t('auth.password_changed'), 'success');
             closeModal(overlay);
-        } catch (err) {
-            errorElement.textContent = err.message;
+        } catch (error) {
+            errorElement.textContent = error.message;
             errorElement.classList.add('visible');
             submit.disabled = false;
         }
@@ -280,8 +280,8 @@ async function openMyRecordsPanel() {
 
         myRecordsPanel.clearStatus();
         renderMyRecords(myRecordsPanel.bodyEl, data.records ?? []);
-    } catch (err) {
-        myRecordsPanel.setStatus(err.message, true);
+    } catch (error) {
+        myRecordsPanel.setStatus(error.message, true);
     }
 }
 
@@ -357,8 +357,8 @@ async function openMyCommentsPanel() {
 
         myCommentsPanel.clearStatus();
         renderMyComments(myCommentsPanel.bodyEl, data.comments ?? []);
-    } catch (err) {
-        myCommentsPanel.setStatus(err.message, true);
+    } catch (error) {
+        myCommentsPanel.setStatus(error.message, true);
     }
 }
 
@@ -375,19 +375,19 @@ function initUserMenu() {
         }
     };
 
-    button.addEventListener('click', e => {
-        e.stopPropagation();
+    button.addEventListener('click', event => {
+        event.stopPropagation();
         toggle(!menu.classList.contains('open'));
     });
 
-    document.addEventListener('click', e => {
-        if (!button.contains(e.target) && !menu.contains(e.target)) {
+    document.addEventListener('click', event => {
+        if (!button.contains(event.target) && !menu.contains(event.target)) {
             toggle(false);
         }
     });
 
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && menu.classList.contains('open')) toggle(false);
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && menu.classList.contains('open')) toggle(false);
     });
 
     document.getElementById('changeAvatarBtn')?.addEventListener('click', () => {

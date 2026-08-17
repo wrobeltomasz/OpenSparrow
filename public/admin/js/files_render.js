@@ -119,7 +119,7 @@ function buildSkeleton() {
                 <input id="f-search" type="search" placeholder="Search by name" class="adm-input flex-1" style="min-width:160px;max-width:300px">
                 <select id="f-type-filter" class="adm-input w-160">
                     <option value="all">All types</option>
-                    ${ALL_TYPES.map(t => `<option value="${t}">${cap(t)}</option>`).join('')}
+                    ${ALL_TYPES.map(typeName => `<option value="${typeName}">${cap(typeName)}</option>`).join('')}
                 </select>
                 <button type="button" id="f-refresh" class="btn btn-success btn-sm">Refresh</button>
             </div>
@@ -155,14 +155,14 @@ function bindEvents(root) {
     root.querySelector('#f-upload-btn').addEventListener('click', uploadFile);
     root.querySelector('#f-add-relation-btn').addEventListener('click', () => addRelationRow());
 
-    root.querySelector('#f-search').addEventListener('input', debounce(e => {
-        _state.search = e.target.value.trim();
+    root.querySelector('#f-search').addEventListener('input', debounce(event => {
+        _state.search = event.target.value.trim();
         _state.page   = 1;
         loadList();
     }, 350));
 
-    root.querySelector('#f-type-filter').addEventListener('change', e => {
-        _state.type = e.target.value;
+    root.querySelector('#f-type-filter').addEventListener('change', event => {
+        _state.type = event.target.value;
         _state.page = 1;
         loadList();
     });
@@ -179,7 +179,7 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     const tables = _state.getTableOptions ? _state.getTableOptions() : [];
 
     let tableOptions = '<option value="">-- Target Table --</option>';
-    tables.forEach(t => tableOptions += `<option value="${escHtml(t.value)}" ${data.table === t.value ? 'selected' : ''}>${escHtml(t.label)}</option>`);
+    tables.forEach(typeName => tableOptions += `<option value="${escHtml(typeName.value)}" ${data.table === typeName.value ? 'selected' : ''}>${escHtml(typeName.label)}</option>`);
 
     row.innerHTML = `
         <div style="flex:1">
@@ -204,9 +204,9 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     const updateColumns = () => {
         col1Select.innerHTML = '<option value="">-- None --</option>';
         col2Select.innerHTML = '<option value="">-- None --</option>';
-        const tbl = tableSelect.value;
-        if (tbl && _state.getColumnOptionsForTable) {
-            const columns = _state.getColumnOptionsForTable(tbl);
+        const tableElement = tableSelect.value;
+        if (tableElement && _state.getColumnOptionsForTable) {
+            const columns = _state.getColumnOptionsForTable(tableElement);
             columns.forEach(column => {
                 col1Select.innerHTML += `<option value="${escHtml(column.value)}" ${data.col1 === column.value ? 'selected' : ''}>${escHtml(column.label)}</option>`;
                 col2Select.innerHTML += `<option value="${escHtml(column.value)}" ${data.col2 === column.value ? 'selected' : ''}>${escHtml(column.label)}</option>`;
@@ -221,7 +221,7 @@ function addRelationRow(data = { table: '', col1: '', col2: '' }) {
     list.appendChild(row);
 }
 
-function fillConfigForm(cfg) {
+function fillConfigForm(config) {
     const maxElement  = document.getElementById('f-max-size');
     const pathElement = document.getElementById('f-storage-path');
     const extensionsElement = document.getElementById('f-allowed-exts');
@@ -229,21 +229,21 @@ function fillConfigForm(cfg) {
 
     if (!maxElement) return;
 
-    maxElement.value  = cfg.max_file_size_mb;
-    pathElement.value = cfg.storage_path;
-    extensionsElement.value = (cfg.allowed_extensions || []).join(', ');
+    maxElement.value  = config.max_file_size_mb;
+    pathElement.value = config.storage_path;
+    extensionsElement.value = (config.allowed_extensions || []).join(', ');
 
-    typesElement.innerHTML = ALL_TYPES.map(t => `
+    typesElement.innerHTML = ALL_TYPES.map(typeName => `
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:normal">
-            <input type="checkbox" value="${t}" ${(cfg.allowed_types || []).includes(t) ? 'checked' : ''}>
-            <span style="font-weight:bold;color:var(--muted)">${TYPE_ICONS[t]}</span> ${cap(t)}
+            <input type="checkbox" value="${typeName}" ${(config.allowed_types || []).includes(typeName) ? 'checked' : ''}>
+            <span style="font-weight:bold;color:var(--muted)">${TYPE_ICONS[typeName]}</span> ${cap(typeName)}
         </label>
     `).join('');
 
     const list = document.getElementById('f-relations-list');
     list.innerHTML = '';
-    const relations = cfg.relations || [];
-    relations.forEach(r => addRelationRow(r));
+    const relations = config.relations || [];
+    relations.forEach(relation => addRelationRow(relation));
 }
 
 async function saveConfig() {
@@ -259,13 +259,13 @@ async function saveConfig() {
             col1: row.querySelector('.rel-col1').value,
             col2: row.querySelector('.rel-col2').value
         };
-    }).filter(r => r.table !== '');
+    }).filter(relation => relation.table !== '');
 
-    const extensionsArray = extensionsElement.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    const extensionsArray = extensionsElement.value.split(',').map(extension => extension.trim()).filter(extension => extension.length > 0);
 
     _state.config.storage_path       = pathElement?.value || 'storage/files/';
     _state.config.max_file_size_mb   = parseInt(maxElement?.value || '20', 10);
-    _state.config.allowed_types      = [...checks].map(c => c.value);
+    _state.config.allowed_types      = [...checks].map(checkbox => checkbox.value);
     _state.config.allowed_extensions = extensionsArray;
     _state.config.relations          = relations;
 
@@ -321,7 +321,7 @@ async function uploadFile() {
         } else {
             showMessage(statusElement, data.error || 'Upload failed', false);
         }
-    } catch (e) {
+    } catch (error) {
         showMessage(statusElement, 'Network error during upload', false);
     }
 }
@@ -356,7 +356,7 @@ async function loadList() {
         renderPager();
         const statusElement = document.getElementById('f-status');
         if (statusElement) statusElement.textContent = `${_state.total} file${_state.total !== 1 ? 's' : ''} found`;
-    } catch (e) {
+    } catch (error) {
         setTbody('<tr><td colspan="8" class="adm-td" style="color:var(--error)">Network error</td></tr>');
     } finally {
         _state.loading = false;
@@ -369,26 +369,26 @@ function renderTable(files) {
         return;
     }
 
-    const rows = files.map(f => `
-        <tr data-uuid="${escHtml(f.uuid)}">
-            <td class="adm-td" style="font-weight:bold;text-align:center;color:var(--muted)">${TYPE_ICONS[f.type] ?? TYPE_ICONS.other}</td>
+    const rows = files.map(fileEntry => `
+        <tr data-uuid="${escHtml(fileEntry.uuid)}">
+            <td class="adm-td" style="font-weight:bold;text-align:center;color:var(--muted)">${TYPE_ICONS[fileEntry.type] ?? TYPE_ICONS.other}</td>
             <td class="adm-td">
-                ${f.type === 'image'
-                    ? `<img src="../file_download.php?uuid=${escHtml(f.uuid)}&thumb=1" alt="" style="height:32px;width:32px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px">`
+                ${fileEntry.type === 'image'
+                    ? `<img src="../file_download.php?uuid=${escHtml(fileEntry.uuid)}&thumb=1" alt="" style="height:32px;width:32px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px">`
                     : ''}
-                <a href="../file_download.php?uuid=${escHtml(f.uuid)}" target="_blank">${escHtml(f.display_name || f.name)}</a>
+                <a href="../file_download.php?uuid=${escHtml(fileEntry.uuid)}" target="_blank">${escHtml(fileEntry.display_name || fileEntry.name)}</a>
             </td>
             <td class="adm-td">
-                <span class="adm-badge adm-badge-muted">${escHtml(f.type)}</span>
+                <span class="adm-badge adm-badge-muted">${escHtml(fileEntry.type)}</span>
             </td>
-            <td class="adm-td" style="white-space:nowrap">${formatBytes(f.size_bytes)}</td>
+            <td class="adm-td" style="white-space:nowrap">${formatBytes(fileEntry.size_bytes)}</td>
             <td class="adm-td">
-                ${f.related_table ? `<span class="adm-badge adm-badge-muted">${escHtml(f.related_table)} #${f.related_id}</span>` : '-'}
+                ${fileEntry.related_table ? `<span class="adm-badge adm-badge-muted">${escHtml(fileEntry.related_table)} #${fileEntry.related_id}</span>` : '-'}
             </td>
-            <td class="adm-td">${escHtml(f.uploaded_by_username || '-')}</td>
-            <td class="adm-td" style="white-space:nowrap">${formatDate(f.created_at)}</td>
+            <td class="adm-td">${escHtml(fileEntry.uploaded_by_username || '-')}</td>
+            <td class="adm-td" style="white-space:nowrap">${formatDate(fileEntry.created_at)}</td>
             <td class="adm-td">
-                <button class="btn btn-danger btn-xs" data-del="${escHtml(f.uuid)}" data-name="${escHtml(f.display_name || f.name)}">Del</button>
+                <button class="btn btn-danger btn-xs" data-del="${escHtml(fileEntry.uuid)}" data-name="${escHtml(fileEntry.display_name || fileEntry.name)}">Del</button>
             </td>
         </tr>
     `).join('');
@@ -426,10 +426,10 @@ function renderPager() {
     if (pages <= 1) { bar.innerHTML = ''; return; }
 
     let html = '';
-    for (let p = 1; p <= pages; p++) {
-        if (p === 1 || p === pages || (p >= page - 2 && p <= page + 2)) {
-            html += `<button data-p="${p}" class="btn btn-xs ${p === page ? 'btn-primary' : 'btn-secondary'}">${p}</button>`;
-        } else if (p === page - 3 || p === page + 3) {
+    for (let pageNumber = 1; pageNumber <= pages; pageNumber++) {
+        if (pageNumber === 1 || pageNumber === pages || (pageNumber >= page - 2 && pageNumber <= page + 2)) {
+            html += `<button data-p="${pageNumber}" class="btn btn-xs ${pageNumber === page ? 'btn-primary' : 'btn-secondary'}">${pageNumber}</button>`;
+        } else if (pageNumber === page - 3 || pageNumber === page + 3) {
             html += `<span style="padding:4px 4px;color:var(--muted)">...</span>`;
         }
     }
@@ -455,12 +455,12 @@ function showMessage(element, text, ok) {
     setTimeout(() => { element.textContent = ''; }, 4000);
 }
 
-function formatBytes(b) {
-    if (!b) return '0 B';
-    const u = ['B', 'KB', 'MB', 'GB'];
-    let i = 0, v = parseInt(b, 10);
-    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
-    return `${v.toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
+function formatBytes(byteCount) {
+    if (!byteCount) return '0 B';
+    const unitLabels = ['B', 'KB', 'MB', 'GB'];
+    let unitIndex = 0, sizeValue = parseInt(byteCount, 10);
+    while (sizeValue >= 1024 && unitIndex < unitLabels.length - 1) { sizeValue /= 1024; unitIndex++; }
+    return `${sizeValue.toFixed(unitIndex === 0 ? 0 : 1)} ${unitLabels[unitIndex]}`;
 }
 
 function formatDate(iso) {
@@ -470,9 +470,9 @@ function formatDate(iso) {
 
 import { escHtml } from '../../assets/js/util/esc.js';
 
-function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function cap(extension) { return extension.charAt(0).toUpperCase() + extension.slice(1); }
 
-function debounce(fn, ms) {
-    let t;
-    return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+function debounce(handler, ms) {
+    let typeName;
+    return (...a) => { clearTimeout(typeName); typeName = setTimeout(() => handler(...a), ms); };
 }

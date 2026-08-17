@@ -96,8 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tipTarget = null;
     }
 
-    sidebar.addEventListener('mouseover', (e) => {
-        const link = e.target.closest('.custom-nav-link');
+    sidebar.addEventListener('mouseover', (event) => {
+        const link = event.target.closest('.custom-nav-link');
         if (link === tipTarget) return;
         tipTarget = link;
         if (link) showNavTip(link);
@@ -107,15 +107,15 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebar.addEventListener('mouseleave', hideNavTip);
     sidebar.addEventListener('click', hideNavTip);
 
-    sidebar.addEventListener('focusin', (e) => {
-        const link = e.target.closest('.custom-nav-link');
+    sidebar.addEventListener('focusin', (event) => {
+        const link = event.target.closest('.custom-nav-link');
         if (link === tipTarget) return;
         tipTarget = link;
         if (link) showNavTip(link);
         else hideNavTip();
     });
 
-    sidebar.addEventListener('focusout', (e) => {
-        if (!sidebar.contains(e.relatedTarget)) hideNavTip();
+    sidebar.addEventListener('focusout', (event) => {
+        if (!sidebar.contains(event.relatedTarget)) hideNavTip();
     });
 });

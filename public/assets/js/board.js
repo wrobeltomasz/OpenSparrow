@@ -16,9 +16,9 @@ async function fetchI18n() {
     } catch (_) {  }
 }
 function t(key, vars = {}) {
-    const v = _i18nBundle[key];
-    if (!v) return key.split('.').pop();
-    return String(v).replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`));
+    const translation = _i18nBundle[key];
+    if (!translation) return key.split('.').pop();
+    return String(translation).replace(/\{(\w+)\}/g, (_, variableName) => (variableName in vars ? String(vars[variableName]) : `{${variableName}}`));
 }
 
 const UNMATCHED = '__unmatched__';
@@ -35,7 +35,7 @@ function cardMatchesSearch(card) {
     const haystack = [
         card.title,
         String(card.id),
-        ...(Array.isArray(card.fields) ? card.fields.map(f => f.value) : [])
+        ...(Array.isArray(card.fields) ? card.fields.map(field => field.value) : [])
     ].join(' ').toLowerCase();
     return haystack.includes(searchTerm);
 }
@@ -130,8 +130,8 @@ async function fetchSchema() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         if (result.ok) appSchema = await result.json();
-    } catch (err) {
-        console.error('Failed to load schema for board', err);
+    } catch (error) {
+        console.error('Failed to load schema for board', error);
     }
 }
 
@@ -143,10 +143,10 @@ async function fetchBoard() {
         });
         if (result.ok) {
             board = await result.json();
-            cards = Array.isArray(board.cards) ? board.cards.map(c => ({ ...c })) : [];
+            cards = Array.isArray(board.cards) ? board.cards.map(cardEntry => ({ ...c })) : [];
         }
-    } catch (err) {
-        console.error('Failed to load board', err);
+    } catch (error) {
+        console.error('Failed to load board', error);
     }
 }
 
@@ -178,21 +178,21 @@ function render() {
         lane.textContent = board.table_label;
         metaElement.appendChild(lane);
         if (board.status_label) {
-            const by = document.createElement('span');
-            by.className = 'board-meta-by';
-            by.textContent = t('board.grouped_by', { column: board.status_label });
-            metaElement.appendChild(by);
+            const ownerSpan = document.createElement('span');
+            ownerSpan.className = 'board-meta-by';
+            ownerSpan.textContent = t('board.grouped_by', { column: board.status_label });
+            metaElement.appendChild(ownerSpan);
         }
     }
 
     const byStatus = {};
-    const laneValues = new Set((board.columns || []).map(l => l.value));
+    const laneValues = new Set((board.columns || []).map(laneEntry => laneEntry.value));
     cards.filter(cardMatchesSearch).forEach(card => {
         const key = laneValues.has(card.status) ? card.status : UNMATCHED;
         (byStatus[key] = byStatus[key] || []).push(card);
     });
 
-    const filterLanes = (board.columns || []).map(l => ({ value: l.value, label: l.label, color: l.color }));
+    const filterLanes = (board.columns || []).map(laneEntry => ({ value: laneEntry.value, label: laneEntry.label, color: laneEntry.color }));
     const hasUnmatched = (byStatus[UNMATCHED] || []).length > 0;
     if (hasUnmatched) {
         filterLanes.push({ value: UNMATCHED, label: t('board.uncategorized'), color: '#8A9199' });
@@ -214,10 +214,10 @@ function render() {
 }
 
 function renderNotice(container, message) {
-    const p = document.createElement('p');
-    p.className = 'board-notice';
-    p.textContent = message;
-    container.appendChild(p);
+    const paragraph = document.createElement('p');
+    paragraph.className = 'board-notice';
+    paragraph.textContent = message;
+    container.appendChild(paragraph);
 }
 
 function buildLane(value, label, color, laneCards, droppable) {
@@ -250,20 +250,20 @@ function buildLane(value, label, color, laneCards, droppable) {
     body.className = 'board-lane-body';
 
     if (canEdit && droppable) {
-        body.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
+        body.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
             lane.classList.add('drag-over');
         });
-        body.addEventListener('dragleave', (e) => {
-            if (!body.contains(e.relatedTarget)) lane.classList.remove('drag-over');
+        body.addEventListener('dragleave', (event) => {
+            if (!body.contains(event.relatedTarget)) lane.classList.remove('drag-over');
         });
-        body.addEventListener('drop', (e) => {
-            e.preventDefault();
+        body.addEventListener('drop', (event) => {
+            event.preventDefault();
             lane.classList.remove('drag-over');
             let payload;
             try {
-                payload = JSON.parse(e.dataTransfer.getData('application/json'));
+                payload = JSON.parse(event.dataTransfer.getData('application/json'));
             } catch {
                 return;
             }
@@ -293,9 +293,9 @@ function buildCard(card, laneColor) {
 
     if (canEdit) {
         element.draggable = true;
-        element.addEventListener('dragstart', (e) => {
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('application/json', JSON.stringify({ id: card.id, status: card.status }));
+        element.addEventListener('dragstart', (event) => {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('application/json', JSON.stringify({ id: card.id, status: card.status }));
             element.classList.add('dragging');
         });
         element.addEventListener('dragend', () => element.classList.remove('dragging'));
@@ -309,11 +309,11 @@ function buildCard(card, laneColor) {
     if (Array.isArray(card.fields) && card.fields.length > 0) {
         const fields = document.createElement('dl');
         fields.className = 'board-card-fields';
-        card.fields.forEach(f => {
+        card.fields.forEach(field => {
             const dt = document.createElement('dt');
-            dt.textContent = f.label;
+            dt.textContent = field.label;
             const dd = document.createElement('dd');
-            dd.textContent = f.value;
+            dd.textContent = field.value;
             fields.appendChild(dt);
             fields.appendChild(dd);
         });
@@ -333,7 +333,7 @@ function buildCard(card, laneColor) {
         const columns = appSchema?.tables?.[board.table]?.columns || {};
         const rows = card.rowData
             ? rowsFromRecord(card.rowData, columns)
-            : (Array.isArray(card.fields) ? card.fields.map(f => ({ label: f.label, value: f.value, color: null })) : []);
+            : (Array.isArray(card.fields) ? card.fields.map(field => ({ label: field.label, value: field.value, color: null })) : []);
         showRecordTooltip(element, { title: card.title, rows });
     });
     element.addEventListener('mouseleave', hideRecordTooltip);
@@ -342,7 +342,7 @@ function buildCard(card, laneColor) {
 }
 
 async function moveCard(id, newStatus, oldStatus) {
-    const card = cards.find(c => String(c.id) === String(id));
+    const card = cards.find(cardEntry => String(cardEntry.id) === String(id));
     if (!card) return;
 
     card.status = newStatus;
@@ -366,9 +366,9 @@ async function moveCard(id, newStatus, oldStatus) {
             render();
             console.error('Failed to move card:', data.error ?? result.status);
         }
-    } catch (err) {
+    } catch (error) {
         card.status = oldStatus;
         render();
-        console.error('Network error during card move:', err);
+        console.error('Network error during card move:', error);
     }
 }

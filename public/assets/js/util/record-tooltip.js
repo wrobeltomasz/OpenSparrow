@@ -33,14 +33,14 @@ export function rowsFromRecord(rowData = {}, columns = {}) {
     for (const key of keys) {
         if (key === 'id') continue;
         if (key.endsWith('__display')) continue;
-        const val = rowData[key + '__display'] ?? rowData[key];
-        if (val === null || val === undefined || val === '') continue;
+        const value = rowData[key + '__display'] ?? rowData[key];
+        if (value === null || value === undefined || value === '') continue;
         const columnConfig = columns[key] || {};
         const label = columnConfig.display_name || key;
         const color = (columnConfig.type || '').toLowerCase() === 'enum'
-            ? (columnConfig.enum_colors?.[String(val)] ?? null)
+            ? (columnConfig.enum_colors?.[String(value)] ?? null)
             : null;
-        rows.push({ label, value: String(val), color });
+        rows.push({ label, value: String(value), color });
     }
     return rows;
 }

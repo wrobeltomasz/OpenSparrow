@@ -21,8 +21,8 @@ function mkStatusElement() {
     return element;
 }
 
-function showStatus(element, msg, ok) {
-    element.textContent = msg;
+function showStatus(element, messageElement, ok) {
+    element.textContent = messageElement;
     element.style.color = ok ? 'var(--ok)' : 'var(--error)';
     element.style.display = '';
 }
@@ -41,14 +41,14 @@ async function saveConfig(partial, statusElement) {
         } else {
             if (statusElement) showStatus(statusElement, 'Error: ' + (data.error || 'unknown'), false);
         }
-    } catch (e) {
-        if (statusElement) showStatus(statusElement, 'Request failed: ' + e.message, false);
+    } catch (error) {
+        if (statusElement) showStatus(statusElement, 'Request failed: ' + error.message, false);
     }
 }
 
 function isDateType(type) {
-    const t = (type || '').toLowerCase();
-    return t === 'date' || t.includes('timestamp') || t === 'datetime';
+    const tableName = (type || '').toLowerCase();
+    return tableName === 'date' || tableName.includes('timestamp') || tableName === 'datetime';
 }
 
 async function getSchema() {
@@ -70,20 +70,20 @@ function buildRulesTab(context) {
         const rules = anonymizationConfig.rules || [];
 
         if (rules.length > 0) {
-            const tbl = document.createElement('table');
-            tbl.className = 'adm-tbl';
-            tbl.style.marginBottom = '20px';
+            const tableElement = document.createElement('table');
+            tableElement.className = 'adm-tbl';
+            tableElement.style.marginBottom = '20px';
 
-            const thead = tbl.createTHead();
-            const hr    = thead.insertRow();
-            ['Table', 'Date Column', 'Older Than', 'PII Column', 'Replacement', ''].forEach(h => {
+            const thead = tableElement.createTHead();
+            const headerRow    = thead.insertRow();
+            ['Table', 'Date Column', 'Older Than', 'PII Column', 'Replacement', ''].forEach(headerLabel => {
                 const th = document.createElement('th');
                 th.className  = 'adm-th';
-                th.textContent = h;
-                hr.appendChild(th);
+                th.textContent = headerLabel;
+                headerRow.appendChild(th);
             });
 
-            const tbody = tbl.createTBody();
+            const tbody = tableElement.createTBody();
             rules.forEach((rule, index) => {
                 const tr = tbody.insertRow();
 
@@ -123,15 +123,15 @@ function buildRulesTab(context) {
                 delButton.addEventListener('click', async () => {
                     if (!confirm('Remove rule for ' + rule.table + '.' + rule.column + '?')) return;
                     anonymizationConfig.rules.splice(index, 1);
-                    const st = mkStatusElement();
-                    await saveConfig({}, st);
+                    const statusPill = mkStatusElement();
+                    await saveConfig({}, statusPill);
                     renderRulesTable();
                 });
                 tdAct.appendChild(delButton);
                 tr.appendChild(tdAct);
             });
 
-            body.appendChild(tbl);
+            body.appendChild(tableElement);
             buildPreviewBlock(body);
         } else {
             const empty = document.createElement('p');
@@ -159,35 +159,35 @@ function buildPreviewBlock(container) {
     hint.textContent = 'Counts how many rows each rule would anonymize — no data is modified.';
     hint.style.cssText = 'margin-left:12px;  ';
 
-    const out = document.createElement('pre');
-    out.style.cssText = 'margin-top:12px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px;  line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
+    const outputElement = document.createElement('pre');
+    outputElement.style.cssText = 'margin-top:12px; padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px;  line-height:1.6; max-height:300px; overflow-y:auto; white-space:pre-wrap; display:none;';
 
     button.addEventListener('click', async () => {
         button.disabled    = true;
         button.textContent = 'Previewing…';
-        out.style.display = '';
-        out.textContent   = 'Please wait…';
-        out.style.color   = '';
+        outputElement.style.display = '';
+        outputElement.textContent   = 'Please wait…';
+        outputElement.style.color   = '';
         try {
             const result  = await apiFetch('api.php?action=preview_anonymization', {
                 method:  'POST',
             });
             const data = await result.json();
             if (data.status === 'success') {
-                out.textContent = data.output || '(no output)';
+                outputElement.textContent = data.output || '(no output)';
             } else {
-                out.textContent = 'Error: ' + (data.error || 'unknown');
-                out.style.color = 'var(--error)';
+                outputElement.textContent = 'Error: ' + (data.error || 'unknown');
+                outputElement.style.color = 'var(--error)';
             }
-        } catch (e) {
-            out.textContent = 'Request failed: ' + e.message;
-            out.style.color = 'var(--error)';
+        } catch (error) {
+            outputElement.textContent = 'Request failed: ' + error.message;
+            outputElement.style.color = 'var(--error)';
         }
         button.disabled    = false;
         button.textContent = 'Preview (dry run)';
     });
 
-    wrap.append(button, hint, out);
+    wrap.append(button, hint, outputElement);
     container.appendChild(wrap);
 }
 
@@ -206,12 +206,12 @@ function buildAddForm(container, tableOptions, onAdded) {
     function mkField(labelText, element, width) {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'display:flex; flex-direction:column; gap:4px;';
-        const lbl = document.createElement('label');
-        lbl.textContent = labelText;
-        lbl.style.cssText = ' ';
+        const labelElement = document.createElement('label');
+        labelElement.textContent = labelText;
+        labelElement.style.cssText = ' ';
         element.className = 'adm-input';
         if (width) element.style.width = width;
-        wrap.append(lbl, element);
+        wrap.append(labelElement, element);
         return wrap;
     }
 
@@ -230,60 +230,60 @@ function buildAddForm(container, tableOptions, onAdded) {
     replInput.placeholder = 'e.g. ***ANONYMIZED***';
 
     tableOptions.forEach(option => {
-        const o = document.createElement('option');
-        o.value = option.value; o.textContent = option.label;
-        tableSelect.appendChild(o);
+        const optionElement = document.createElement('option');
+        optionElement.value = option.value; optionElement.textContent = option.label;
+        tableSelect.appendChild(optionElement);
     });
 
     async function refreshColumns() {
         columnSelect.innerHTML     = '';
         dateColumnSelect.innerHTML = '';
 
-        const tbl = tableSelect.value;
-        if (!tbl) {
-            [columnSelect, dateColumnSelect].forEach(sel => {
-                const o = document.createElement('option');
-                o.value = ''; o.textContent = '-- Select --';
-                sel.appendChild(o);
+        const tableElement = tableSelect.value;
+        if (!tableElement) {
+            [columnSelect, dateColumnSelect].forEach(selectElement => {
+                const optionElement = document.createElement('option');
+                optionElement.value = ''; optionElement.textContent = '-- Select --';
+                selectElement.appendChild(optionElement);
             });
             return;
         }
 
-        const allOptions = window._anonColOptions ? window._anonColOptions(tbl) : [];
+        const allOptions = window._anonColOptions ? window._anonColOptions(tableElement) : [];
         if (allOptions.length === 0) {
-            const o = document.createElement('option');
-            o.value = ''; o.textContent = '-- No columns --';
-            columnSelect.appendChild(o);
+            const optionElement = document.createElement('option');
+            optionElement.value = ''; optionElement.textContent = '-- No columns --';
+            columnSelect.appendChild(optionElement);
         } else {
             allOptions.forEach(option => {
-                const o = document.createElement('option');
-                o.value = option.value; o.textContent = option.label;
-                columnSelect.appendChild(o);
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value; optionElement.textContent = option.label;
+                columnSelect.appendChild(optionElement);
             });
         }
 
         try {
             const schema   = await getSchema();
-            const tDef     = (schema.tables || {})[tbl] || {};
+            const tDef     = (schema.tables || {})[tableElement] || {};
             const dateOptions = Object.entries(tDef.columns || {})
                 .filter(([, def]) => isDateType(def.type))
                 .map(([name, def]) => ({ value: name, label: def.display_name || name }));
 
             if (dateOptions.length === 0) {
-                const o = document.createElement('option');
-                o.value = ''; o.textContent = '-- No date/timestamp columns --';
-                dateColumnSelect.appendChild(o);
+                const optionElement = document.createElement('option');
+                optionElement.value = ''; optionElement.textContent = '-- No date/timestamp columns --';
+                dateColumnSelect.appendChild(optionElement);
             } else {
                 dateOptions.forEach(({ value, label }) => {
-                    const o = document.createElement('option');
-                    o.value = value; o.textContent = label;
-                    dateColumnSelect.appendChild(o);
+                    const optionElement = document.createElement('option');
+                    optionElement.value = value; optionElement.textContent = label;
+                    dateColumnSelect.appendChild(optionElement);
                 });
             }
-        } catch (e) {
-            const o = document.createElement('option');
-            o.value = ''; o.textContent = '-- Error loading --';
-            dateColumnSelect.appendChild(o);
+        } catch (error) {
+            const optionElement = document.createElement('option');
+            optionElement.value = ''; optionElement.textContent = '-- Error loading --';
+            dateColumnSelect.appendChild(optionElement);
         }
     }
 
@@ -295,38 +295,38 @@ function buildAddForm(container, tableOptions, onAdded) {
     addButton.textContent = '+ Add Rule';
     addButton.style.alignSelf = 'flex-end';
 
-    const st = mkStatusElement();
+    const statusPill = mkStatusElement();
 
     addButton.addEventListener('click', async () => {
-        const t    = tableSelect.value.trim();
-        const dc   = dateColumnSelect.value.trim();
+        const tableName    = tableSelect.value.trim();
+        const dateColumnName   = dateColumnSelect.value.trim();
         const days = parseInt(daysInput.value, 10);
-        const c    = columnSelect.value.trim();
-        const r    = replInput.value;
+        const columnName    = columnSelect.value.trim();
+        const replacementValue    = replInput.value;
 
-        if (!t || !dc) {
-            showStatus(st, 'Select a table and a date/timestamp column.', false);
+        if (!tableName || !dateColumnName) {
+            showStatus(statusPill, 'Select a table and a date/timestamp column.', false);
             return;
         }
-        if (!c) {
-            showStatus(st, 'Select a PII column to anonymize.', false);
+        if (!columnName) {
+            showStatus(statusPill, 'Select a PII column to anonymize.', false);
             return;
         }
         if (isNaN(days) || days < 1) {
-            showStatus(st, 'Enter a valid number of days (minimum 1).', false);
+            showStatus(statusPill, 'Enter a valid number of days (minimum 1).', false);
             return;
         }
-        const duplicate = (anonymizationConfig.rules || []).some(x => x.table === t && x.column === c && x.date_column === dc);
+        const duplicate = (anonymizationConfig.rules || []).some(existingRule => existingRule.table === tableName && existingRule.column === columnName && existingRule.date_column === dateColumnName);
         if (duplicate) {
-            showStatus(st, 'A rule for ' + t + '.' + c + ' with that date column already exists.', false);
+            showStatus(statusPill, 'A rule for ' + tableName + '.' + columnName + ' with that date column already exists.', false);
             return;
         }
         anonymizationConfig.rules = anonymizationConfig.rules || [];
-        anonymizationConfig.rules.push({ table: t, date_column: dc, days, column: c, replacement: r });
+        anonymizationConfig.rules.push({ table: tableName, date_column: dateColumnName, days, column: columnName, replacement: replacementValue });
         addButton.disabled = true;
-        await saveConfig({}, st);
+        await saveConfig({}, statusPill);
         addButton.disabled = false;
-        if (st.style.color === 'rgb(43, 147, 72)') {
+        if (statusPill.style.color === 'rgb(43, 147, 72)') {
             replInput.value   = '';
             daysInput.value   = '365';
             tableSelect.value = tableOptions.length > 0 ? tableOptions[0].value : '';
@@ -343,7 +343,7 @@ function buildAddForm(container, tableOptions, onAdded) {
     replWrap.style.cssText += 'flex:1; min-width:140px;';
 
     row.append(tableWrap, dateColumnWrap, daysWrap, columnWrap, replWrap, addButton);
-    formCard.append(row, st);
+    formCard.append(row, statusPill);
     container.appendChild(formCard);
 }
 
@@ -382,11 +382,11 @@ function buildScheduleTab() {
         { value: 'weekly',  label: 'Weekly' },
         { value: 'monthly', label: 'Monthly' },
     ].forEach(({ value, label }) => {
-        const o = document.createElement('option');
-        o.value       = value;
-        o.textContent = label;
-        if (value === anonymizationConfig.frequency) o.selected = true;
-        freqSelect.appendChild(o);
+        const optionElement = document.createElement('option');
+        optionElement.value       = value;
+        optionElement.textContent = label;
+        if (value === anonymizationConfig.frequency) optionElement.selected = true;
+        freqSelect.appendChild(optionElement);
     });
     freqRow.append(freqLabel, freqSelect);
     body.appendChild(freqRow);
@@ -433,8 +433,8 @@ function buildScheduleTab() {
                 output.textContent = 'Error: ' + (data.error || 'unknown');
                 output.style.color = 'var(--error)';
             }
-        } catch (e) {
-            output.textContent = 'Request failed: ' + e.message;
+        } catch (error) {
+            output.textContent = 'Request failed: ' + error.message;
             output.style.color = 'var(--error)';
         }
         runButton.disabled    = false;
@@ -454,18 +454,18 @@ function buildScheduleTab() {
     function guideBlock(heading, code, note) {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:14px; margin-bottom:12px;';
-        const h = document.createElement('strong');
-        h.textContent = heading;
-        h.style.cssText = 'display:block; margin-bottom:8px; ';
-        const pre = document.createElement('pre');
-        pre.style.cssText = 'margin:0 0 6px;  background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
-        pre.textContent = code;
-        wrap.append(h, pre);
+        const headerLabel = document.createElement('strong');
+        headerLabel.textContent = heading;
+        headerLabel.style.cssText = 'display:block; margin-bottom:8px; ';
+        const preElement = document.createElement('pre');
+        preElement.style.cssText = 'margin:0 0 6px;  background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
+        preElement.textContent = code;
+        wrap.append(headerLabel, preElement);
         if (note) {
-            const pn = document.createElement('p');
-            pn.textContent = note;
-            pn.style.cssText = 'margin:6px 0 0;  ';
-            wrap.appendChild(pn);
+            const paragraphNote = document.createElement('p');
+            paragraphNote.textContent = note;
+            paragraphNote.style.cssText = 'margin:6px 0 0;  ';
+            wrap.appendChild(paragraphNote);
         }
         return wrap;
     }
@@ -512,12 +512,12 @@ function buildSuggestionsTab() {
         try {
             const schema  = await getGlobalSchema();
             const tables  = schema?.tables || {};
-            const keywords = (anonymizationConfig.dictionary || []).map(w => w.toLowerCase().trim()).filter(Boolean);
+            const keywords = (anonymizationConfig.dictionary || []).map(word => word.toLowerCase().trim()).filter(Boolean);
 
             if (keywords.length === 0) {
-                const msg = document.createElement('p');
-                msg.textContent = 'Dictionary is empty. Add keywords in the Dictionary tab first.';
-                container.appendChild(msg);
+                const messageElement = document.createElement('p');
+                messageElement.textContent = 'Dictionary is empty. Add keywords in the Dictionary tab first.';
+                container.appendChild(messageElement);
                 return;
             }
 
@@ -528,7 +528,7 @@ function buildSuggestionsTab() {
                 for (const columnName in cols) {
                     const haystack = columnName.toLowerCase();
                     const dispName = (cols[columnName].display_name || '').toLowerCase();
-                    const matched  = keywords.filter(kw => haystack.includes(kw) || dispName.includes(kw));
+                    const matched  = keywords.filter(keyword => haystack.includes(keyword) || dispName.includes(keyword));
                     if (matched.length > 0) {
                         matches.push({ table: tableName, column: columnName, keywords: matched });
                     }
@@ -536,9 +536,9 @@ function buildSuggestionsTab() {
             }
 
             if (matches.length === 0) {
-                const msg = document.createElement('p');
-                msg.textContent = 'No columns matched the current dictionary keywords.';
-                container.appendChild(msg);
+                const messageElement = document.createElement('p');
+                messageElement.textContent = 'No columns matched the current dictionary keywords.';
+                container.appendChild(messageElement);
                 return;
             }
 
@@ -547,17 +547,17 @@ function buildSuggestionsTab() {
             count.style.cssText = '  margin-bottom:12px;';
             container.appendChild(count);
 
-            const tbl   = document.createElement('table');
-            tbl.className = 'adm-tbl';
-            const thead = tbl.createTHead();
-            const hr    = thead.insertRow();
-            ['Table', 'Column', 'Matched Keywords', ''].forEach(h => {
+            const tableElement   = document.createElement('table');
+            tableElement.className = 'adm-tbl';
+            const thead = tableElement.createTHead();
+            const headerRow    = thead.insertRow();
+            ['Table', 'Column', 'Matched Keywords', ''].forEach(headerLabel => {
                 const th = document.createElement('th');
                 th.className   = 'adm-th';
-                th.textContent = h;
-                hr.appendChild(th);
+                th.textContent = headerLabel;
+                headerRow.appendChild(th);
             });
-            const tbody = tbl.createTBody();
+            const tbody = tableElement.createTBody();
 
             matches.forEach(({ table, column, keywords: kws }) => {
                 const tr = tbody.insertRow();
@@ -573,20 +573,20 @@ function buildSuggestionsTab() {
                 tdC.textContent = column;
                 tr.appendChild(tdC);
 
-                const tdK = document.createElement('td');
-                tdK.className  = 'adm-td';
-                tdK.textContent = kws.join(', ');
-                tr.appendChild(tdK);
+                const keywordCell = document.createElement('td');
+                keywordCell.className  = 'adm-td';
+                keywordCell.textContent = kws.join(', ');
+                tr.appendChild(keywordCell);
 
-                const tdA = document.createElement('td');
-                tdA.className = 'adm-td';
+                const actionCell = document.createElement('td');
+                actionCell.className = 'adm-td';
 
-                const alreadyHas = (anonymizationConfig.rules || []).some(r => r.table === table && r.column === column);
+                const alreadyHas = (anonymizationConfig.rules || []).some(replacementValue => replacementValue.table === table && replacementValue.column === column);
                 if (alreadyHas) {
                     const badge = document.createElement('span');
                     badge.textContent = '✓ Rule exists';
                     badge.style.cssText = ' color:var(--ok);';
-                    tdA.appendChild(badge);
+                    actionCell.appendChild(badge);
                 } else {
                     const addButton = document.createElement('button');
                     addButton.textContent = '+ Add Rule';
@@ -598,10 +598,10 @@ function buildSuggestionsTab() {
                         form.style.cssText = 'display:flex; flex-direction:column; gap:5px; padding:4px 0;';
 
                         function fLabel(text) {
-                            const l = document.createElement('label');
-                            l.textContent = text;
-                            l.style.cssText = ' ';
-                            return l;
+                            const labelElement = document.createElement('label');
+                            labelElement.textContent = text;
+                            labelElement.style.cssText = ' ';
+                            return labelElement;
                         }
 
                         const dateColumnSelect = document.createElement('select');
@@ -614,20 +614,20 @@ function buildSuggestionsTab() {
                                 .filter(([, def]) => isDateType(def.type))
                                 .map(([name, def]) => ({ value: name, label: def.display_name || name }));
                             if (dateOptions.length === 0) {
-                                const o = document.createElement('option');
-                                o.value = ''; o.textContent = '-- no date columns --';
-                                dateColumnSelect.appendChild(o);
+                                const optionElement = document.createElement('option');
+                                optionElement.value = ''; optionElement.textContent = '-- no date columns --';
+                                dateColumnSelect.appendChild(optionElement);
                             } else {
                                 dateOptions.forEach(({ value, label }) => {
-                                    const o = document.createElement('option');
-                                    o.value = value; o.textContent = label;
-                                    dateColumnSelect.appendChild(o);
+                                    const optionElement = document.createElement('option');
+                                    optionElement.value = value; optionElement.textContent = label;
+                                    dateColumnSelect.appendChild(optionElement);
                                 });
                             }
-                        } catch (e) {
-                            const o = document.createElement('option');
-                            o.value = ''; o.textContent = '-- error --';
-                            dateColumnSelect.appendChild(o);
+                        } catch (error) {
+                            const optionElement = document.createElement('option');
+                            optionElement.value = ''; optionElement.textContent = '-- error --';
+                            dateColumnSelect.appendChild(optionElement);
                         }
 
                         const daysInp = document.createElement('input');
@@ -661,10 +661,10 @@ function buildSuggestionsTab() {
                         });
 
                         saveButton.addEventListener('click', async () => {
-                            const dc   = dateColumnSelect.value.trim();
+                            const dateColumnName   = dateColumnSelect.value.trim();
                             const days = parseInt(daysInp.value, 10);
                             const repl = replInp.value;
-                            if (!dc) {
+                            if (!dateColumnName) {
                                 formSt.textContent = 'Select a date column.';
                                 formSt.style.color = 'var(--error)';
                                 formSt.style.display = '';
@@ -677,9 +677,9 @@ function buildSuggestionsTab() {
                                 return;
                             }
                             anonymizationConfig.rules = anonymizationConfig.rules || [];
-                            anonymizationConfig.rules.push({ table, date_column: dc, days, column, replacement: repl });
-                            const st = mkStatusElement();
-                            await saveConfig({}, st);
+                            anonymizationConfig.rules.push({ table, date_column: dateColumnName, days, column, replacement: repl });
+                            const statusPill = mkStatusElement();
+                            await saveConfig({}, statusPill);
                             form.remove();
                             addButton.disabled = true;
                             addButton.style.display = '';
@@ -694,19 +694,19 @@ function buildSuggestionsTab() {
                             fLabel('Replacement:'), replInp,
                             formSt, buttonRow
                         );
-                        tdA.appendChild(form);
+                        actionCell.appendChild(form);
                     });
-                    tdA.appendChild(addButton);
+                    actionCell.appendChild(addButton);
                 }
-                tr.appendChild(tdA);
+                tr.appendChild(actionCell);
             });
 
-            container.appendChild(tbl);
-        } catch (e) {
-            const msg = document.createElement('p');
-            msg.textContent = 'Failed to load schema: ' + e.message;
-            msg.style.color = 'var(--error)';
-            container.appendChild(msg);
+            container.appendChild(tableElement);
+        } catch (error) {
+            const messageElement = document.createElement('p');
+            messageElement.textContent = 'Failed to load schema: ' + error.message;
+            messageElement.style.color = 'var(--error)';
+            container.appendChild(messageElement);
         } finally {
             scanButton.disabled    = false;
             scanButton.textContent = 'Scan Schema';
@@ -739,20 +739,20 @@ function buildDictionaryTab() {
     saveButton.className   = 'btn btn-primary';
     saveButton.textContent = 'Save Dictionary';
 
-    const st = mkStatusElement();
+    const statusPill = mkStatusElement();
 
     saveButton.addEventListener('click', async () => {
         const words = textarea.value
             .split(',')
-            .map(w => w.trim())
+            .map(word => word.trim())
             .filter(Boolean);
         saveButton.disabled = true;
-        await saveConfig({ dictionary: words }, st);
+        await saveConfig({ dictionary: words }, statusPill);
         saveButton.disabled = false;
         anonymizationConfig.dictionary = words;
     });
 
-    body.append(textarea, hint, saveButton, st);
+    body.append(textarea, hint, saveButton, statusPill);
 
     const { card: logCard, body: logBody } = mkSection(
         'Log Cleanup',
@@ -804,8 +804,8 @@ function buildDictionaryTab() {
             } else {
                 showStatus(purgeSt, 'Error: ' + (data.error || 'unknown'), false);
             }
-        } catch (e) {
-            showStatus(purgeSt, 'Request failed: ' + e.message, false);
+        } catch (error) {
+            showStatus(purgeSt, 'Request failed: ' + error.message, false);
         }
         purgeButton.disabled    = false;
         purgeButton.textContent = 'Purge Old Logs';
@@ -818,15 +818,15 @@ function buildDictionaryTab() {
     return card;
 }
 
-function buildReportCell(r, tbody, colspan) {
+function buildReportCell(replacementValue, tbody, colspan) {
     const cell = document.createElement('td');
     cell.className = 'adm-td';
 
     let report = null;
-    if (r.report) {
+    if (replacementValue.report) {
         try {
-            report = typeof r.report === 'string' ? JSON.parse(r.report) : r.report;
-        } catch (e) {
+            report = typeof replacementValue.report === 'string' ? JSON.parse(replacementValue.report) : replacementValue.report;
+        } catch (error) {
             report = null;
         }
     }
@@ -854,10 +854,10 @@ function buildReportCell(r, tbody, colspan) {
         detailRow = tbody.insertRow(parentTr.sectionRowIndex + 1);
         viewButton.textContent = 'Hide';
 
-        const dtd = detailRow.insertCell();
-        dtd.className   = 'adm-td';
-        dtd.colSpan     = colspan;
-        dtd.style.cssText = 'background:var(--bg); padding:12px;';
+        const detailCell = detailRow.insertCell();
+        detailCell.className   = 'adm-td';
+        detailCell.colSpan     = colspan;
+        detailCell.style.cssText = 'background:var(--bg); padding:12px;';
 
         const bar = document.createElement('div');
         bar.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:8px; flex-wrap:wrap;';
@@ -872,22 +872,22 @@ function buildReportCell(r, tbody, colspan) {
         dlButton.addEventListener('click', () => {
             const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
             const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href     = url;
-            a.download = (report.report_id || 'anonymization-report') + '.json';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
+            const downloadLink    = document.createElement('a');
+            downloadLink.href     = url;
+            downloadLink.download = (report.report_id || 'anonymization-report') + '.json';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
             URL.revokeObjectURL(url);
         });
 
         bar.append(idLabel, dlButton);
 
-        const pre = document.createElement('pre');
-        pre.style.cssText = 'margin:0; padding:12px; background:#fff; border:1px solid var(--border); border-radius:4px;  line-height:1.5; max-height:360px; overflow:auto; white-space:pre-wrap;';
-        pre.textContent = JSON.stringify(report, null, 2);
+        const preElement = document.createElement('pre');
+        preElement.style.cssText = 'margin:0; padding:12px; background:#fff; border:1px solid var(--border); border-radius:4px;  line-height:1.5; max-height:360px; overflow:auto; white-space:pre-wrap;';
+        preElement.textContent = JSON.stringify(report, null, 2);
 
-        dtd.append(bar, pre);
+        detailCell.append(bar, preElement);
     });
 
     cell.appendChild(viewButton);
@@ -927,28 +927,28 @@ function buildHistorySection() {
                 return;
             }
             const headers = ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Rules', 'Rows Anonymized', 'Report', 'Error'];
-            const tbl = mkTable();
-            mkThead(tbl, headers);
-            const tbody = tbl.createTBody();
-            data.rows.forEach(r => {
+            const tableElement = mkTable();
+            mkThead(tableElement, headers);
+            const tbody = tableElement.createTBody();
+            data.rows.forEach(replacementValue => {
                 const tr = tbody.insertRow();
-                const tdSt = tdStatus(r.status);
+                const tdSt = tdStatus(replacementValue.status);
 
                 tr.append(
-                    td(r.id),
+                    td(replacementValue.id),
                     tdSt,
-                    td(r.triggered_by),
-                    td(r.started_at ? r.started_at.replace('T', ' ').substring(0, 19) : ''),
-                    td(r.duration_sec !== null && r.duration_sec !== undefined ? Number(r.duration_sec).toFixed(2) + 's' : '—'),
-                    td(r.rules_processed),
-                    td(r.rows_anonymized),
-                    buildReportCell(r, tbody, headers.length),
-                    td(r.error_message, 'color:var(--error); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')
+                    td(replacementValue.triggered_by),
+                    td(replacementValue.started_at ? replacementValue.started_at.replace('T', ' ').substring(0, 19) : ''),
+                    td(replacementValue.duration_sec !== null && replacementValue.duration_sec !== undefined ? Number(replacementValue.duration_sec).toFixed(2) + 's' : '—'),
+                    td(replacementValue.rules_processed),
+                    td(replacementValue.rows_anonymized),
+                    buildReportCell(replacementValue, tbody, headers.length),
+                    td(replacementValue.error_message, 'color:var(--error); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;')
                 );
             });
-            container.appendChild(tbl);
-        } catch (e) {
-            container.textContent = 'Request failed: ' + e.message;
+            container.appendChild(tableElement);
+        } catch (error) {
+            container.textContent = 'Request failed: ' + error.message;
         }
         loadButton.disabled    = false;
         loadButton.textContent = 'Refresh';
@@ -975,8 +975,8 @@ export async function renderAnonymizationPage(context) {
         }
         anonymizationConfig  = data.config;
         anonymizationVersion = data.version ?? 0;
-    } catch (e) {
-        workspaceElement.innerHTML = '<p style="color:var(--error);padding:20px;">Request failed: ' + escHtml(e.message) + '</p>';
+    } catch (error) {
+        workspaceElement.innerHTML = '<p style="color:var(--error);padding:20px;">Request failed: ' + escHtml(error.message) + '</p>';
         return;
     }
 

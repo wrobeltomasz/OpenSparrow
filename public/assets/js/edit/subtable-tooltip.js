@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let columns = {};
         try {
             columns = JSON.parse(table.dataset.columns || '{}');
-        } catch (e) {
+        } catch (error) {
             return;
         }
 
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let row = null;
             try {
                 row = JSON.parse(tr.dataset.row);
-            } catch (e) {
+            } catch (error) {
                 return;
             }
 

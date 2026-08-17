@@ -45,7 +45,7 @@ function renderColumnsPanel(panel, currentConfig) {
             const tables = (schema && schema.tables) || {};
             const tableNames = Object.keys(tables)
                 .filter((t) => !tables[t].hidden)
-                .sort((a, b) => (tables[a].display_name || a).localeCompare(tables[b].display_name || b));
+                .sort((left, right) => (tables[left].display_name || left).localeCompare(tables[right].display_name || right));
 
             panel.innerHTML = '';
 
@@ -95,21 +95,21 @@ function buildTableBlock(tableName, tableConfig, currentConfig) {
     const cols = Object.keys(tableConfig.columns || {})
         .filter((c) => (tableConfig.columns[c].type || '') !== 'virtual');
 
-    const grp = document.createElement('div');
-    grp.className = 'form-group';
+    const group = document.createElement('div');
+    group.className = 'form-group';
     const label = document.createElement('label');
     label.textContent = 'Label columns';
-    grp.appendChild(label);
-    grp.appendChild(createColumnMultiSelect(
+    group.appendChild(label);
+    group.appendChild(createColumnMultiSelect(
         cols.map((c) => ({ value: c, label: tableConfig.columns[c].display_name || c })),
         currentConfig.columns[tableName] || [],
-        (val) => {
-            if (val.length) currentConfig.columns[tableName] = val;
+        (value) => {
+            if (value.length) currentConfig.columns[tableName] = value;
             else delete currentConfig.columns[tableName];
             markDirty();
         }
     ));
-    bodyDiv.appendChild(grp);
+    bodyDiv.appendChild(group);
 
     block.appendChild(bodyDiv);
     return block;
@@ -128,24 +128,24 @@ function createColumnMultiSelect(options, selectedValues, onChange) {
     }
 
     options.forEach((option) => {
-        const lbl = document.createElement('label');
-        lbl.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
+        const labelElement = document.createElement('label');
+        labelElement.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
 
-        const chk = document.createElement('input');
-        chk.type = 'checkbox';
-        chk.value = option.value;
-        chk.checked = selected.includes(option.value);
-        chk.style.marginRight = '8px';
-        chk.addEventListener('change', () => {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = option.value;
+        checkbox.checked = selected.includes(option.value);
+        checkbox.style.marginRight = '8px';
+        checkbox.addEventListener('change', () => {
             const index = selected.indexOf(option.value);
-            if (chk.checked && index === -1) selected.push(option.value);
-            else if (!chk.checked && index !== -1) selected.splice(index, 1);
+            if (checkbox.checked && index === -1) selected.push(option.value);
+            else if (!checkbox.checked && index !== -1) selected.splice(index, 1);
             onChange([...selected]);
         });
 
-        lbl.appendChild(chk);
-        lbl.appendChild(document.createTextNode(option.label));
-        container.appendChild(lbl);
+        labelElement.appendChild(checkbox);
+        labelElement.appendChild(document.createTextNode(option.label));
+        container.appendChild(labelElement);
     });
 
     return container;
@@ -155,31 +155,31 @@ function renderSettingsPanel(panel, context) {
     const { currentConfig } = context;
     panel.style.cssText = 'padding-top:16px; max-width:420px;';
 
-    const grp = document.createElement('div');
-    grp.className = 'form-group';
+    const group = document.createElement('div');
+    group.className = 'form-group';
 
     const label = document.createElement('label');
     label.textContent = 'Recent records limit per table (0 = unlimited)';
-    grp.appendChild(label);
+    group.appendChild(label);
 
     const input = document.createElement('input');
     input.type = 'number';
     input.min = '0';
     input.value = String(currentConfig.limit ?? 20);
     input.addEventListener('input', () => {
-        const n = parseInt(input.value, 10);
-        currentConfig.limit = Number.isFinite(n) && n >= 0 ? n : 0;
+        const parsedLimit = parseInt(input.value, 10);
+        currentConfig.limit = Number.isFinite(parsedLimit) && parsedLimit >= 0 ? parsedLimit : 0;
         markDirty();
     });
-    grp.appendChild(input);
+    group.appendChild(input);
 
     const help = document.createElement('span');
     help.className = 'help-text';
     help.textContent = 'In the "My records" panel, only this many most-recently-assigned records '
         + 'are shown per table (ordered by assignment date). Set to 0 to show all.';
-    grp.appendChild(help);
+    group.appendChild(help);
 
-    panel.appendChild(grp);
+    panel.appendChild(group);
 
     const dangerGroup = document.createElement('div');
     dangerGroup.className = 'form-group';

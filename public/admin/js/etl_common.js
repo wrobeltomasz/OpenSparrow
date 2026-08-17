@@ -19,20 +19,20 @@ export function showStatus(element, message, ok) {
 }
 
 export function fg(label, node) {
-    const g = document.createElement('div');
-    g.className = 'form-group';
-    const l = document.createElement('label');
-    l.textContent = label;
-    g.append(l, node);
-    return g;
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    const labelElement = document.createElement('label');
+    labelElement.textContent = label;
+    group.append(labelElement, node);
+    return group;
 }
 
 export function input(value, type = 'text') {
-    const i = document.createElement('input');
-    i.type = type;
-    i.className = 'adm-input';
-    i.value = value ?? '';
-    return i;
+    const inputElement = document.createElement('input');
+    inputElement.type = type;
+    inputElement.className = 'adm-input';
+    inputElement.value = value ?? '';
+    return inputElement;
 }
 
 export function checkbox(labelText, checked, onChange) {
@@ -40,18 +40,18 @@ export function checkbox(labelText, checked, onChange) {
     box.className = 'adm-check';
     box.checked = checked;
     box.onchange = () => onChange(box.checked);
-    const lbl = document.createElement('label');
-    lbl.style.cssText = 'display:flex; align-items:center; gap:8px;';
-    lbl.append(box, document.createTextNode(labelText));
-    return { input: box, label: lbl };
+    const labelElement = document.createElement('label');
+    labelElement.style.cssText = 'display:flex; align-items:center; gap:8px;';
+    labelElement.append(box, document.createTextNode(labelText));
+    return { input: box, label: labelElement };
 }
 
 export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onDelete, confirmMsg: confirmMessage }) {
     const card = document.createElement('div');
     card.className = 'column-block collapsed';
 
-    const hdr = document.createElement('div');
-    hdr.className = 'block-header';
+    const headerElement = document.createElement('div');
+    headerElement.className = 'block-header';
     const chevron = document.createElement('span');
     chevron.className = 'block-chevron';
     chevron.textContent = '▶';
@@ -59,22 +59,22 @@ export function buildCollapsibleCard({ titleText, placeholder = '(unnamed)', onD
     title.className = 'block-title';
     title.textContent = titleText || placeholder;
 
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'icon-btn icon-btn-danger';
-    del.title = 'Delete';
-    del.textContent = '✕';
-    del.onclick = (e) => {
-        e.stopPropagation();
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'icon-btn icon-btn-danger';
+    deleteButton.title = 'Delete';
+    deleteButton.textContent = '✕';
+    deleteButton.onclick = (event) => {
+        event.stopPropagation();
         if (confirmMessage && !confirm(confirmMessage)) return;
         onDelete();
     };
-    hdr.append(chevron, title, del);
-    hdr.onclick = (e) => { if (!e.target.closest('button')) card.classList.toggle('collapsed'); };
+    headerElement.append(chevron, title, deleteButton);
+    headerElement.onclick = (event) => { if (!event.target.closest('button')) card.classList.toggle('collapsed'); };
 
     const body = document.createElement('div');
     body.className = 'block-body';
-    card.append(hdr, body);
+    card.append(headerElement, body);
     return { card, body, title };
 }
 
@@ -86,9 +86,9 @@ export function buildHistoryTable(headers, rows, rowFn) {
     const errorCell  = tdError;
 
     const tbody = table.createTBody();
-    rows.forEach(r => {
+    rows.forEach(rowEntry => {
         const tr = tbody.insertRow();
-        rowFn(r, { td, statusCell, errorCell }).forEach(cell => tr.appendChild(cell));
+        rowFn(rowEntry, { td, statusCell, errorCell }).forEach(cell => tr.appendChild(cell));
     });
 
     const wrap = document.createElement('div');

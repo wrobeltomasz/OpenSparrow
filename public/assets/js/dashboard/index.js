@@ -107,8 +107,8 @@ async function initDashboard() {
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         globalConfig = await response.json();
-    } catch (e) {
-        console.error('Error fetching initial dashboard config', e);
+    } catch (error) {
+        console.error('Error fetching initial dashboard config', error);
         container.replaceChildren();
         const message = document.createElement('p');
         message.className = 'dash-error';
@@ -147,10 +147,10 @@ async function loadDashboardData(container, dateFilter, targetWidget) {
     } catch (error) {
         console.error('Error loading dashboard:', error);
         container.replaceChildren();
-        const err = document.createElement('p');
-        err.className = 'dash-error';
-        err.textContent = I18n.t('dashboard.error_load');
-        container.appendChild(err);
+        const errorParagraph = document.createElement('p');
+        errorParagraph.className = 'dash-error';
+        errorParagraph.textContent = I18n.t('dashboard.error_load');
+        container.appendChild(errorParagraph);
     }
 }
 
@@ -159,10 +159,10 @@ function renderWidgets(container, config) {
     updateClearButton();
 
     if (!config?.widgets?.length) {
-        const p = document.createElement('p');
-        p.style.gridColumn = '1/-1';
-        p.textContent = I18n.t('dashboard.no_widgets');
-        container.appendChild(p);
+        const paragraph = document.createElement('p');
+        paragraph.style.gridColumn = '1/-1';
+        paragraph.textContent = I18n.t('dashboard.no_widgets');
+        container.appendChild(paragraph);
         return;
     }
 

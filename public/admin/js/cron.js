@@ -9,11 +9,11 @@ import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdEl, buildSect
 import { escHtml } from '../../assets/js/util/esc.js';
 
 function statusBadge(status) {
-    const cls = { success: 'ok', error: 'danger', running: 'warn' }[status] ?? 'muted';
-    const b = document.createElement('span');
-    b.className = `adm-badge adm-badge-${cls}`;
-    b.textContent = status.toUpperCase();
-    return b;
+    const cssClass = { success: 'ok', error: 'danger', running: 'warn' }[status] ?? 'muted';
+    const badgeSpan = document.createElement('span');
+    badgeSpan.className = `adm-badge adm-badge-${cssClass}`;
+    badgeSpan.textContent = status.toUpperCase();
+    return badgeSpan;
 }
 
 function cronMakeSection(id, title, description) {
@@ -38,18 +38,18 @@ function buildManualRunSection() {
         output.style.color = '';
 
         try {
-            const res = await apiFetch('api.php?action=run_cron_notifications', {
+            const response = await apiFetch('api.php?action=run_cron_notifications', {
                 method: 'POST',
             });
-            const data = await res.json();
+            const data = await response.json();
             if (data.status === 'success') {
                 output.innerHTML = data.output || '(no output)';
             } else {
                 output.textContent = 'Error: ' + (data.error || 'unknown');
                 output.style.color = 'var(--error)';
             }
-        } catch (e) {
-            output.textContent = 'Request failed: ' + e.message;
+        } catch (error) {
+            output.textContent = 'Request failed: ' + error.message;
             output.style.color = 'var(--error)';
         }
 
@@ -77,8 +77,8 @@ function buildRunHistorySection() {
         container.textContent = '';
 
         try {
-            const res = await apiFetch('api.php?action=cron_log');
-            const data = await res.json();
+            const response = await apiFetch('api.php?action=cron_log');
+            const data = await response.json();
 
             if (data.status !== 'success') {
                 container.textContent = 'Error: ' + (data.error || 'unknown');
@@ -90,27 +90,27 @@ function buildRunHistorySection() {
                 return;
             }
 
-            const t = mkTable();
-            mkThead(t, ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Sources', 'Notifications', 'Error']);
+            const tableElement = mkTable();
+            mkThead(tableElement, ['#', 'Status', 'Triggered By', 'Started At', 'Duration', 'Sources', 'Notifications', 'Error']);
 
-            const tbody = t.createTBody();
-            data.rows.forEach(r => {
+            const tbody = tableElement.createTBody();
+            data.rows.forEach(logRow => {
                 const tr = tbody.insertRow();
-                tr.appendChild(td(r.id));
-                tr.appendChild(tdEl(statusBadge(r.status)));
-                tr.appendChild(td(r.triggered_by));
-                tr.appendChild(td(r.started_at ? r.started_at.replace('T', ' ').substring(0, 19) : ''));
-                const dur = r.duration_sec !== null ? Number(r.duration_sec).toFixed(2) + 's' : '—';
-                tr.appendChild(td(dur));
-                tr.appendChild(td(r.sources_processed));
-                tr.appendChild(td(r.notifications_created));
-                tr.appendChild(td(r.error_message, 'color:var(--error); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
+                tr.appendChild(td(logRow.id));
+                tr.appendChild(tdEl(statusBadge(logRow.status)));
+                tr.appendChild(td(logRow.triggered_by));
+                tr.appendChild(td(logRow.started_at ? logRow.started_at.replace('T', ' ').substring(0, 19) : ''));
+                const duration = logRow.duration_sec !== null ? Number(logRow.duration_sec).toFixed(2) + 's' : '—';
+                tr.appendChild(td(duration));
+                tr.appendChild(td(logRow.sources_processed));
+                tr.appendChild(td(logRow.notifications_created));
+                tr.appendChild(td(logRow.error_message, 'color:var(--error); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
             });
 
             container.innerHTML = '';
-            container.appendChild(t);
-        } catch (e) {
-            container.textContent = 'Request failed: ' + e.message;
+            container.appendChild(tableElement);
+        } catch (error) {
+            container.textContent = 'Request failed: ' + error.message;
         }
 
         loadButton.disabled = false;
@@ -137,37 +137,37 @@ function buildStatisticsSection() {
         container.textContent = '';
 
         try {
-            const res = await apiFetch('api.php?action=cron_stats');
-            const data = await res.json();
+            const response = await apiFetch('api.php?action=cron_stats');
+            const data = await response.json();
 
             if (data.status !== 'success') {
                 container.textContent = 'Error: ' + (data.error || 'unknown');
                 return;
             }
 
-            const t = data.totals || {};
+            const tableElement = data.totals || {};
             const lastRun = data.last_run;
 
             const kpiGrid = document.createElement('div');
             kpiGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:18px;';
 
             const kpis = [
-                ['Total Notifications', t.total ?? '—', 'var(--muted)'],
-                ['Unread',              t.unread ?? '—', 'var(--error)'],
-                ['Due Today (unread)',  t.due_today ?? '—', 'var(--warn)'],
-                ['Upcoming Unread',     t.upcoming_unread ?? '—', 'var(--muted)'],
+                ['Total Notifications', tableElement.total ?? '—', 'var(--muted)'],
+                ['Unread',              tableElement.unread ?? '—', 'var(--error)'],
+                ['Due Today (unread)',  tableElement.due_today ?? '—', 'var(--warn)'],
+                ['Upcoming Unread',     tableElement.upcoming_unread ?? '—', 'var(--muted)'],
             ];
-            kpis.forEach(([label, val, color]) => {
-                const kpi = document.createElement('div');
-                kpi.style.cssText = `padding:14px 16px; border-left:4px solid ${color}; background:#fff; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.07);`;
+            kpis.forEach(([label, value, color]) => {
+                const kpiElement = document.createElement('div');
+                kpiElement.style.cssText = `padding:14px 16px; border-left:4px solid ${color}; background:#fff; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.07);`;
                 const number = document.createElement('div');
-                number.textContent = val;
+                number.textContent = value;
                 number.style.cssText = ` font-weight:700; color:${color};`;
-                const lbl = document.createElement('div');
-                lbl.textContent = label;
-                lbl.style.cssText = '  margin-top:2px;';
-                kpi.append(number, lbl);
-                kpiGrid.appendChild(kpi);
+                const labelElement = document.createElement('div');
+                labelElement.textContent = label;
+                labelElement.style.cssText = '  margin-top:2px;';
+                kpiElement.append(number, labelElement);
+                kpiGrid.appendChild(kpiElement);
             });
             container.appendChild(kpiGrid);
 
@@ -190,20 +190,20 @@ function buildStatisticsSection() {
                 const table = mkTable();
                 mkThead(table, ['Username', 'Email', 'Unread Count']);
                 const tbody = table.createTBody();
-                data.per_user.forEach(r => {
+                data.per_user.forEach(logRow => {
                     const tr = tbody.insertRow();
-                    tr.appendChild(td(r.username));
-                    tr.appendChild(td(r.email));
-                    tr.appendChild(td(r.unread_count));
+                    tr.appendChild(td(logRow.username));
+                    tr.appendChild(td(logRow.email));
+                    tr.appendChild(td(logRow.unread_count));
                 });
                 container.appendChild(table);
             } else {
-                const p = document.createElement('p');
-                p.textContent = 'No unread notifications found.';
-                container.appendChild(p);
+                const paragraph = document.createElement('p');
+                paragraph.textContent = 'No unread notifications found.';
+                container.appendChild(paragraph);
             }
-        } catch (e) {
-            container.textContent = 'Request failed: ' + e.message;
+        } catch (error) {
+            container.textContent = 'Request failed: ' + error.message;
         }
 
         loadButton.disabled = false;
@@ -226,21 +226,21 @@ function buildSetupSection() {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:14px;';
 
-        const h = document.createElement('strong');
-        h.textContent = heading;
-        h.style.cssText = 'display:block; margin-bottom:8px; ';
+        const headingElement = document.createElement('strong');
+        headingElement.textContent = heading;
+        headingElement.style.cssText = 'display:block; margin-bottom:8px; ';
 
-        const pre = document.createElement('pre');
-        pre.style.cssText = 'margin:0 0 6px;  background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
-        pre.textContent = code;
+        const preElement = document.createElement('pre');
+        preElement.style.cssText = 'margin:0 0 6px;  background:var(--accent-dark); color:var(--accent-light); padding:10px 12px; border-radius:4px; overflow-x:auto; white-space:pre-wrap;';
+        preElement.textContent = code;
 
-        wrap.append(h, pre);
+        wrap.append(headingElement, preElement);
 
         if (note) {
-            const p = document.createElement('p');
-            p.textContent = note;
-            p.style.cssText = 'margin:6px 0 0;  ';
-            wrap.appendChild(p);
+            const paragraph = document.createElement('p');
+            paragraph.textContent = note;
+            paragraph.style.cssText = 'margin:6px 0 0;  ';
+            wrap.appendChild(paragraph);
         }
 
         return wrap;
@@ -322,11 +322,11 @@ function buildCleanupSection() {
         result.style.display = 'none';
 
         try {
-            const res = await apiFetch('api.php?action=cron_purge_log', {
+            const response = await apiFetch('api.php?action=cron_purge_log', {
                 method: 'POST',
                 body: JSON.stringify({ days })
             });
-            const data = await res.json();
+            const data = await response.json();
             if (data.status === 'success') {
                 result.textContent = `Deleted ${data.deleted} log row(s).`;
                 result.style.color = 'var(--ok)';
@@ -334,8 +334,8 @@ function buildCleanupSection() {
                 result.textContent = 'Error: ' + (data.error || 'unknown');
                 result.style.color = 'var(--error)';
             }
-        } catch (e) {
-            result.textContent = 'Request failed: ' + e.message;
+        } catch (error) {
+            result.textContent = 'Request failed: ' + error.message;
             result.style.color = 'var(--error)';
         }
 
@@ -352,11 +352,11 @@ function buildCleanupSection() {
 function cronField(labelText, inputElement) {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'margin-bottom:14px;';
-    const lbl = document.createElement('label');
-    lbl.textContent = labelText;
-    lbl.className = 'adm-field-label';
-    if (inputElement.id) lbl.htmlFor = inputElement.id;
-    wrap.append(lbl, inputElement);
+    const labelElement = document.createElement('label');
+    labelElement.textContent = labelText;
+    labelElement.className = 'adm-field-label';
+    if (inputElement.id) labelElement.htmlFor = inputElement.id;
+    wrap.append(labelElement, inputElement);
     return wrap;
 }
 
@@ -409,9 +409,9 @@ function buildEmailSection() {
     const encSelect = document.createElement('select');
     encSelect.id = 'cron-smtp-encryption';
     encSelect.className = 'adm-input w-full';
-    [['tls', 'STARTTLS (587)'], ['ssl', 'SSL/TLS (465)'], ['none', 'None']].forEach(([val, text]) => {
+    [['tls', 'STARTTLS (587)'], ['ssl', 'SSL/TLS (465)'], ['none', 'None']].forEach(([value, text]) => {
         const option = document.createElement('option');
-        option.value = val;
+        option.value = value;
         option.textContent = text;
         encSelect.appendChild(option);
     });
@@ -485,8 +485,8 @@ function buildEmailSection() {
 
     async function load() {
         try {
-            const res = await apiFetch('api.php?action=get_automation_email_setting');
-            const data = await res.json();
+            const response = await apiFetch('api.php?action=get_automation_email_setting');
+            const data = await response.json();
             fromInput.value = data.from || '';
             if (data.locked_by_env) {
                 fromInput.disabled = true;
@@ -498,8 +498,8 @@ function buildEmailSection() {
             encSelect.value = data.smtp_encryption || 'tls';
             userInput.value = data.smtp_username || '';
             renderPassStatus(!!data.smtp_password_configured);
-        } catch (e) {
-            result.textContent = 'Request failed: ' + e.message;
+        } catch (error) {
+            result.textContent = 'Request failed: ' + error.message;
             result.style.color = 'var(--error)';
             result.style.display = '';
         }
@@ -528,11 +528,11 @@ function buildEmailSection() {
         result.style.display = 'none';
 
         try {
-            const res = await apiFetch('api.php?action=set_automation_email_setting', {
+            const response = await apiFetch('api.php?action=set_automation_email_setting', {
                 method: 'POST',
                 body: JSON.stringify(buildPayload())
             });
-            const data = await res.json();
+            const data = await response.json();
             if (data.status === 'success') {
                 result.textContent = 'Saved.';
                 result.style.color = 'var(--ok)';
@@ -543,8 +543,8 @@ function buildEmailSection() {
                 result.textContent = 'Error: ' + (data.error || 'unknown');
                 result.style.color = 'var(--error)';
             }
-        } catch (e) {
-            result.textContent = 'Request failed: ' + e.message;
+        } catch (error) {
+            result.textContent = 'Request failed: ' + error.message;
             result.style.color = 'var(--error)';
         }
 
@@ -559,7 +559,7 @@ function buildEmailSection() {
         result.style.display = 'none';
 
         try {
-            const res = await apiFetch('api.php?action=test_smtp_connection', {
+            const response = await apiFetch('api.php?action=test_smtp_connection', {
                 method: 'POST',
                 body: JSON.stringify({
                     smtp_host: hostInput.value.trim(),
@@ -569,7 +569,7 @@ function buildEmailSection() {
                     smtp_password: passInput.value,
                 })
             });
-            const data = await res.json();
+            const data = await response.json();
             if (data.status === 'success') {
                 result.textContent = 'Connection successful.';
                 result.style.color = 'var(--ok)';
@@ -577,8 +577,8 @@ function buildEmailSection() {
                 result.textContent = 'Error: ' + (data.error || 'unknown');
                 result.style.color = 'var(--error)';
             }
-        } catch (e) {
-            result.textContent = 'Request failed: ' + e.message;
+        } catch (error) {
+            result.textContent = 'Request failed: ' + error.message;
             result.style.color = 'var(--error)';
         }
 

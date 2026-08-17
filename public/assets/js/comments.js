@@ -88,10 +88,10 @@ function buildMessage(c) {
 }
 
 function buildEmptyState() {
-    const p = document.createElement('p');
-    p.className = 'c-empty';
-    p.textContent = I18n.t('comments.none');
-    return p;
+    const paragraph = document.createElement('p');
+    paragraph.className = 'c-empty';
+    paragraph.textContent = I18n.t('comments.none');
+    return paragraph;
 }
 
 async function fetchComments() {
@@ -163,9 +163,9 @@ function renderComments(thread, comments) {
 
     let appended = false;
     for (const c of comments) {
-        const cid = String(c.id);
-        if (!knownIds.has(cid)) {
-            knownIds.add(cid);
+        const commentId = String(c.id);
+        if (!knownIds.has(commentId)) {
+            knownIds.add(commentId);
             thread.appendChild(buildMessage(c));
             appended = true;
         }
@@ -228,9 +228,9 @@ async function init() {
         function wrapSelection(before, after) {
             const start = textarea.selectionStart;
             const end   = textarea.selectionEnd;
-            const sel   = textarea.value.slice(start, end);
+            const selectElement   = textarea.value.slice(start, end);
             textarea.value =
-                textarea.value.slice(0, start) + before + sel + after + textarea.value.slice(end);
+                textarea.value.slice(0, start) + before + selectElement + after + textarea.value.slice(end);
             textarea.selectionStart = start + before.length;
             textarea.selectionEnd   = end + before.length;
             textarea.focus();
@@ -239,9 +239,9 @@ async function init() {
         boldButton.addEventListener('click', () => wrapSelection('**', '**'));
         italicButton.addEventListener('click', () => wrapSelection('*', '*'));
 
-        textarea.addEventListener('keydown', e => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
+        textarea.addEventListener('keydown', event => {
+            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                event.preventDefault();
                 sendButton.click();
             }
         });
@@ -260,8 +260,8 @@ async function init() {
                 knownIds.add(String(comment.id));
                 thread.appendChild(buildMessage(comment));
                 thread.scrollTop = thread.scrollHeight;
-            } catch (err) {
-                alert(err.message);
+            } catch (error) {
+                alert(error.message);
             } finally {
                 sendButton.disabled = false;
                 textarea.focus();
@@ -271,7 +271,7 @@ async function init() {
 
     fetchComments()
         .then(comments => renderComments(thread, comments))
-        .catch(err => console.error('Comments load failed:', err));
+        .catch(error => console.error('Comments load failed:', error));
 
     let pollTimer = null;
 

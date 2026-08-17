@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 export function escHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, m => ({
+    return String(value ?? '').replace(/[&<>"']/g, matchedCharacter => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
+    }[matchedCharacter]));
 }

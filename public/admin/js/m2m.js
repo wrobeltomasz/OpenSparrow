@@ -16,18 +16,18 @@ export async function renderM2mPage(context) {
     let tables = [];
     let relationships = [];
     try {
-        const res = await apiFetch('api.php?action=list_m2m', {
+        const response = await apiFetch('api.php?action=list_m2m', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
-        const data = await res.json();
+        const data = await response.json();
         if (myGen !== _renderGen) return;
         tables        = data.tables        || [];
         relationships = data.relationships || [];
     } catch {
-        const err = document.createElement('p');
-        err.style.color = 'red';
-        err.textContent = 'Failed to load schema data.';
-        workspaceElement.appendChild(err);
+        const error = document.createElement('p');
+        error.style.color = 'red';
+        error.textContent = 'Failed to load schema data.';
+        workspaceElement.appendChild(error);
         return;
     }
 
@@ -35,11 +35,11 @@ export async function renderM2mPage(context) {
     h2.style.cssText = 'margin:0 0 6px;';
     h2.textContent = 'Many-to-Many Relationship Builder';
 
-    const sub = document.createElement('p');
-    sub.style.cssText = '  margin:0 0 32px;';
-    sub.textContent = 'Select two tables — the wizard creates the junction table in PostgreSQL and updates the schema configuration automatically.';
+    const subtitle = document.createElement('p');
+    subtitle.style.cssText = '  margin:0 0 32px;';
+    subtitle.textContent = 'Select two tables — the wizard creates the junction table in PostgreSQL and updates the schema configuration automatically.';
 
-    workspaceElement.append(h2, sub);
+    workspaceElement.append(h2, subtitle);
 
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); padding:28px; max-width:680px; margin-bottom:44px;';
@@ -61,23 +61,23 @@ export async function renderM2mPage(context) {
     function makeTableSelect(labelText) {
         const wrap = document.createElement('div');
         wrap.className = 'flex-1';
-        const lbl = document.createElement('label');
-        lbl.className = 'adm-field-label';
-        lbl.textContent = labelText;
-        const sel = document.createElement('select');
-        sel.className = 'adm-input w-full';
+        const labelElement = document.createElement('label');
+        labelElement.className = 'adm-field-label';
+        labelElement.textContent = labelText;
+        const selectElement = document.createElement('select');
+        selectElement.className = 'adm-input w-full';
         const blank = document.createElement('option');
         blank.value = '';
         blank.textContent = '— select table —';
-        sel.appendChild(blank);
-        tables.forEach(t => {
+        selectElement.appendChild(blank);
+        tables.forEach(tableEntry => {
             const option = document.createElement('option');
-            option.value = t.name;
-            option.textContent = t.display_name ? `${t.display_name} (${t.name})` : t.name;
-            sel.appendChild(option);
+            option.value = tableEntry.name;
+            option.textContent = tableEntry.display_name ? `${tableEntry.display_name} (${tableEntry.name})` : tableEntry.name;
+            selectElement.appendChild(option);
         });
-        wrap.append(lbl, sel);
-        return { wrap, sel };
+        wrap.append(labelElement, selectElement);
+        return { wrap, sel: selectElement };
     }
 
     const { wrap: wrapA, sel: selectA } = makeTableSelect('Table A — parent (has many)');
@@ -93,20 +93,20 @@ export async function renderM2mPage(context) {
 
     function makeField(labelText, placeholder, hint) {
         const wrap = document.createElement('div');
-        const lbl = document.createElement('label');
-        lbl.className = 'adm-field-label';
-        lbl.textContent = labelText;
+        const labelElement = document.createElement('label');
+        labelElement.className = 'adm-field-label';
+        labelElement.textContent = labelText;
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = placeholder;
         input.className = 'adm-input w-full';
         if (hint) {
-            const h = document.createElement('div');
-            h.style.cssText = '  margin-top:4px;';
-            h.textContent = hint;
-            wrap.append(lbl, input, h);
+            const headingElement = document.createElement('div');
+            headingElement.style.cssText = '  margin-top:4px;';
+            headingElement.textContent = hint;
+            wrap.append(labelElement, input, headingElement);
         } else {
-            wrap.append(lbl, input);
+            wrap.append(labelElement, input);
         }
         return { wrap, inp: input };
     }
@@ -123,17 +123,17 @@ export async function renderM2mPage(context) {
     const GUESSES = ['name', 'title', 'label', 'code', 'description'];
 
     function autoFill() {
-        const a = selectA.value;
-        const b = selectB.value;
-        if (!a || !b) return;
-        const tB = tables.find(t => t.name === b);
-        const bColumns = Array.isArray(tB?.columns) ? tB.columns : [];
-        const dispGuess = GUESSES.find(g => bColumns.includes(g)) || bColumns.find(c => c !== 'id') || 'name';
+        const tableAName = selectA.value;
+        const tableBName = selectB.value;
+        if (!tableAName || !tableBName) return;
+        const tableBEntry = tables.find(tableEntry => tableEntry.name === tableBName);
+        const bColumns = Array.isArray(tableBEntry?.columns) ? tableBEntry.columns : [];
+        const dispGuess = GUESSES.find(guessCandidate => bColumns.includes(guessCandidate)) || bColumns.find(candidateColumn => candidateColumn !== 'id') || 'name';
 
-        if (inputJunction.dataset.auto !== '0') { inputJunction.value = `${a}_${b}`; inputJunction.dataset.auto = '1'; }
-        if (inputSelfFk.dataset.auto  !== '0') { inputSelfFk.value   = `${a}_id`;   inputSelfFk.dataset.auto   = '1'; }
-        if (inputOtherFk.dataset.auto !== '0') { inputOtherFk.value  = `${b}_id`;   inputOtherFk.dataset.auto  = '1'; }
-        if (inputLabel.dataset.auto   !== '0') { inputLabel.value    = tB?.display_name || b; inputLabel.dataset.auto = '1'; }
+        if (inputJunction.dataset.auto !== '0') { inputJunction.value = `${tableAName}_${tableBName}`; inputJunction.dataset.auto = '1'; }
+        if (inputSelfFk.dataset.auto  !== '0') { inputSelfFk.value   = `${tableAName}_id`;   inputSelfFk.dataset.auto   = '1'; }
+        if (inputOtherFk.dataset.auto !== '0') { inputOtherFk.value  = `${tableBName}_id`;   inputOtherFk.dataset.auto  = '1'; }
+        if (inputLabel.dataset.auto   !== '0') { inputLabel.value    = tableBEntry?.display_name || tableBName; inputLabel.dataset.auto = '1'; }
         if (inputDisp.dataset.auto    !== '0') { inputDisp.value     = dispGuess;   inputDisp.dataset.auto     = '1'; }
     }
 
@@ -147,9 +147,9 @@ export async function renderM2mPage(context) {
     preview.style.cssText = '  margin:6px 0 20px; min-height:18px;';
 
     function updatePreview() {
-        const a = selectA.value; const b = selectB.value;
-        if (!a || !b) { preview.textContent = ''; return; }
-        preview.textContent = `Will execute: CREATE TABLE app.${inputJunction.value || a + '_' + b} (id SERIAL PK, ${inputSelfFk.value || a + '_id'} → ${a}, ${inputOtherFk.value || b + '_id'} → ${b}, UNIQUE)`;
+        const tableAName = selectA.value; const tableBName = selectB.value;
+        if (!tableAName || !tableBName) { preview.textContent = ''; return; }
+        preview.textContent = `Will execute: CREATE TABLE app.${inputJunction.value || tableAName + '_' + tableBName} (id SERIAL PK, ${inputSelfFk.value || tableAName + '_id'} → ${tableAName}, ${inputOtherFk.value || tableBName + '_id'} → ${tableBName}, UNIQUE)`;
     }
 
     [selectA, selectB, inputJunction, inputSelfFk, inputOtherFk].forEach(element => element.addEventListener('input', updatePreview));
@@ -180,12 +180,12 @@ export async function renderM2mPage(context) {
         buttonCreate.textContent = 'Creating…';
 
         try {
-            const res = await apiFetch('api.php?action=create_m2m', {
+            const response = await apiFetch('api.php?action=create_m2m', {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: JSON.stringify({ table_a: tableA, table_b: tableB, junction_table: junctionTable, self_fk: selfFk, other_fk: otherFk, label, display_column: displayColumn })
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 showStatusPill(buttonCreate, 'Relationship created!', 'success');
                 setTimeout(() => renderM2mPage(context), 900);
@@ -219,14 +219,14 @@ export async function renderM2mPage(context) {
     const list = document.createElement('div');
     list.style.cssText = 'max-width:680px;';
 
-    relationships.forEach(rel => {
+    relationships.forEach(relationship => {
         const card = document.createElement('div');
         card.className = 'column-block collapsed';
 
         const header = document.createElement('div');
         header.className = 'block-header';
-        header.addEventListener('click', (e) => {
-            if (e.target.closest('button, input, label')) return;
+        header.addEventListener('click', (event) => {
+            if (event.target.closest('button, input, label')) return;
             card.classList.toggle('collapsed');
         });
 
@@ -236,7 +236,7 @@ export async function renderM2mPage(context) {
 
         const title = document.createElement('strong');
         title.className = 'block-title';
-        title.textContent = `${rel.table_a_display} ↔ ${rel.table_b_display}`;
+        title.textContent = `${relationship.table_a_display} ↔ ${relationship.table_b_display}`;
 
         const buttonDel = document.createElement('button');
         buttonDel.type = 'button';
@@ -244,21 +244,21 @@ export async function renderM2mPage(context) {
         buttonDel.textContent = '✕';
         buttonDel.className = 'icon-btn icon-btn-danger';
 
-        buttonDel.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            if (!confirm(`Remove relationship "${rel.table_a_display} ↔ ${rel.table_b_display}"?\n\nThis removes the configuration entry. The junction table "${rel.junction_table}" stays in the database unless you choose to drop it next.`)) return;
+        buttonDel.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            if (!confirm(`Remove relationship "${relationship.table_a_display} ↔ ${relationship.table_b_display}"?\n\nThis removes the configuration entry. The junction table "${relationship.junction_table}" stays in the database unless you choose to drop it next.`)) return;
 
-            const alsoDropTable = confirm(`Also DROP TABLE "${rel.junction_table}" from PostgreSQL?\n\nWARNING: This permanently deletes all relationship data.`);
+            const alsoDropTable = confirm(`Also DROP TABLE "${relationship.junction_table}" from PostgreSQL?\n\nWARNING: This permanently deletes all relationship data.`);
 
             buttonDel.disabled = true;
 
             try {
-                const res = await apiFetch('api.php?action=delete_m2m', {
+                const response = await apiFetch('api.php?action=delete_m2m', {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    body: JSON.stringify({ table_a: rel.table_a, m2m_index: rel.m2m_index, junction_table: rel.junction_table, drop_table: alsoDropTable })
+                    body: JSON.stringify({ table_a: relationship.table_a, m2m_index: relationship.m2m_index, junction_table: relationship.junction_table, drop_table: alsoDropTable })
                 });
-                const result = await res.json();
+                const result = await response.json();
                 if (result.status === 'success') {
                     card.style.opacity = '0.4';
                     setTimeout(() => card.remove(), 300);
@@ -278,11 +278,11 @@ export async function renderM2mPage(context) {
         const body = document.createElement('div');
         body.className = 'block-body';
         [
-            ['Junction table', rel.junction_table],
-            ['Label in form', rel.label],
-            ['Display column', rel.display_column],
-            ['Table A', rel.table_a_display],
-            ['Table B', rel.table_b_display],
+            ['Junction table', relationship.junction_table],
+            ['Label in form', relationship.label],
+            ['Display column', relationship.display_column],
+            ['Table A', relationship.table_a_display],
+            ['Table B', relationship.table_b_display],
         ].forEach(([k, v]) => {
             const detail = document.createElement('div');
             detail.style.cssText = ' margin-bottom:6px;';

@@ -8,18 +8,18 @@ export function initColumnResize(th) {
     resizer.className = 'col-resizer';
     th.appendChild(resizer);
 
-    resizer.addEventListener('mousedown', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        const startX = e.pageX;
+    resizer.addEventListener('mousedown', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const startX = event.pageX;
         const startWidth = th.offsetWidth;
 
-        const onMove = mv => {
-            const w = startWidth + (mv.pageX - startX);
-            if (w > 30) {
-                th.style.width = `${w}px`;
-                th.style.minWidth = `${w}px`;
-                th.style.maxWidth = `${w}px`;
+        const onMove = moveEvent => {
+            const newWidth = startWidth + (moveEvent.pageX - startX);
+            if (newWidth > 30) {
+                th.style.width = `${newWidth}px`;
+                th.style.minWidth = `${newWidth}px`;
+                th.style.maxWidth = `${newWidth}px`;
             }
         };
         const onUp = () => {

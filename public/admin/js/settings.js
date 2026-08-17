@@ -24,7 +24,7 @@ export async function renderSettingsPage(context) {
         data       = await langResult.json();
         bubbleData = bubbleResult.ok ? await bubbleResult.json() : { chat_bubble_enabled: false };
         logoData   = logoResult.ok ? await logoResult.json() : { logo_path: null };
-    } catch (e) {
+    } catch (error) {
         workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading settings. Check server logs.</h3>';
         return;
     }
@@ -73,11 +73,11 @@ export async function renderSettingsPage(context) {
     const defSelect = document.createElement('select');
     defSelect.id = 'setting-default-lang';
     defSelect.className = 'adm-input w-220';
-    data.all_locales.forEach(loc => {
+    data.all_locales.forEach(locale => {
         const option = document.createElement('option');
-        option.value = loc.code;
-        option.textContent = `${loc.name} (${loc.code})`;
-        if (loc.code === data.default_language) option.selected = true;
+        option.value = locale.code;
+        option.textContent = `${locale.name} (${locale.code})`;
+        if (locale.code === data.default_language) option.selected = true;
         defSelect.appendChild(option);
     });
     defRow.appendChild(defSelect);
@@ -95,19 +95,19 @@ export async function renderSettingsPage(context) {
     saveButton.addEventListener('click', async () => {
         saveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_language_setting', {
+            const response = await apiFetch('api.php?action=set_language_setting', {
                 method: 'POST',
                 body: JSON.stringify({
                     default_language: defSelect.value,
                 }),
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 showStatusPill(pillAnchor, 'Language settings saved.', 'success');
             } else {
                 showStatusPill(pillAnchor, result.error || 'Error saving settings.', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(pillAnchor, 'Request failed.', 'error');
         }
         saveButton.disabled = false;
@@ -157,17 +157,17 @@ export async function renderSettingsPage(context) {
     bubbleSaveButton.addEventListener('click', async () => {
         bubbleSaveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_chat_bubble_setting', {
+            const response = await apiFetch('api.php?action=set_chat_bubble_setting', {
                 method: 'POST',
                 body: JSON.stringify({ chat_bubble_enabled: toggleCallback.checked }),
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 showStatusPill(bubblePillAnchor, 'Saved. Reload the app to see the change.', 'success');
             } else {
                 showStatusPill(bubblePillAnchor, result.error || 'Error saving setting.', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(bubblePillAnchor, 'Request failed.', 'error');
         }
         bubbleSaveButton.disabled = false;
@@ -228,17 +228,17 @@ export async function renderSettingsPage(context) {
         }
         appNameSaveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_app_name', {
+            const response = await apiFetch('api.php?action=set_app_name', {
                 method: 'POST',
                 body: JSON.stringify({ app_name: chosenName }),
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 showStatusPill(appNamePillAnchor, 'Saved.', 'success');
             } else {
                 showStatusPill(appNamePillAnchor, result.error || 'Error saving app name.', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(appNamePillAnchor, 'Request failed.', 'error');
         }
         appNameSaveButton.disabled = false;
@@ -272,17 +272,17 @@ export async function renderSettingsPage(context) {
     logoEnabledSaveButton.addEventListener('click', async () => {
         logoEnabledSaveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=set_logo_enabled', {
+            const response = await apiFetch('api.php?action=set_logo_enabled', {
                 method: 'POST',
                 body: JSON.stringify({ logo_enabled: logoEnabledCallback.checked }),
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 showStatusPill(logoEnabledPillAnchor, 'Saved. Reload the app to see the change.', 'success');
             } else {
                 showStatusPill(logoEnabledPillAnchor, result.error || 'Error saving setting.', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(logoEnabledPillAnchor, 'Request failed.', 'error');
         }
         logoEnabledSaveButton.disabled = false;
@@ -328,11 +328,11 @@ export async function renderSettingsPage(context) {
 
         logoUploadButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=upload_logo', {
+            const response = await apiFetch('api.php?action=upload_logo', {
                 method: 'POST',
                 body: formData,
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 logoPreview.src = result.logo_path + '?t=' + Date.now();
                 logoPreview.style.display = 'block';
@@ -343,7 +343,7 @@ export async function renderSettingsPage(context) {
             } else {
                 showStatusPill(logoPillAnchor, result.error || 'Error uploading logo.', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(logoPillAnchor, 'Request failed.', 'error');
         }
         logoUploadButton.disabled = false;
@@ -352,11 +352,11 @@ export async function renderSettingsPage(context) {
     logoRemoveButton.addEventListener('click', async () => {
         logoRemoveButton.disabled = true;
         try {
-            const res = await apiFetch('api.php?action=remove_logo', {
+            const response = await apiFetch('api.php?action=remove_logo', {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
-            const result = await res.json();
+            const result = await response.json();
             if (result.status === 'success') {
                 logoPreview.style.display = 'none';
                 logoRemoveButton.style.display = 'none';
@@ -365,7 +365,7 @@ export async function renderSettingsPage(context) {
             } else {
                 showStatusPill(logoPillAnchor, result.error || 'Error removing logo.', 'error');
             }
-        } catch (e) {
+        } catch (error) {
             showStatusPill(logoPillAnchor, 'Request failed.', 'error');
         }
         logoRemoveButton.disabled = false;

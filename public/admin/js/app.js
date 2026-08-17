@@ -13,24 +13,24 @@ import { renderBoardEditor } from './board.js';
 import { renderWorkflowsEditor } from './workflows.js';
 
 const PAGE_MODULES = {
-    overview:      () => import('./overview.js').then(m => m.renderOverviewPage),
-    health:        () => import('./health.js').then(m => m.renderHealthDashboard),
-    docs:          () => import('./docs.js').then(m => m.renderDocumentation),
-    users:         () => import('./users.js').then(m => m.renderUsersEditor),
-    backup:        () => import('./backup.js').then(m => m.renderBackupPage),
-    migrations:    () => import('./migrations.js').then(m => m.renderMigrationsPage),
-    performance:   () => import('./performance.js').then(m => m.renderPerformancePage),
-    cron:          () => import('./cron.js').then(m => m.renderCronPage),
-    demo:          () => import('./demo.js').then(m => m.renderDemoPage),
-    settings:      () => import('./settings.js').then(m => m.renderSettingsPage),
-    csv_import:    () => import('./csv_import.js').then(m => m.renderCsvImportPage),
-    rag:           () => import('./rag.js').then(m => m.renderRagPage),
-    anonymization: () => import('./anonymization.js').then(m => m.renderAnonymizationPage),
-    etl:           () => import('./etl.js').then(m => m.renderEtlPage),
-    print:         () => import('./print_editor.js').then(m => m.renderPrintEditor),
-    views:         () => import('./views_editor.js').then(m => m.renderViewsEditor),
-    user_records:  () => import('./user_records_editor.js').then(m => m.renderUserRecordsEditor),
-    clickstats:    () => import('./clickstats.js').then(m => m.renderClickstatsPage),
+    overview:      () => import('./overview.js').then(imported => imported.renderOverviewPage),
+    health:        () => import('./health.js').then(imported => imported.renderHealthDashboard),
+    docs:          () => import('./docs.js').then(imported => imported.renderDocumentation),
+    users:         () => import('./users.js').then(imported => imported.renderUsersEditor),
+    backup:        () => import('./backup.js').then(imported => imported.renderBackupPage),
+    migrations:    () => import('./migrations.js').then(imported => imported.renderMigrationsPage),
+    performance:   () => import('./performance.js').then(imported => imported.renderPerformancePage),
+    cron:          () => import('./cron.js').then(imported => imported.renderCronPage),
+    demo:          () => import('./demo.js').then(imported => imported.renderDemoPage),
+    settings:      () => import('./settings.js').then(imported => imported.renderSettingsPage),
+    csv_import:    () => import('./csv_import.js').then(imported => imported.renderCsvImportPage),
+    rag:           () => import('./rag.js').then(imported => imported.renderRagPage),
+    anonymization: () => import('./anonymization.js').then(imported => imported.renderAnonymizationPage),
+    etl:           () => import('./etl.js').then(imported => imported.renderEtlPage),
+    print:         () => import('./print_editor.js').then(imported => imported.renderPrintEditor),
+    views:         () => import('./views_editor.js').then(imported => imported.renderViewsEditor),
+    user_records:  () => import('./user_records_editor.js').then(imported => imported.renderUserRecordsEditor),
+    clickstats:    () => import('./clickstats.js').then(imported => imported.renderClickstatsPage),
 };
 
 let currentConfig = null;
@@ -40,7 +40,7 @@ let globalSchemaObject = null;
 let isDirty = false;
 
 let activeSaveHandler = null;
-function setSaveHandler(fn) { activeSaveHandler = fn; }
+function setSaveHandler(handler) { activeSaveHandler = handler; }
 
 const itemPanelElement = document.getElementById('itemPanel');
 const workspaceElement = document.getElementById('editorForm');
@@ -77,11 +77,11 @@ export function showStatusPill(anchor, message, variant = 'success') {
     pill.style.cssText = `display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:4px 10px; background:${colors.bg}; color:${colors.fg}; border:1px solid ${colors.border}; border-radius:999px;  font-weight:600; transition:opacity .3s;`;
     anchor.insertAdjacentElement('afterend', pill);
 
-    const ttl = variant === 'error' ? 6000 : 3000;
+    const toastDuration = variant === 'error' ? 6000 : 3000;
     setTimeout(() => {
         pill.style.opacity = '0';
         setTimeout(() => pill.remove(), 300);
-    }, ttl);
+    }, toastDuration);
 }
 
 import { escHtml } from '../../assets/js/util/esc.js';
@@ -93,21 +93,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const debugToggle = document.getElementById('debugToggle');
     if (debugToggle) {
         debugToggle.checked = localStorage.getItem('sparrow_debug_mode') === 'true';
-        debugToggle.addEventListener('change', (e) => {
-            localStorage.setItem('sparrow_debug_mode', e.target.checked);
-            if (!e.target.checked) {
-                const dbg = document.getElementById('debug');
-                if (dbg) dbg.style.display = 'none';
+        debugToggle.addEventListener('change', (event) => {
+            localStorage.setItem('sparrow_debug_mode', event.target.checked);
+            if (!event.target.checked) {
+                const debugElement = document.getElementById('debug');
+                if (debugElement) debugElement.style.display = 'none';
             }
         });
     }
 
     tabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
+        tab.addEventListener('click', (event) => {
             if (!confirmDiscard()) return;
-            tabs.forEach(t => t.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            currentFile = e.currentTarget.dataset.file;
+            tabs.forEach(tabElement => tabElement.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            currentFile = event.currentTarget.dataset.file;
 
             workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
             markClean();
@@ -118,10 +118,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     workspaceElement.addEventListener('input', markDirty);
     workspaceElement.addEventListener('change', markDirty);
 
-    window.addEventListener('beforeunload', (e) => {
+    window.addEventListener('beforeunload', (event) => {
         if (isDirty) {
-            e.preventDefault();
-            e.returnValue = '';
+            event.preventDefault();
+            event.returnValue = '';
         }
     });
 });
@@ -130,12 +130,12 @@ let globalSchemaPromise = null;
 
 async function fetchGlobalSchema() {
     try {
-        const res = await apiFetch('api.php?action=get&file=schema');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        globalSchemaObject = await res.json();
-    } catch (e) {
+        const fetchResponse = await apiFetch('api.php?action=get&file=schema');
+        if (!fetchResponse.ok) throw new Error(`HTTP ${fetchResponse.status}`);
+        globalSchemaObject = await fetchResponse.json();
+    } catch (schemaError) {
         globalSchemaObject = null;
-        console.warn('Could not load global schema', e);
+        console.warn('Could not load global schema', schemaError);
         showStatusPill(document.getElementById('workspace'), 'Could not load the schema — table and column lists will be empty.', 'error');
     }
     return globalSchemaObject;
@@ -158,15 +158,15 @@ export function invalidateGlobalSchema() {
 export async function getSchemaTables() {
     const schema = await getGlobalSchema();
     return Object.entries(schema?.tables ?? {})
-        .filter(([, cfg]) => !cfg?.hidden)
-        .map(([name, cfg]) => ({ name, label: cfg.display_name || name, columns: cfg.columns ?? {} }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .filter(([, menuConfig]) => !menuConfig?.hidden)
+        .map(([name, menuConfig]) => ({ name, label: menuConfig.display_name || name, columns: menuConfig.columns ?? {} }))
+        .sort((left, right) => left.label.localeCompare(right.label));
 }
 
 function getTableOptions() {
     const options = [{ value: '', label: '-- Select Table --' }];
     if (globalSchemaObject && globalSchemaObject.tables) {
-        for (const t in globalSchemaObject.tables) options.push({ value: t, label: globalSchemaObject.tables[t].display_name || t });
+        for (const tabElement in globalSchemaObject.tables) options.push({ value: tabElement, label: globalSchemaObject.tables[tabElement].display_name || tabElement });
     }
     return options;
 }
@@ -286,7 +286,7 @@ async function loadConfigFile(fileName) {
         }
 
         markClean();
-    } catch (err) {
+    } catch (error) {
         showStatusPill(buttonSave, `Failed to load ${fileName}.json`, 'error');
     }
 }
@@ -403,11 +403,11 @@ function renderSidebar() {
         const h2 = document.createElement('h2');
         h2.className = 'admin-page-title';
         h2.textContent = title;
-        const p = document.createElement('p');
-        p.className = 'admin-page-desc';
-        p.textContent = description;
+        const paragraph = document.createElement('p');
+        paragraph.className = 'admin-page-desc';
+        paragraph.textContent = description;
         itemPanelElement.appendChild(h2);
-        itemPanelElement.appendChild(p);
+        itemPanelElement.appendChild(paragraph);
     }
 
     if (currentFile === 'schema') {
@@ -547,8 +547,8 @@ function renderSidebar() {
         buttonUp.className = 'item-order-btn';
         buttonUp.textContent = '^';
         buttonUp.disabled = index === 0;
-        buttonUp.onclick = (e) => {
-            e.stopPropagation();
+        buttonUp.onclick = (event) => {
+            event.stopPropagation();
             moveArrayItem(itemsToIterate, key, -1);
             if (currentItemKey === key) currentItemKey = key - 1; else if (currentItemKey === key - 1) currentItemKey = key;
             markDirty();
@@ -560,8 +560,8 @@ function renderSidebar() {
         buttonDown.className = 'item-order-btn';
         buttonDown.textContent = 'v';
         buttonDown.disabled = index === keys.length - 1;
-        buttonDown.onclick = (e) => {
-            e.stopPropagation();
+        buttonDown.onclick = (event) => {
+            event.stopPropagation();
             moveArrayItem(itemsToIterate, key, 1);
             if (currentItemKey === key) currentItemKey = key + 1; else if (currentItemKey === key + 1) currentItemKey = key;
             markDirty();
@@ -615,7 +615,7 @@ function renderItemCards() {
                     renderItemCards();
                     setTimeout(() => renderSidebar(), 900);
                 },
-                (err) => showStatusPill(buttonSync, err, 'error'));
+                (error) => showStatusPill(buttonSync, error, 'error'));
         };
         bar.appendChild(buttonSync);
     } else {
@@ -651,8 +651,8 @@ function renderItemCards() {
             list.appendChild(empty);
             return;
         }
-        freshKeys.forEach((k, idx) =>
-            list.appendChild(buildItemCard(k, fresh[k], idx, freshKeys.length, isArray, fresh, redraw))
+        freshKeys.forEach((itemKey, itemIndex) =>
+            list.appendChild(buildItemCard(itemKey, fresh[itemKey], itemIndex, freshKeys.length, isArray, fresh, redraw))
         );
     }
 
@@ -668,8 +668,8 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
     const card = document.createElement('div');
     card.className = 'column-block collapsed';
 
-    const hdr = document.createElement('div');
-    hdr.className = 'block-header';
+    const headerElement = document.createElement('div');
+    headerElement.className = 'block-header';
 
     const chevron = document.createElement('span');
     chevron.className = 'block-chevron';
@@ -690,8 +690,8 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
         nameSpan.appendChild(keySpan);
     }
 
-    hdr.appendChild(chevron);
-    hdr.appendChild(nameSpan);
+    headerElement.appendChild(chevron);
+    headerElement.appendChild(nameSpan);
 
     const buttonUp = document.createElement('button');
     buttonUp.type = 'button';
@@ -699,8 +699,8 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
     buttonUp.textContent = '▲';
     buttonUp.className = 'icon-btn';
     if (index === 0) { buttonUp.disabled = true; buttonUp.style.opacity = '0.3'; }
-    buttonUp.onclick = e => {
-        e.stopPropagation();
+    buttonUp.onclick = event => {
+        event.stopPropagation();
         if (isArray) moveArrayItem(itemsReference, key, -1);
         else currentConfig.tables = moveObjectKey(itemsReference, key, -1);
         markDirty();
@@ -713,8 +713,8 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
     buttonDown.textContent = '▼';
     buttonDown.className = 'icon-btn';
     if (index === total - 1) { buttonDown.disabled = true; buttonDown.style.opacity = '0.3'; }
-    buttonDown.onclick = e => {
-        e.stopPropagation();
+    buttonDown.onclick = event => {
+        event.stopPropagation();
         if (isArray) moveArrayItem(itemsReference, key, 1);
         else currentConfig.tables = moveObjectKey(itemsReference, key, 1);
         markDirty();
@@ -726,8 +726,8 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
     buttonDel.title = 'Delete';
     buttonDel.textContent = '✕';
     buttonDel.className = 'icon-btn icon-btn-danger';
-    buttonDel.onclick = e => {
-        e.stopPropagation();
+    buttonDel.onclick = event => {
+        event.stopPropagation();
         const label = isSchema    ? (item.display_name || key)
                     : isDashboard ? (item.title || `Widget ${key}`)
                     : isWorkflows ? (item.title || `Workflow ${key}`)
@@ -742,11 +742,11 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
         markDirty();
         redraw();
     };
-    hdr.appendChild(buttonUp);
-    hdr.appendChild(buttonDown);
-    hdr.appendChild(buttonDel);
+    headerElement.appendChild(buttonUp);
+    headerElement.appendChild(buttonDown);
+    headerElement.appendChild(buttonDel);
 
-    card.appendChild(hdr);
+    card.appendChild(headerElement);
 
     const body = document.createElement('div');
     body.className = 'block-body';
@@ -766,8 +766,8 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
         card.classList.add('collapsed');
     }
 
-    hdr.addEventListener('click', (e) => {
-        if (e.target.closest('button, input, label')) return;
+    headerElement.addEventListener('click', (event) => {
+        if (event.target.closest('button, input, label')) return;
         card.classList.contains('collapsed') ? openCard() : closeCard();
     });
 
@@ -787,9 +787,9 @@ function renderEditorIntoCard(key, item, isArray, bodyElement, nameSpan, redraw)
         getColumnOptionsForTable,
         getEnumColumnsForTable,
         getColumnMeta,
-        renderEditor: (k, d, array) => {
+        renderEditor: (itemKey, itemDataEntry, array) => {
             bodyElement.innerHTML = '';
-            renderEditorIntoCard(k, d, array !== undefined ? array : isArray, bodyElement, nameSpan, redraw);
+            renderEditorIntoCard(itemKey, itemDataEntry, array !== undefined ? array : isArray, bodyElement, nameSpan, redraw);
         },
         renderSidebar: isSchema
             ? redraw
@@ -823,16 +823,16 @@ function renderMenuPreview(context) {
         const preview = createFullMenuPreview(null);
         workspaceElement.appendChild(preview.el);
         try {
-            const res = await apiFetch('api.php?action=menu_config');
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const data = await res.json();
+            const fetchResponse = await apiFetch('api.php?action=menu_config');
+            if (!fetchResponse.ok) throw new Error('HTTP ' + fetchResponse.status);
+            const data = await fetchResponse.json();
             preview.update(data);
-        } catch (err) {
+        } catch (error) {
             preview.el.remove();
-            const msg = document.createElement('p');
-            msg.style.color = 'var(--error)';
-            msg.textContent = 'Failed to load menu config: ' + escHtml(err.message);
-            workspaceElement.appendChild(msg);
+            const messageElement = document.createElement('p');
+            messageElement.style.color = 'var(--error)';
+            messageElement.textContent = 'Failed to load menu config: ' + escHtml(error.message);
+            workspaceElement.appendChild(messageElement);
         }
     })();
 }
@@ -840,18 +840,18 @@ function renderMenuPreview(context) {
 function loadAndRender(loader, context, invoke = null) {
     const myId = workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
     return loader().then(
-        (fn) => {
+        (handler) => {
             if (workspaceElement._renderId !== myId) return undefined;
-            return invoke ? invoke(fn) : fn(context);
+            return invoke ? invoke(handler) : handler(context);
         },
-        (err) => {
+        (error) => {
             if (workspaceElement._renderId !== myId) return undefined;
-            console.error('Could not load tab module', err);
+            console.error('Could not load tab module', error);
             workspaceElement.innerHTML = '';
-            const msg = document.createElement('p');
-            msg.className = 'admin-error';
-            msg.textContent = 'Could not load this section. Check your connection and reload the page.';
-            workspaceElement.appendChild(msg);
+            const messageElement = document.createElement('p');
+            messageElement.className = 'admin-error';
+            messageElement.textContent = 'Could not load this section. Check your connection and reload the page.';
+            workspaceElement.appendChild(messageElement);
             return undefined;
         }
     );
@@ -872,28 +872,28 @@ function renderEditor(key, itemData, isArray) {
 
     if (currentFile === 'security') {
         return loadAndRender(
-            () => import('./security.js').then(m => m.renderSecurityEditor),
+            () => import('./security.js').then(imported => imported.renderSecurityEditor),
             context,
-            (fn) => fn(key, itemData, isArray, context)
+            (handler) => handler(key, itemData, isArray, context)
         );
     }
     if (currentFile === 'automations') {
         if (key === 'LAYOUT') {
-            const msg = document.createElement('p');
-            msg.style.cssText = ' padding:20px;';
-            msg.textContent = 'Automations have no global configuration settings.';
-            workspaceElement.appendChild(msg);
+            const messageElement = document.createElement('p');
+            messageElement.style.cssText = ' padding:20px;';
+            messageElement.textContent = 'Automations have no global configuration settings.';
+            workspaceElement.appendChild(messageElement);
             return;
         }
 
         return loadAndRender(
-            () => import('./automations.js').then(m => m.renderAutomationsPage),
+            () => import('./automations.js').then(imported => imported.renderAutomationsPage),
             context,
-            (fn) => fn(context, key === 'N8N' ? 'n8n' : 'record')
+            (handler) => handler(context, key === 'N8N' ? 'n8n' : 'record')
         );
     }
     if (currentFile === 'files' && key === 'MANAGER') {
-        return loadAndRender(() => import('./files_render.js').then(m => m.renderFilesEditor), context);
+        return loadAndRender(() => import('./files_render.js').then(imported => imported.renderFilesEditor), context);
     }
 
     if (currentFile === 'schema' && key === 'MENU_PREVIEW') {
@@ -901,13 +901,13 @@ function renderEditor(key, itemData, isArray) {
         return;
     }
     if (currentFile === 'schema' && key === 'ADD_TABLE') {
-        return loadAndRender(() => import('./add_table.js').then(m => m.renderAddTableEditor), context);
+        return loadAndRender(() => import('./add_table.js').then(imported => imported.renderAddTableEditor), context);
     }
     if (currentFile === 'schema' && key === 'M2M_BUILDER') {
-        return loadAndRender(() => import('./m2m.js').then(m => m.renderM2mPage), context);
+        return loadAndRender(() => import('./m2m.js').then(imported => imported.renderM2mPage), context);
     }
     if (currentFile === 'schema' && key === 'SCHEMA_MAP') {
-        return loadAndRender(() => import('./erd.js').then(m => m.renderErdPage), context);
+        return loadAndRender(() => import('./erd.js').then(imported => imported.renderErdPage), context);
     }
 
     if (key === 'LAYOUT') {
@@ -966,17 +966,17 @@ function renderEditor(key, itemData, isArray) {
 
 (async () => {
     try {
-        const res  = await apiFetch('api_migrations.php?action=scan');
-        const data = await res.json();
+        const fetchResponse  = await apiFetch('api_migrations.php?action=scan');
+        const data = await fetchResponse.json();
         if (data.status !== 'success') return;
-        const pending = (data.versions || []).filter(v => v.status === 'pending');
+        const pending = (data.versions || []).filter(migration => migration.status === 'pending');
         if (pending.length === 0) return;
         const banner = document.getElementById('mig-pending-banner');
         if (!banner) return;
         const noun = pending.length === 1 ? 'release' : 'releases';
         banner.querySelector('.mig-pending-banner-text').textContent =
             pending.length + ' pending release migration' + (pending.length > 1 ? 's' : '') +
-            ' (' + pending.map(v => 'v' + v.version).join(', ') + '). Go to System → Migrations to apply.';
+            ' (' + pending.map(migration => 'v' + migration.version).join(', ') + '). Go to System → Migrations to apply.';
         banner.style.display = 'block';
     } catch {
     }
@@ -984,34 +984,34 @@ function renderEditor(key, itemData, isArray) {
 
 function validateWorkflowsConfig(config) {
     const workflows = config.workflows || [];
-    for (let w = 0; w < workflows.length; w++) {
-        const workflow = workflows[w];
-        const label = (workflow.title && workflow.title.trim()) || `Workflow ${w + 1}`;
+    for (let workflowIndex = 0; workflowIndex < workflows.length; workflowIndex++) {
+        const workflow = workflows[workflowIndex];
+        const label = (workflow.title && workflow.title.trim()) || `Workflow ${workflowIndex + 1}`;
         const steps = workflow.steps || [];
         if (steps.length === 0) {
             return `"${label}" has no steps — add at least one step or remove the workflow.`;
         }
-        for (let s = 0; s < steps.length; s++) {
-            const step = steps[s] || {};
+        for (let stepIndex = 0; stepIndex < steps.length; stepIndex++) {
+            const step = steps[stepIndex] || {};
             if (!step.title || step.title.trim() === '') {
-                return `"${label}" — Step ${s + 1} is missing a step name.`;
+                return `"${label}" — Step ${stepIndex + 1} is missing a step name.`;
             }
             if (!step.table || step.table.trim() === '') {
-                return `"${label}" — Step ${s + 1} ("${step.title.trim()}") has no target table.`;
+                return `"${label}" — Step ${stepIndex + 1} ("${step.title.trim()}") has no target table.`;
             }
 
             const proc = step.procedure;
             if (proc && proc.enabled) {
-                const stepLabel = `"${label}" — Step ${s + 1} ("${step.title.trim()}")`;
+                const stepLabel = `"${label}" — Step ${stepIndex + 1} ("${step.title.trim()}")`;
                 if (!proc.schema || !proc.name) {
                     return `${stepLabel} has "call procedure" enabled but no procedure selected.`;
                 }
                 const parameters = proc.params || [];
-                for (let p = 0; p < parameters.length; p++) {
-                    const parameter = parameters[p] || {};
+                for (let paragraph = 0; paragraph < parameters.length; paragraph++) {
+                    const parameter = parameters[paragraph] || {};
                     if (parameter.source === 'literal') continue;
                     if (!parameter.field || parameter.field.trim() === '') {
-                        return `${stepLabel} — procedure parameter ${p + 1} has no source field selected.`;
+                        return `${stepLabel} — procedure parameter ${paragraph + 1} has no source field selected.`;
                     }
                 }
             }
@@ -1043,9 +1043,9 @@ buttonSave.addEventListener('click', async () => {
         if (!currentConfig) return;
 
         if (currentFile === 'workflows') {
-            const err = validateWorkflowsConfig(currentConfig);
-            if (err) {
-                showStatusPill(buttonSave, err, 'error');
+            const error = validateWorkflowsConfig(currentConfig);
+            if (error) {
+                showStatusPill(buttonSave, error, 'error');
                 return;
             }
         }
@@ -1065,7 +1065,7 @@ buttonSave.addEventListener('click', async () => {
             } else {
                 showStatusPill(buttonSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
             }
-        } catch (err) {
+        } catch (error) {
             showStatusPill(buttonSave, 'Failed to save changes.', 'error');
         }
     } finally {

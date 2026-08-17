@@ -639,10 +639,10 @@ export async function renderCsvImportPage(context) {
 
             const thead = tableElement.createTHead();
             const hrow  = thead.insertRow();
-            for (const h of ['CSV Header', 'Sample values', 'DB column name', 'Type']) {
+            for (const headingElement of ['CSV Header', 'Sample values', 'DB column name', 'Type']) {
                 const th = document.createElement('th');
                 th.className = 'adm-th';
-                th.textContent = h;
+                th.textContent = headingElement;
                 hrow.appendChild(th);
             }
 
@@ -706,10 +706,10 @@ export async function renderCsvImportPage(context) {
 
         const thead = tableElement.createTHead();
         const hrow  = thead.insertRow();
-        for (const h of ['CSV Header', 'Sample values', 'Target column']) {
+        for (const headingElement of ['CSV Header', 'Sample values', 'Target column']) {
             const th = document.createElement('th');
             th.className = 'adm-th';
-            th.textContent = h;
+            th.textContent = headingElement;
             hrow.appendChild(th);
         }
 
@@ -999,10 +999,10 @@ export async function renderCsvImportPage(context) {
 
         const thead = tableElement.createTHead();
         const hrow  = thead.insertRow();
-        for (const h of ['Row #', 'Error', 'Raw data (JSON)']) {
+        for (const headingElement of ['Row #', 'Error', 'Raw data (JSON)']) {
             const th = document.createElement('th');
             th.className = 'adm-th adm-th-sm';
-            th.textContent = h;
+            th.textContent = headingElement;
             hrow.appendChild(th);
         }
 
@@ -1040,10 +1040,10 @@ export async function renderCsvImportPage(context) {
 
             const thead = tableElement.createTHead();
             const hrow  = thead.insertRow();
-            for (const h of ['#', 'File', 'Table', 'Status', 'Imported', 'Skipped', 'By', 'Started', 'Duration']) {
+            for (const headingElement of ['#', 'File', 'Table', 'Status', 'Imported', 'Skipped', 'By', 'Started', 'Duration']) {
                 const th = document.createElement('th');
                 th.className = 'adm-th';
-                th.textContent = h;
+                th.textContent = headingElement;
                 hrow.appendChild(th);
             }
 
@@ -1139,14 +1139,14 @@ export async function renderCsvImportPage(context) {
         setTimeout(() => { element.textContent = original; element.style.color = originalC; }, 2200);
     }
 
-    function showBanner(container, msg, type) {
+    function showBanner(container, messageElement, type) {
         const colors = {
             success: { bg: 'var(--ok-light)', fg: 'var(--ok)', border: 'var(--ok)' },
             error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
         }[type] ?? { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--accent-mid)' };
         const wrapper = document.createElement('div');
         wrapper.style.cssText = `padding:10px 14px;border-radius:6px;background:${colors.bg};color:${colors.fg};border:1px solid ${colors.border};`;
-        wrapper.textContent = msg;
+        wrapper.textContent = messageElement;
         container.innerHTML = '';
         container.appendChild(wrapper);
     }
@@ -1161,14 +1161,14 @@ function loadCSVPreviewLocal(file, delimiter = ',', encoding = 'UTF-8') {
                 if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
                 const lines = text.split(/\r?\n/);
                 const rawHeaders = parseCsvLine(lines[0] || '', delimiter);
-                const headers = rawHeaders.map(h => h.trim()).filter(h => h !== '');
+                const headers = rawHeaders.map(headingElement => headingElement.trim()).filter(headingElement => headingElement !== '');
                 if (!headers.length) throw new Error('No headers found in CSV.');
                 const preview = [];
                 for (let i = 1; i <= 5 && i < lines.length; i++) {
                     if (!lines[i].trim()) continue;
                     const vals = parseCsvLine(lines[i], delimiter);
                     const row = {};
-                    headers.forEach((h, j) => { row[h] = vals[j] ?? ''; });
+                    headers.forEach((headingElement, j) => { row[headingElement] = vals[j] ?? ''; });
                     preview.push(row);
                 }
                 resolve({ headers, preview });
@@ -1187,25 +1187,25 @@ function formatDuration(startedAt, finishedAt) {
     if (isNaN(secs) || secs < 0) return '—';
     if (secs < 60) return secs + 's';
     const mappingResult = Math.floor(secs / 60);
-    const s = secs % 60;
-    return s > 0 ? `${mappingResult}m ${s}s` : `${mappingResult}m`;
+    const remainingSeconds = secs % 60;
+    return remainingSeconds > 0 ? `${mappingResult}m ${remainingSeconds}s` : `${mappingResult}m`;
 }
 
 function parseCsvLine(line, delimiter = ',') {
     const fields = [];
     let current = '';
-    let inQ = false;
+    let insideQuotes = false;
     for (let i = 0; i < line.length; i++) {
         const columnName = line[i];
-        if (inQ) {
+        if (insideQuotes) {
             if (columnName === '"') {
                 if (line[i + 1] === '"') { current += '"'; i++; }
-                else inQ = false;
+                else insideQuotes = false;
             } else {
                 current += columnName;
             }
         } else if (columnName === '"') {
-            inQ = true;
+            insideQuotes = true;
         } else if (line.startsWith(delimiter, i)) {
             fields.push(current); current = '';
             i += delimiter.length - 1;
@@ -1284,10 +1284,10 @@ function buildCard(title) {
     const headerName = document.createElement('div');
     headerName.className = 'adm-sec-hdr';
     headerName.style.display = 'block';
-    const h = document.createElement('h3');
-    h.style.margin = '0';
-    h.textContent = title;
-    headerName.appendChild(h);
+    const headingElement = document.createElement('h3');
+    headingElement.style.margin = '0';
+    headingElement.textContent = title;
+    headerName.appendChild(headingElement);
     element.appendChild(headerName);
 
     const body = document.createElement('div');

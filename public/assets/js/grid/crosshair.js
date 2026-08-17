@@ -33,8 +33,8 @@ export function attachCrosshair(table) {
         lastIndex = index;
     };
 
-    table.addEventListener('mouseover', (e) => {
-        const cell = e.target.closest('td, th');
+    table.addEventListener('mouseover', (event) => {
+        const cell = event.target.closest('td, th');
         if (!cell || cell.closest('table') !== table) return clear();
         paint(cell.colSpan === 1 ? cell.cellIndex : -1);
         if (cell !== lastCell) {

@@ -23,10 +23,10 @@ const SKIP_TYPES = new Set([
 ]);
 
 function isTextColumn(config) {
-    const t = (config.type ?? '').toLowerCase().split('(')[0].trim();
-    return !SKIP_TYPES.has(t) && !t.startsWith('int') && !t.startsWith('float')
-        && !t.startsWith('double') && !t.startsWith('numeric') && !t.startsWith('decimal')
-        && !t.startsWith('timestamp') && !t.startsWith('time') && !t.startsWith('date');
+    const normalizedType = (config.type ?? '').toLowerCase().split('(')[0].trim();
+    return !SKIP_TYPES.has(normalizedType) && !normalizedType.startsWith('int') && !normalizedType.startsWith('float')
+        && !normalizedType.startsWith('double') && !normalizedType.startsWith('numeric') && !normalizedType.startsWith('decimal')
+        && !normalizedType.startsWith('timestamp') && !normalizedType.startsWith('time') && !normalizedType.startsWith('date');
 }
 
 import { escHtml as esc } from './util/esc.js';
@@ -38,16 +38,16 @@ function escRe(s) {
 
 function highlightBefore(text, find, ignoreCase) {
     if (!find || text == null) return esc(text ?? '');
-    let re;
-    try { re = new RegExp(escRe(find), ignoreCase ? 'gi' : 'g'); } catch { return esc(text); }
+    let pattern;
+    try { pattern = new RegExp(escRe(find), ignoreCase ? 'gi' : 'g'); } catch { return esc(text); }
     const parts = [];
     let last = 0, m;
-    re.lastIndex = 0;
-    while ((m = re.exec(text)) !== null) {
+    pattern.lastIndex = 0;
+    while ((m = pattern.exec(text)) !== null) {
         parts.push(esc(text.slice(last, m.index)));
         parts.push('<del class="dc-del">' + esc(m[0]) + '</del>');
         last = m.index + m[0].length;
-        if (m[0].length === 0) re.lastIndex++;
+        if (m[0].length === 0) pattern.lastIndex++;
     }
     parts.push(esc(text.slice(last)));
     return parts.join('');
@@ -55,16 +55,16 @@ function highlightBefore(text, find, ignoreCase) {
 
 function highlightAfter(text, replace, ignoreCase) {
     if (!replace || text == null) return esc(text ?? '');
-    let re;
-    try { re = new RegExp(escRe(replace), ignoreCase ? 'gi' : 'g'); } catch { return esc(text); }
+    let pattern;
+    try { pattern = new RegExp(escRe(replace), ignoreCase ? 'gi' : 'g'); } catch { return esc(text); }
     const parts = [];
     let last = 0, m;
-    re.lastIndex = 0;
-    while ((m = re.exec(text)) !== null) {
+    pattern.lastIndex = 0;
+    while ((m = pattern.exec(text)) !== null) {
         parts.push(esc(text.slice(last, m.index)));
         parts.push('<ins class="dc-ins">' + esc(m[0]) + '</ins>');
         last = m.index + m[0].length;
-        if (m[0].length === 0) re.lastIndex++;
+        if (m[0].length === 0) pattern.lastIndex++;
     }
     parts.push(esc(text.slice(last)));
     return parts.join('');
@@ -139,36 +139,36 @@ async function runPreview() {
 
     const rows = data.rows ?? [];
     if (rows.length > 0) {
-        const tbl = document.createElement('table');
-        tbl.className = 'dc-preview-table';
+        const tableElement = document.createElement('table');
+        tableElement.className = 'dc-preview-table';
 
         const thead = document.createElement('thead');
         const hr    = document.createElement('tr');
-        ['data_cleanup.col_before', 'data_cleanup.col_after'].forEach(k => {
+        ['data_cleanup.col_before', 'data_cleanup.col_after'].forEach(translationKey => {
             const th = document.createElement('th');
-            th.textContent = I18n.t(k);
+            th.textContent = I18n.t(translationKey);
             hr.appendChild(th);
         });
         thead.appendChild(hr);
-        tbl.appendChild(thead);
+        tableElement.appendChild(thead);
 
         const tbody = document.createElement('tbody');
         for (const row of rows) {
             const tr = document.createElement('tr');
-            const tdB = document.createElement('td');
-            const tdA = document.createElement('td');
-            tdB.innerHTML = highlightBefore(row.before, payload.find, !payload.case_insensitive);
+            const beforeCell = document.createElement('td');
+            const afterCell = document.createElement('td');
+            beforeCell.innerHTML = highlightBefore(row.before, payload.find, !payload.case_insensitive);
             if (row.after === '' || row.after === null) {
-                tdA.innerHTML = '<em class="dc-empty">' + esc(I18n.t('data_cleanup.empty_result')) + '</em>';
+                afterCell.innerHTML = '<em class="dc-empty">' + esc(I18n.t('data_cleanup.empty_result')) + '</em>';
             } else {
-                tdA.innerHTML = highlightAfter(row.after, payload.replace, !payload.case_insensitive);
+                afterCell.innerHTML = highlightAfter(row.after, payload.replace, !payload.case_insensitive);
             }
-            tr.appendChild(tdB);
-            tr.appendChild(tdA);
+            tr.appendChild(beforeCell);
+            tr.appendChild(afterCell);
             tbody.appendChild(tr);
         }
-        tbl.appendChild(tbody);
-        panel.querySelector('#dc-preview-area').appendChild(tbl);
+        tableElement.appendChild(tbody);
+        panel.querySelector('#dc-preview-area').appendChild(tableElement);
     }
 
     updateApplyButton();
@@ -216,9 +216,9 @@ async function applyChanges() {
 }
 
 function populateColumns() {
-    const sel   = panel.querySelector('#dc-column');
+    const selectElement   = panel.querySelector('#dc-column');
     const table = gridState.currentTable;
-    sel.innerHTML = '';
+    selectElement.innerHTML = '';
     if (!table || !window.schema?.tables?.[table]) return;
 
     const cols = window.schema.tables[table].columns ?? {};
@@ -229,52 +229,52 @@ function populateColumns() {
         option.value       = name;
         option.textContent = config.display_name ?? name;
         if (first) { option.selected = true; first = false; }
-        sel.appendChild(option);
+        selectElement.appendChild(option);
     }
 }
 
 function buildPanel() {
-    const t  = k => esc(I18n.t(k));
+    const normalizedType  = translationKey => esc(I18n.t(translationKey));
     const element = document.createElement('div');
     element.className = 'dc-panel';
     element.id        = 'dc-panel';
     element.innerHTML = `
 <div class="dc-header">
-    <h3 class="dc-title">${t('data_cleanup.title')}</h3>
-    <button class="dc-close" id="dc-close" title="${t('header.close')}" aria-label="${t('header.close')}">&#x2715;</button>
+    <h3 class="dc-title">${normalizedType('data_cleanup.title')}</h3>
+    <button class="dc-close" id="dc-close" title="${normalizedType('header.close')}" aria-label="${normalizedType('header.close')}">&#x2715;</button>
 </div>
 <div class="dc-body">
     <div class="dc-field">
-        <label for="dc-column">${t('data_cleanup.column')}</label>
+        <label for="dc-column">${normalizedType('data_cleanup.column')}</label>
         <select id="dc-column"></select>
     </div>
     <div class="dc-field">
-        <label for="dc-find">${t('data_cleanup.find')}</label>
+        <label for="dc-find">${normalizedType('data_cleanup.find')}</label>
         <input type="text" id="dc-find" autocomplete="off" />
     </div>
     <div class="dc-field">
-        <label for="dc-replace">${t('data_cleanup.replace')}</label>
+        <label for="dc-replace">${normalizedType('data_cleanup.replace')}</label>
         <input type="text" id="dc-replace" autocomplete="off"
-            placeholder="${t('data_cleanup.replace_hint')}" />
+            placeholder="${normalizedType('data_cleanup.replace_hint')}" />
     </div>
     <div class="dc-toggles">
         <label class="dc-toggle-row">
             <input type="checkbox" id="dc-toggle-case" />
-            <span class="dc-toggle-label">${t('data_cleanup.toggle_case')}</span>
+            <span class="dc-toggle-label">${normalizedType('data_cleanup.toggle_case')}</span>
         </label>
         <label class="dc-toggle-row">
             <input type="checkbox" id="dc-toggle-word" />
-            <span class="dc-toggle-label">${t('data_cleanup.toggle_word')}</span>
+            <span class="dc-toggle-label">${normalizedType('data_cleanup.toggle_word')}</span>
         </label>
         <label class="dc-toggle-row">
             <input type="checkbox" id="dc-toggle-accent" />
-            <span class="dc-toggle-label">${t('data_cleanup.toggle_accent')}</span>
+            <span class="dc-toggle-label">${normalizedType('data_cleanup.toggle_accent')}</span>
         </label>
     </div>
     <div id="dc-status" class="dc-status"></div>
     <div id="dc-preview-area" class="dc-preview-area"></div>
     <div class="dc-footer">
-        <button id="dc-apply" class="dc-apply-btn" disabled>${t('data_cleanup.apply')}</button>
+        <button id="dc-apply" class="dc-apply-btn" disabled>${normalizedType('data_cleanup.apply')}</button>
     </div>
 </div>`;
     return element;
@@ -292,12 +292,12 @@ function openPanel() {
         panel.querySelector('#dc-close').addEventListener('click', closePanel);
         overlay.addEventListener('click', closePanel);
 
-        ['#dc-find', '#dc-replace'].forEach(sel => {
-            panel.querySelector(sel).addEventListener('input', schedulePreview);
+        ['#dc-find', '#dc-replace'].forEach(selectElement => {
+            panel.querySelector(selectElement).addEventListener('input', schedulePreview);
         });
         panel.querySelector('#dc-column').addEventListener('change', schedulePreview);
-        ['#dc-toggle-case', '#dc-toggle-word', '#dc-toggle-accent'].forEach(sel => {
-            panel.querySelector(sel).addEventListener('change', schedulePreview);
+        ['#dc-toggle-case', '#dc-toggle-word', '#dc-toggle-accent'].forEach(selectElement => {
+            panel.querySelector(selectElement).addEventListener('change', schedulePreview);
         });
         panel.querySelector('#dc-apply').addEventListener('click', applyChanges);
     }

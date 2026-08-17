@@ -34,8 +34,8 @@ async function loadOwner() {
             hasOwner = true;
             let label = data.owner.username;
             if (data.owner.changed_at) {
-                const d = new Date(data.owner.changed_at);
-                label += ' ' + I18n.t('owners.last_changed', { date: d.toLocaleDateString() });
+                const changedAt = new Date(data.owner.changed_at);
+                label += ' ' + I18n.t('owners.last_changed', { date: changedAt.toLocaleDateString() });
             }
             current.textContent = label;
         }
@@ -65,9 +65,9 @@ async function loadHistory() {
 
         const thead = table_.createTHead();
         const hrow  = thead.insertRow();
-        [I18n.t('owners.col_owner'), I18n.t('owners.col_changed_by'), I18n.t('owners.col_date')].forEach(h => {
+        [I18n.t('owners.col_owner'), I18n.t('owners.col_changed_by'), I18n.t('owners.col_date')].forEach(headerLabel => {
             const th = document.createElement('th');
-            th.textContent = h;
+            th.textContent = headerLabel;
             th.style.cssText = 'text-align:left;padding:8px 10px;border-bottom:2px solid var(--border-light);color:var(--muted);font-weight:600;';
             hrow.appendChild(th);
         });
@@ -80,9 +80,9 @@ async function loadHistory() {
                 row.username       || '—',
                 row.changed_by_name || '—',
                 row.changed_at ? new Date(row.changed_at).toLocaleString() : '—',
-            ].forEach(val => {
+            ].forEach(value => {
                 const td = tr.insertCell();
-                td.textContent = val;
+                td.textContent = value;
                 td.style.padding = '8px 10px';
             });
         });
@@ -108,10 +108,10 @@ async function loadEditors() {
     placeholder.selected = true;
     select.appendChild(placeholder);
 
-    data.users.forEach(u => {
+    data.users.forEach(user => {
         const option       = document.createElement('option');
-        option.value       = u.id;
-        option.textContent = u.username;
+        option.value       = user.id;
+        option.textContent = user.username;
         select.appendChild(option);
     });
 }

@@ -25,9 +25,9 @@ async function saveFlowsConfig(statusElement) {
     return false;
 }
 
-function buildTile(text, cls) {
+function buildTile(text, cssClass) {
     const tile = document.createElement('div');
-    tile.className = 'flow-tile ' + cls;
+    tile.className = 'flow-tile ' + cssClass;
     tile.textContent = text;
     return tile;
 }
@@ -39,28 +39,28 @@ function buildJobTile(flow, stepIndex, redraw) {
     const select = document.createElement('select');
     select.className = 'adm-input';
     if (jobsForPicker.length === 0) {
-        const o = document.createElement('option');
-        o.value = ''; o.textContent = '(no jobs configured)';
-        select.appendChild(o);
+        const optionElement = document.createElement('option');
+        optionElement.value = ''; optionElement.textContent = '(no jobs configured)';
+        select.appendChild(optionElement);
     }
     jobsForPicker.forEach((job) => {
-        const o = document.createElement('option');
-        o.value = job.id; o.textContent = job.name;
-        if (flow.steps[stepIndex] === job.id) o.selected = true;
-        select.appendChild(o);
+        const optionElement = document.createElement('option');
+        optionElement.value = job.id; optionElement.textContent = job.name;
+        if (flow.steps[stepIndex] === job.id) optionElement.selected = true;
+        select.appendChild(optionElement);
     });
     select.onchange = () => { flow.steps[stepIndex] = select.value; };
 
     const btns = document.createElement('div');
     btns.className = 'flow-tile-btns';
 
-    const up = document.createElement('button');
-    up.type = 'button';
-    up.className = 'icon-btn';
-    up.title = 'Move earlier';
-    up.textContent = '↑';
-    up.disabled = stepIndex === 0;
-    up.onclick = () => {
+    const moveUpButton = document.createElement('button');
+    moveUpButton.type = 'button';
+    moveUpButton.className = 'icon-btn';
+    moveUpButton.title = 'Move earlier';
+    moveUpButton.textContent = '↑';
+    moveUpButton.disabled = stepIndex === 0;
+    moveUpButton.onclick = () => {
         [flow.steps[stepIndex - 1], flow.steps[stepIndex]] = [flow.steps[stepIndex], flow.steps[stepIndex - 1]];
         redraw();
     };
@@ -86,7 +86,7 @@ function buildJobTile(flow, stepIndex, redraw) {
         redraw();
     };
 
-    btns.append(up, down, remove);
+    btns.append(moveUpButton, down, remove);
     tile.append(select, btns);
     return tile;
 }
@@ -148,16 +148,16 @@ function buildFlowCard(flow, index, redraw, status) {
     body.append(fg('Name', name), fg('', enabled.label), fg('Steps', tileRowWrap));
     redrawTiles();
 
-    const out = document.createElement('pre');
-    out.className = 'adm-input';
-    out.style.cssText = 'white-space:pre-wrap; max-height:220px; overflow:auto; display:none;';
+    const outputElement = document.createElement('pre');
+    outputElement.className = 'adm-input';
+    outputElement.style.cssText = 'white-space:pre-wrap; max-height:220px; overflow:auto; display:none;';
 
     const buttonRun = document.createElement('button');
     buttonRun.className = 'btn btn-success';
     buttonRun.textContent = 'Run now';
     buttonRun.onclick = async () => {
         if (!(await saveFlowsConfig(status))) return;
-        await runCronAction('run_etl_flow', { flow_id: flow.id }, out);
+        await runCronAction('run_etl_flow', { flow_id: flow.id }, outputElement);
     };
 
     const histWrap = document.createElement('div');
@@ -165,8 +165,8 @@ function buildFlowCard(flow, index, redraw, status) {
     async function loadHistory() {
         histWrap.textContent = 'Loading history…';
         try {
-            const res  = await apiFetch('api.php?action=etl_flow_log&flow_id=' + encodeURIComponent(flow.id));
-            const data = await res.json();
+            const response  = await apiFetch('api.php?action=etl_flow_log&flow_id=' + encodeURIComponent(flow.id));
+            const data = await response.json();
             if (data.status !== 'success') { histWrap.textContent = data.error || 'Failed to load history.'; return; }
             if (data.note && (!data.rows || data.rows.length === 0)) { histWrap.textContent = data.note; return; }
             if (!data.rows || data.rows.length === 0) { histWrap.textContent = 'No runs yet.'; return; }
@@ -179,7 +179,7 @@ function buildFlowCard(flow, index, redraw, status) {
     const buttonBar = document.createElement('div');
     buttonBar.style.marginTop = '10px';
     buttonBar.append(buttonRun);
-    body.append(buttonBar, out, histWrap);
+    body.append(buttonBar, outputElement, histWrap);
 
     return card;
 }
@@ -188,8 +188,8 @@ export async function renderFlowsTab(panel) {
     panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading flows…</p>';
 
     try {
-        const res  = await apiFetch('api.php?action=etl_flow_load');
-        const data = await res.json();
+        const response  = await apiFetch('api.php?action=etl_flow_load');
+        const data = await response.json();
         if (data.status !== 'success') {
             panel.innerHTML = `<p style="color:var(--error); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
             return;

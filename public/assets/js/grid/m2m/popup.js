@@ -11,8 +11,8 @@ let popup = null;
 export function initM2mPopup() {
     popup = createHoverPopup({ className: 'm2m-popup', width: 260, verticalThreshold: 160 });
 
-    document.addEventListener('mouseover', e => {
-        const td = e.target.closest('[data-m2m-row-id]');
+    document.addEventListener('mouseover', event => {
+        const td = event.target.closest('[data-m2m-row-id]');
         if (!td) return;
 
         const rowId = td.dataset.m2mRowId;
@@ -24,8 +24,8 @@ export function initM2mPopup() {
         popup.show(td);
     });
 
-    document.addEventListener('mouseout', e => {
-        if (!e.target.closest('[data-m2m-row-id]')) return;
+    document.addEventListener('mouseout', event => {
+        if (!event.target.closest('[data-m2m-row-id]')) return;
         popup.scheduleHide();
     });
 }

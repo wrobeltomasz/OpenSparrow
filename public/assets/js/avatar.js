@@ -11,9 +11,9 @@ export const AVATAR_COLORS = [
 ];
 
 export function avatarColor(avatarId) {
-    const i = parseInt(avatarId, 10);
-    if (!Number.isInteger(i) || i < 1 || i > AVATAR_COLORS.length) return AVATAR_COLORS[0];
-    return AVATAR_COLORS[i - 1];
+    const parsedAvatarId = parseInt(avatarId, 10);
+    if (!Number.isInteger(parsedAvatarId) || parsedAvatarId < 1 || parsedAvatarId > AVATAR_COLORS.length) return AVATAR_COLORS[0];
+    return AVATAR_COLORS[parsedAvatarId - 1];
 }
 
 export function renderAvatar(avatarId, username, size = 32) {

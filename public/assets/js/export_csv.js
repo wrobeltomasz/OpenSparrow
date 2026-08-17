@@ -11,16 +11,16 @@ export function exportCSV() {
   debugLog("Exporting CSV", { rows: filteredData.length });
 
   const header = displayedColumns.join(',');
-  const rows = filteredData.map(r =>
-    displayedColumns.map(c => JSON.stringify(r[c] ?? '')).join(',')
+  const rows = filteredData.map(dataRow =>
+    displayedColumns.map(columnName => JSON.stringify(dataRow[columnName] ?? '')).join(',')
   );
   const csv = [header, ...rows].join('\n');
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'export.csv';
-  a.click();
+  const downloadLink = document.createElement('a');
+  downloadLink.href = url;
+  downloadLink.download = 'export.csv';
+  downloadLink.click();
   URL.revokeObjectURL(url);
 }

@@ -7,11 +7,11 @@ import { escHtml } from '../../assets/js/util/esc.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
 function ovFormatBytes(bytes) {
-    const b = Number(bytes);
-    if (b >= 1073741824) return (b / 1073741824).toFixed(1) + ' GB';
-    if (b >= 1048576)    return (b / 1048576).toFixed(1) + ' MB';
-    if (b >= 1024)       return (b / 1024).toFixed(1) + ' KB';
-    return b + ' B';
+    const byteCount = Number(bytes);
+    if (byteCount >= 1073741824) return (byteCount / 1073741824).toFixed(1) + ' GB';
+    if (byteCount >= 1048576)    return (byteCount / 1048576).toFixed(1) + ' MB';
+    if (byteCount >= 1024)       return (byteCount / 1024).toFixed(1) + ' KB';
+    return byteCount + ' B';
 }
 
 function ovFormatNumber(n) {
@@ -82,16 +82,16 @@ function ovStatusRow(label, isOk, detail) {
     badge.textContent = isOk ? 'OK' : 'WARN';
     row.appendChild(badge);
 
-    const lbl = document.createElement('span');
-    lbl.className = 'ov-status-label';
-    lbl.textContent = label;
-    row.appendChild(lbl);
+    const labelElement = document.createElement('span');
+    labelElement.className = 'ov-status-label';
+    labelElement.textContent = label;
+    row.appendChild(labelElement);
 
     if (detail) {
-        const det = document.createElement('span');
-        det.className = 'ov-status-detail';
-        det.textContent = detail;
-        row.appendChild(det);
+        const detailSpan = document.createElement('span');
+        detailSpan.className = 'ov-status-detail';
+        detailSpan.textContent = detail;
+        row.appendChild(detailSpan);
     }
 
     return row;
@@ -146,10 +146,10 @@ function ovCronRow(entry) {
     sent.textContent = Number(entry.sent) + ' sent';
     row.appendChild(sent);
 
-    const by = document.createElement('span');
-    by.className = 'ov-feed-table';
-    by.textContent = 'via ' + (entry.triggered_by ?? 'cron');
-    row.appendChild(by);
+    const authorSpan = document.createElement('span');
+    authorSpan.className = 'ov-feed-table';
+    authorSpan.textContent = 'via ' + (entry.triggered_by ?? 'cron');
+    row.appendChild(authorSpan);
 
     return row;
 }
@@ -171,7 +171,7 @@ export async function renderOverviewPage(context) {
     try {
         const result = await apiFetch('api.php?action=overview');
         data = await result.json();
-    } catch (e) {
+    } catch (error) {
         if (workspaceElement._renderId !== myId) return;
         workspaceElement.innerHTML = '<p style="color:var(--error);">Failed to load dashboard data. Check server logs.</p>';
         return;
@@ -181,10 +181,10 @@ export async function renderOverviewPage(context) {
     workspaceElement.innerHTML = '';
 
     if (data.status === 'error') {
-        const err = document.createElement('p');
-        err.style.color = 'var(--error)';
-        err.textContent = 'Error: ' + escHtml(data.error ?? 'Unknown error');
-        workspaceElement.appendChild(err);
+        const error = document.createElement('p');
+        error.style.color = 'var(--error)';
+        error.textContent = 'Error: ' + escHtml(data.error ?? 'Unknown error');
+        workspaceElement.appendChild(error);
         return;
     }
 
@@ -297,13 +297,13 @@ export async function renderOverviewPage(context) {
     feedPanel.appendChild(ovSection('Recent Activity'));
 
     const feedItems = [];
-    (data.cron_recent ?? []).forEach(c => {
-        feedItems.push({ ts: c.started_at, type: 'cron', data: c });
+    (data.cron_recent ?? []).forEach(cronEntry => {
+        feedItems.push({ ts: cronEntry.started_at, type: 'cron', data: cronEntry });
     });
-    (data.audit_recent ?? []).forEach(a => {
-        feedItems.push({ ts: a.created_at, type: 'audit', data: a });
+    (data.audit_recent ?? []).forEach(auditEntry => {
+        feedItems.push({ ts: auditEntry.created_at, type: 'audit', data: auditEntry });
     });
-    feedItems.sort((a, b) => (b.ts ?? '').localeCompare(a.ts ?? ''));
+    feedItems.sort((auditEntry, byteCount) => (byteCount.ts ?? '').localeCompare(auditEntry.ts ?? ''));
     const topFeed = feedItems.slice(0, 10);
 
     if (topFeed.length === 0) {
@@ -421,15 +421,15 @@ export async function renderOverviewPage(context) {
         const grid = document.createElement('div');
         grid.className = 'ov-tables-grid';
 
-        const maxCount = Math.max(1, ...(data.tables.map(t => t.count)));
+        const maxCount = Math.max(1, ...(data.tables.map(tableEntry => tableEntry.count)));
 
-        data.tables.forEach(t => {
+        data.tables.forEach(tableEntry => {
             const item = document.createElement('div');
             item.className = 'ov-table-item';
 
             const nameElement = document.createElement('div');
             nameElement.className = 'ov-table-name';
-            nameElement.textContent = t.label ?? t.name;
+            nameElement.textContent = tableEntry.label ?? tableEntry.name;
             item.appendChild(nameElement);
 
             const barWrap = document.createElement('div');
@@ -437,13 +437,13 @@ export async function renderOverviewPage(context) {
 
             const bar = document.createElement('div');
             bar.className = 'ov-bar';
-            bar.style.width = Math.round((t.count / maxCount) * 100) + '%';
+            bar.style.width = Math.round((tableEntry.count / maxCount) * 100) + '%';
             barWrap.appendChild(bar);
             item.appendChild(barWrap);
 
             const countElement = document.createElement('div');
             countElement.className = 'ov-table-count';
-            countElement.textContent = ovFormatNumber(t.count);
+            countElement.textContent = ovFormatNumber(tableEntry.count);
             item.appendChild(countElement);
 
             grid.appendChild(item);

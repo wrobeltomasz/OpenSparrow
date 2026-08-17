@@ -19,8 +19,8 @@ export function clearPreviewCache() {
 export function initPreviewPopup() {
     popup = createHoverPopup({ className: 'c-preview-popup', width: 360, verticalThreshold: 180 });
 
-    document.addEventListener('mouseover', async e => {
-        const badge = e.target.closest('.c-count-badge[data-row-id]');
+    document.addEventListener('mouseover', async event => {
+        const badge = event.target.closest('.c-count-badge[data-row-id]');
         if (!badge) return;
 
         popup.el.replaceChildren(makeParagraph('c-preview-loading', 'Loading…'));
@@ -42,8 +42,8 @@ export function initPreviewPopup() {
         if (!popup.el.hidden) renderContent(previewCache.get(cacheKey) ?? []);
     });
 
-    document.addEventListener('mouseout', e => {
-        if (!e.target.closest('.c-count-badge[data-row-id]')) return;
+    document.addEventListener('mouseout', event => {
+        if (!event.target.closest('.c-count-badge[data-row-id]')) return;
         popup.scheduleHide();
     });
 }
@@ -55,16 +55,16 @@ function renderContent(comments) {
     title.textContent = I18n.t('grid.recent_comments');
     popup.el.appendChild(title);
 
-    const visible = comments.filter(c => !c.deleted_at);
+    const visible = comments.filter(comment => !comment.deleted_at);
     if (visible.length === 0) {
         popup.el.appendChild(makeParagraph('c-preview-empty', I18n.t('grid.no_comments')));
         return;
     }
 
-    for (const c of visible) {
+    for (const comment of visible) {
         const item = document.createElement('div');
         item.className = 'c-preview-item';
-        item.appendChild(renderAvatar(c.avatar_id ? parseInt(c.avatar_id, 10) : null, c.username ?? '?', 24));
+        item.appendChild(renderAvatar(comment.avatar_id ? parseInt(comment.avatar_id, 10) : null, comment.username ?? '?', 24));
 
         const content = document.createElement('div');
         content.className = 'c-preview-item-content';
@@ -72,15 +72,15 @@ function renderContent(comments) {
         const meta = document.createElement('div');
         meta.className = 'c-preview-meta';
         const author = document.createElement('strong');
-        author.textContent = c.username ?? 'Unknown';
+        author.textContent = comment.username ?? 'Unknown';
         const time = document.createElement('span');
         time.className = 'c-preview-time';
-        time.textContent = new Date(c.created_at || '').toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+        time.textContent = new Date(comment.created_at || '').toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
         meta.append(author, time);
 
         const body = document.createElement('p');
         body.className = 'c-preview-body';
-        const raw = (c.body ?? '').replace(/\s+/g, ' ');
+        const raw = (comment.body ?? '').replace(/\s+/g, ' ');
         body.textContent = raw.length > 90 ? raw.slice(0, 90) + '…' : raw;
 
         content.append(meta, body);
@@ -90,8 +90,8 @@ function renderContent(comments) {
 }
 
 function makeParagraph(className, text) {
-    const p = document.createElement('p');
-    p.className = className;
-    p.textContent = text;
-    return p;
+    const paragraph = document.createElement('p');
+    paragraph.className = className;
+    paragraph.textContent = text;
+    return paragraph;
 }

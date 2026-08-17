@@ -64,11 +64,11 @@ export function renderPagination(schema) {
     sizeLabel.textContent = I18n.t('grid.rows_per_page') + ':';
 
     const sizeSelect = document.createElement('select');
-    PAGE_SIZE_OPTIONS.forEach(n => {
+    PAGE_SIZE_OPTIONS.forEach(sizeOption => {
         const option = document.createElement('option');
-        option.value = n;
-        option.textContent = n;
-        if (n === pageSize) option.selected = true;
+        option.value = sizeOption;
+        option.textContent = sizeOption;
+        if (sizeOption === pageSize) option.selected = true;
         sizeSelect.appendChild(option);
     });
     sizeSelect.addEventListener('change', async () => {

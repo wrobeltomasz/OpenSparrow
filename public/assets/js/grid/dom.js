@@ -17,11 +17,11 @@ export function makeIconButton({ cy, title, icon, className = 'btn-icon', onClic
 }
 
 export function makeInlineLink(href, text, { newTab = false, onClick } = {}) {
-    const a = document.createElement('a');
-    a.href = href;
-    if (newTab) a.target = '_blank';
-    a.className = 'cell-link';
-    a.textContent = text;
-    if (onClick) a.addEventListener('click', onClick);
-    return a;
+    const linkElement = document.createElement('a');
+    linkElement.href = href;
+    if (newTab) linkElement.target = '_blank';
+    linkElement.className = 'cell-link';
+    linkElement.textContent = text;
+    if (onClick) linkElement.addEventListener('click', onClick);
+    return linkElement;
 }

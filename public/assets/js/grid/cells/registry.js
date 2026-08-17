@@ -6,14 +6,14 @@
 const renderers = new Map();
 
 export const CellRenderer = {
-    register(type, fn) {
-        renderers.set(type, fn);
+    register(type, handler) {
+        renderers.set(type, handler);
     },
 
     render(type, context) {
-        const fn = renderers.get(type);
-        if (!fn) throw new Error(`No cell renderer for type: "${type}"`);
-        return fn(context);
+        const handler = renderers.get(type);
+        if (!handler) throw new Error(`No cell renderer for type: "${type}"`);
+        return handler(context);
     },
 
     has(type) {

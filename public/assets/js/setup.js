@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-const T = window.SETUP_TEXT;
+const TEXT = window.SETUP_TEXT;
 let currentStep = 1;
 let connectionValid = false;
 const dbData = {
@@ -21,7 +21,7 @@ function checkSchemaExists() {
     const schema = document.getElementById('db-schema').value.trim();
     if (schema && dbData.connSchemas.includes(schema)) {
         box.style.display = '';
-        document.getElementById('schema-exists-text').textContent = T.schema_exists_text.replace('{schema}', schema);
+        document.getElementById('schema-exists-text').textContent = TEXT.schema_exists_text.replace('{schema}', schema);
     } else {
         box.style.display = 'none';
         document.getElementById('drop-schema').checked = false;
@@ -32,7 +32,7 @@ document.getElementById('db-schema').addEventListener('input', checkSchemaExists
 
 function nextStep(step) {
     if (step === 3 && !connectionValid) {
-        showMessage('status-message-2', T.test_first, 'error');
+        showMessage('status-message-2', TEXT.test_first, 'error');
         return;
     }
     currentStep = step;
@@ -55,7 +55,7 @@ function previousStep(step) {
 function updateDisplay() {
     document.querySelectorAll('.setup-step').forEach(element => element.classList.remove('active'));
     document.getElementById('step-' + currentStep).classList.add('active');
-    document.getElementById('step-counter').textContent = currentStep <= 4 ? T.step_of.replace('{current}', currentStep) : T.complete_short;
+    document.getElementById('step-counter').textContent = currentStep <= 4 ? TEXT.step_of.replace('{current}', currentStep) : TEXT.complete_short;
 }
 
 function testConnection() {
@@ -71,12 +71,12 @@ function testConnection() {
     dbData.password = document.getElementById('db-password').value;
 
     if (!dbData.host || !dbData.port || !dbData.dbname || !dbData.user) {
-        showMessage('status-message-2', T.fill_required, 'error');
+        showMessage('status-message-2', TEXT.fill_required, 'error');
         return;
     }
 
     button.disabled = true;
-    message.innerHTML = '<span class="spinner"></span>' + T.checking;
+    message.innerHTML = '<span class="spinner"></span>' + TEXT.checking;
     status.classList.add('show');
     nextButton.disabled = true;
     connectionValid = false;
@@ -92,12 +92,12 @@ function testConnection() {
             password: dbData.password
         })
     })
-    .then(r => r.json())
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
             status.classList.remove('error');
             status.classList.add('success');
-            message.innerHTML = '<span class="status-icon success"></span>' + T.conn_success;
+            message.innerHTML = '<span class="status-icon success"></span>' + TEXT.conn_success;
             connectionValid = true;
             dbData.connSchemas = data.schemas || [];
             nextButton.disabled = false;
@@ -105,19 +105,19 @@ function testConnection() {
         } else {
             status.classList.remove('success');
             status.classList.add('error');
-            message.innerHTML = '<span class="status-icon error"></span>' + (data.message || T.conn_failed);
+            message.innerHTML = '<span class="status-icon error"></span>' + (data.message || TEXT.conn_failed);
             connectionValid = false;
             nextButton.disabled = true;
-            showMessage('status-message-2', data.message || T.conn_failed, 'error');
+            showMessage('status-message-2', data.message || TEXT.conn_failed, 'error');
         }
     })
     .catch(error => {
         status.classList.remove('success');
         status.classList.add('error');
-        message.innerHTML = '<span class="status-icon error"></span>' + T.network_error;
+        message.innerHTML = '<span class="status-icon error"></span>' + TEXT.network_error;
         connectionValid = false;
         nextButton.disabled = true;
-        showMessage('status-message-2', T.network_error_msg.replace('{msg}', error.message), 'error');
+        showMessage('status-message-2', TEXT.network_error_msg.replace('{msg}', error.message), 'error');
     })
     .finally(() => {
         button.disabled = false;
@@ -140,7 +140,7 @@ function initializeDatabase() {
 
     button.disabled = true;
     backButton.disabled = true;
-    button.innerHTML = '<span class="spinner"></span>' + T.initializing;
+    button.innerHTML = '<span class="spinner"></span>' + TEXT.initializing;
 
     fetch('setup_api.php?action=init_database', {
         method: 'POST',
@@ -157,7 +157,7 @@ function initializeDatabase() {
             install_demo: document.getElementById('install-demo').checked
         })
     })
-    .then(r => r.json())
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
             const hasAdmin = !!data.admin_password;
@@ -173,24 +173,24 @@ function initializeDatabase() {
             if (document.getElementById('install-demo').checked) {
                 demoMessage.hidden = false;
                 demoMessage.textContent = data.demo_installed
-                    ? T.demo_installed
-                    : (T.demo_failed_prefix + (data.demo_error || ''));
+                    ? TEXT.demo_installed
+                    : (TEXT.demo_failed_prefix + (data.demo_error || ''));
                 demoMessage.className = 'status-message show ' + (data.demo_installed ? 'success' : 'error');
             }
             currentStep = 5;
             updateDisplay();
         } else {
-            showMessage('status-message-4', data.message || T.init_failed, 'error');
+            showMessage('status-message-4', data.message || TEXT.init_failed, 'error');
             button.disabled = false;
             backButton.disabled = false;
-            button.innerHTML = T.init_btn;
+            button.innerHTML = TEXT.init_btn;
         }
     })
     .catch(error => {
-        showMessage('status-message-4', T.network_error_msg.replace('{msg}', error.message), 'error');
+        showMessage('status-message-4', TEXT.network_error_msg.replace('{msg}', error.message), 'error');
         button.disabled = false;
         backButton.disabled = false;
-        button.innerHTML = T.init_btn;
+        button.innerHTML = TEXT.init_btn;
     });
 }
 

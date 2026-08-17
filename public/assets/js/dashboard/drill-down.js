@@ -7,7 +7,7 @@ import { I18n } from '../i18n.js';
 
 export function firstEqCondition(conditions) {
     if (!Array.isArray(conditions)) return null;
-    return conditions.find(c => c.op === '=' && c.col && c.val !== undefined && c.val !== null) ?? null;
+    return conditions.find(condition => condition.op === '=' && condition.col && condition.val !== undefined && condition.val !== null) ?? null;
 }
 
 export function applyDrillDown(element, table, filterColumn = null, filterValue = null, range = null) {

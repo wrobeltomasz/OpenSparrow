@@ -11,8 +11,8 @@ let popup = null;
 export function initImagePopup() {
     popup = createHoverPopup({ className: 'img-popup', width: 280, verticalThreshold: 220 });
 
-    document.addEventListener('mouseover', e => {
-        const td = e.target.closest('[data-img-row-id]');
+    document.addEventListener('mouseover', event => {
+        const td = event.target.closest('[data-img-row-id]');
         if (!td) return;
 
         const entry = getImageEntry(td.dataset.imgRowId);
@@ -22,8 +22,8 @@ export function initImagePopup() {
         popup.show(td);
     });
 
-    document.addEventListener('mouseout', e => {
-        if (!e.target.closest('[data-img-row-id]')) return;
+    document.addEventListener('mouseout', event => {
+        if (!event.target.closest('[data-img-row-id]')) return;
         popup.scheduleHide();
     });
 }

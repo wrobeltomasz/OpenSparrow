@@ -9,10 +9,10 @@ import { escHtml } from '../../assets/js/util/esc.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
 function severityBadge(sev) {
-    const b = document.createElement('span');
-    b.className = `adm-badge adm-badge-${sev in { high:1, medium:1, low:1 } ? sev : 'muted'}`;
-    b.textContent = sev.toUpperCase();
-    return b;
+    const badgeSpan = document.createElement('span');
+    badgeSpan.className = `adm-badge adm-badge-${sev in { high:1, medium:1, low:1 } ? sev : 'muted'}`;
+    badgeSpan.textContent = sev.toUpperCase();
+    return badgeSpan;
 }
 
 function copyButton(getText, label = 'Copy SQL', small = true) {
@@ -33,8 +33,8 @@ function makeSection(title, description) {
     const card = document.createElement('div');
     card.className = 'adm-sec-card';
 
-    const hdr = document.createElement('div');
-    hdr.className = 'adm-sec-hdr';
+    const headerElement = document.createElement('div');
+    headerElement.className = 'adm-sec-hdr';
 
     const hdrLeft = document.createElement('div');
     const h3 = document.createElement('h3');
@@ -50,9 +50,9 @@ function makeSection(title, description) {
     button.className = 'btn btn-primary btn-sm';
     button.textContent = 'Scan';
 
-    hdr.appendChild(hdrLeft);
-    hdr.appendChild(button);
-    card.appendChild(hdr);
+    headerElement.appendChild(hdrLeft);
+    headerElement.appendChild(button);
+    card.appendChild(headerElement);
 
     const body = document.createElement('div');
     body.className = 'adm-sec-body';
@@ -68,26 +68,26 @@ function makeSection(title, description) {
 
 function setBodyLoading(body) {
     body.replaceChildren();
-    const p = document.createElement('p');
-    p.style.cssText = '  margin:0;';
-    p.textContent = 'Scanning…';
-    body.appendChild(p);
+    const paragraph = document.createElement('p');
+    paragraph.style.cssText = '  margin:0;';
+    paragraph.textContent = 'Scanning…';
+    body.appendChild(paragraph);
 }
 
-function setBodyError(body, msg) {
+function setBodyError(body, messageElement) {
     body.replaceChildren();
-    const p = document.createElement('p');
-    p.style.cssText = 'color:var(--error);  margin:0;';
-    p.textContent = msg;
-    body.appendChild(p);
+    const paragraph = document.createElement('p');
+    paragraph.style.cssText = 'color:var(--error);  margin:0;';
+    paragraph.textContent = messageElement;
+    body.appendChild(paragraph);
 }
 
-function setBodyEmpty(body, msg) {
+function setBodyEmpty(body, messageElement) {
     body.replaceChildren();
-    const p = document.createElement('p');
-    p.style.cssText = 'color:var(--ok); font-weight:600;  margin:0;';
-    p.textContent = '✓ ' + msg;
-    body.appendChild(p);
+    const paragraph = document.createElement('p');
+    paragraph.style.cssText = 'color:var(--ok); font-weight:600;  margin:0;';
+    paragraph.textContent = '✓ ' + messageElement;
+    body.appendChild(paragraph);
 }
 
 function renderIndexAdvisor(body, data) {
@@ -101,52 +101,52 @@ function renderIndexAdvisor(body, data) {
 
     const row = document.createElement('div');
     row.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:14px;';
-    const high = suggestions.filter(s => s.priority === 'high').length;
+    const high = suggestions.filter(suggestion => suggestion.priority === 'high').length;
     const sum = document.createElement('span');
     sum.style.cssText = '';
     sum.textContent = `${suggestions.length} suggestion${suggestions.length !== 1 ? 's' : ''} · ${high} high priority`;
     row.appendChild(sum);
-    row.appendChild(copyButton(() => suggestions.map(s => s.sql).join('\n'), 'Copy All SQL', false));
+    row.appendChild(copyButton(() => suggestions.map(suggestion => suggestion.sql).join('\n'), 'Copy All SQL', false));
     body.appendChild(row);
 
     const byTable = new Map();
-    suggestions.forEach(s => {
-        const k = `"${s.schema}"."${s.table}"`;
-        if (!byTable.has(k)) byTable.set(k, []);
-        byTable.get(k).push(s);
+    suggestions.forEach(suggestion => {
+        const groupKey = `"${suggestion.schema}"."${suggestion.table}"`;
+        if (!byTable.has(groupKey)) byTable.set(groupKey, []);
+        byTable.get(groupKey).push(suggestion);
     });
 
     byTable.forEach((rows, tableKey) => {
-        const grp = document.createElement('div');
-        grp.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px; overflow:hidden;';
+        const group = document.createElement('div');
+        group.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px; overflow:hidden;';
 
-        const gh = document.createElement('div');
-        gh.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono);  font-weight:600;';
+        const groupHeader = document.createElement('div');
+        groupHeader.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono);  font-weight:600;';
         const ghText = document.createElement('span');
         ghText.textContent = tableKey;
-        gh.appendChild(ghText);
-        gh.appendChild(copyButton(() => rows.map(r => r.sql).join('\n'), 'Copy table SQL'));
-        grp.appendChild(gh);
+        groupHeader.appendChild(ghText);
+        groupHeader.appendChild(copyButton(() => rows.map(suggestionRow => suggestionRow.sql).join('\n'), 'Copy table SQL'));
+        group.appendChild(groupHeader);
 
-        const t = mkTable();
-        mkThead(t, ['Priority', 'Column', 'Reason(s)', 'SQL', '']);
-        const tbody = t.createTBody();
-        rows.forEach(s => {
+        const tableElement = mkTable();
+        mkThead(tableElement, ['Priority', 'Column', 'Reason(s)', 'SQL', '']);
+        const tbody = tableElement.createTBody();
+        rows.forEach(suggestion => {
             const tr = tbody.insertRow();
-            tr.appendChild(tdEl(severityBadge(s.priority)));
-            tr.appendChild(td(s.column, 'font-family:var(--font-mono); font-weight:600;'));
-            tr.appendChild(td(s.reasons.join(' · ')));
+            tr.appendChild(tdEl(severityBadge(suggestion.priority)));
+            tr.appendChild(td(suggestion.column, 'font-family:var(--font-mono); font-weight:600;'));
+            tr.appendChild(td(suggestion.reasons.join(' · ')));
             const codeTd = document.createElement('td');
             codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:340px;';
             const code = document.createElement('code');
             code.style.cssText = ' background:var(--bg); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
-            code.textContent = s.sql;
+            code.textContent = suggestion.sql;
             codeTd.appendChild(code);
             tr.appendChild(codeTd);
-            tr.appendChild(tdEl(copyButton(() => s.sql)));
+            tr.appendChild(tdEl(copyButton(() => suggestion.sql)));
         });
-        grp.appendChild(t);
-        body.appendChild(grp);
+        group.appendChild(tableElement);
+        body.appendChild(group);
     });
 }
 
@@ -164,42 +164,42 @@ function renderUnusedIndexes(body, data) {
     warn.textContent = `⚠ ${rows.length} unused index${rows.length !== 1 ? 'es' : ''} found. Unused indexes waste storage and slow down writes. Verify before dropping.`;
     body.appendChild(warn);
 
-    body.appendChild(copyButton(() => rows.map(r => r.drop_sql).join('\n'), 'Copy All DROP SQL', false));
+    body.appendChild(copyButton(() => rows.map(suggestionRow => suggestionRow.drop_sql).join('\n'), 'Copy All DROP SQL', false));
 
-    const t = mkTable();
-    t.style.marginTop = '12px';
-    mkThead(t, ['Table', 'Index', 'Scans', 'Size', 'DROP SQL', '']);
-    const tbody = t.createTBody();
-    rows.forEach(r => {
+    const tableElement = mkTable();
+    tableElement.style.marginTop = '12px';
+    mkThead(tableElement, ['Table', 'Index', 'Scans', 'Size', 'DROP SQL', '']);
+    const tbody = tableElement.createTBody();
+    rows.forEach(suggestionRow => {
         const tr = tbody.insertRow();
-        tr.appendChild(td(`"${r.schemaname}"."${r.tablename}"`));
-        tr.appendChild(td(r.indexname, 'font-family:var(--font-mono);'));
-        tr.appendChild(td(r.idx_scan));
-        tr.appendChild(td(r.index_size));
+        tr.appendChild(td(`"${suggestionRow.schemaname}"."${suggestionRow.tablename}"`));
+        tr.appendChild(td(suggestionRow.indexname, 'font-family:var(--font-mono);'));
+        tr.appendChild(td(suggestionRow.idx_scan));
+        tr.appendChild(td(suggestionRow.index_size));
         const codeTd = document.createElement('td');
         codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:300px;';
         const code = document.createElement('code');
         code.style.cssText = ' background:var(--error-light); padding:3px 6px; border-radius:4px; display:block; overflow-x:auto; white-space:nowrap;';
-        code.textContent = r.drop_sql;
+        code.textContent = suggestionRow.drop_sql;
         codeTd.appendChild(code);
         tr.appendChild(codeTd);
-        tr.appendChild(tdEl(copyButton(() => r.drop_sql)));
+        tr.appendChild(tdEl(copyButton(() => suggestionRow.drop_sql)));
     });
-    t.appendChild(tbody);
-    body.appendChild(t);
+    tableElement.appendChild(tbody);
+    body.appendChild(tableElement);
 }
 
 function renderSlowQueries(body, data) {
     body.replaceChildren();
 
     if (data.status === 'unavailable') {
-        const p = document.createElement('p');
-        p.style.cssText = ' ';
-        p.textContent = data.message;
+        const paragraph = document.createElement('p');
+        paragraph.style.cssText = ' ';
+        paragraph.textContent = data.message;
         const code = document.createElement('code');
         code.style.cssText = 'display:block; margin-top:8px; padding:8px 12px; background:var(--bg); border-radius:4px; ';
         code.textContent = 'CREATE EXTENSION pg_stat_statements;';
-        body.appendChild(p);
+        body.appendChild(paragraph);
         body.appendChild(code);
         return;
     }
@@ -210,28 +210,28 @@ function renderSlowQueries(body, data) {
         return;
     }
 
-    const t = mkTable();
-    mkThead(t, ['Avg ms', 'Total ms', 'Calls', 'Rows/call', 'Query']);
-    const tbody = t.createTBody();
-    rows.forEach(r => {
+    const tableElement = mkTable();
+    mkThead(tableElement, ['Avg ms', 'Total ms', 'Calls', 'Rows/call', 'Query']);
+    const tbody = tableElement.createTBody();
+    rows.forEach(suggestionRow => {
         const tr = tbody.insertRow();
-        const avgMs = parseFloat(r.mean_ms);
+        const avgMs = parseFloat(suggestionRow.mean_ms);
         const color = avgMs > 500 ? 'var(--error)' : avgMs > 100 ? 'var(--muted)' : 'inherit';
-        tr.appendChild(td(r.mean_ms + ' ms', `font-weight:600; color:${color};`));
-        tr.appendChild(td(r.total_ms + ' ms'));
-        tr.appendChild(td(r.calls));
-        tr.appendChild(td(r.calls > 0 ? Math.round(r.rows / r.calls) : '—'));
+        tr.appendChild(td(suggestionRow.mean_ms + ' ms', `font-weight:600; color:${color};`));
+        tr.appendChild(td(suggestionRow.total_ms + ' ms'));
+        tr.appendChild(td(suggestionRow.calls));
+        tr.appendChild(td(suggestionRow.calls > 0 ? Math.round(suggestionRow.rows / suggestionRow.calls) : '—'));
         const qtd = document.createElement('td');
         qtd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:420px;';
         const code = document.createElement('code');
         code.style.cssText = ' display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text);';
-        code.title = r.query;
-        code.textContent = r.query;
+        code.title = suggestionRow.query;
+        code.textContent = suggestionRow.query;
         qtd.appendChild(code);
         tr.appendChild(qtd);
     });
-    t.appendChild(tbody);
-    body.appendChild(t);
+    tableElement.appendChild(tbody);
+    body.appendChild(tableElement);
 }
 
 function renderTableStatistics(body, data) {
@@ -243,41 +243,41 @@ function renderTableStatistics(body, data) {
         return;
     }
 
-    const t = mkTable();
-    mkThead(t, ['Table', 'Est. rows', 'Dead rows', 'Bloat %', 'Seq scans', 'Idx scans', 'Size', 'Last AutoVacuum', 'Last AutoAnalyze', '']);
-    const tbody = t.createTBody();
-    rows.forEach(r => {
+    const tableElement = mkTable();
+    mkThead(tableElement, ['Table', 'Est. rows', 'Dead rows', 'Bloat %', 'Seq scans', 'Idx scans', 'Size', 'Last AutoVacuum', 'Last AutoAnalyze', '']);
+    const tbody = tableElement.createTBody();
+    rows.forEach(suggestionRow => {
         const tr = tbody.insertRow();
-        const deadPct = parseFloat(r.dead_pct);
+        const deadPct = parseFloat(suggestionRow.dead_pct);
         const bloatColor = deadPct > 20 ? 'var(--error)' : deadPct > 10 ? 'var(--muted)' : 'inherit';
-        const seqScan = parseInt(r.seq_scan) || 0;
-        const indexScan = parseInt(r.idx_scan) || 0;
+        const seqScan = parseInt(suggestionRow.seq_scan) || 0;
+        const indexScan = parseInt(suggestionRow.idx_scan) || 0;
         const scanColor = seqScan > 100 && seqScan > indexScan * 2 ? 'var(--muted)' : 'inherit';
 
-        tr.appendChild(td(r.tablename));
-        tr.appendChild(td(Number(r.estimated_rows).toLocaleString()));
-        tr.appendChild(td(Number(r.n_dead_tup).toLocaleString()));
-        tr.appendChild(td(r.dead_pct + '%', `font-weight:600; color:${bloatColor};`));
+        tr.appendChild(td(suggestionRow.tablename));
+        tr.appendChild(td(Number(suggestionRow.estimated_rows).toLocaleString()));
+        tr.appendChild(td(Number(suggestionRow.n_dead_tup).toLocaleString()));
+        tr.appendChild(td(suggestionRow.dead_pct + '%', `font-weight:600; color:${bloatColor};`));
         tr.appendChild(td(seqScan.toLocaleString(), `color:${scanColor};`));
         tr.appendChild(td(indexScan.toLocaleString()));
-        tr.appendChild(td(r.total_size));
-        tr.appendChild(td(r.last_autovacuum || 'never'));
-        tr.appendChild(td(r.last_autoanalyze || 'never'));
+        tr.appendChild(td(suggestionRow.total_size));
+        tr.appendChild(td(suggestionRow.last_autovacuum || 'never'));
+        tr.appendChild(td(suggestionRow.last_autoanalyze || 'never'));
 
-        const vacuumSql = `VACUUM ANALYZE "${r.schemaname}"."${r.tablename}";`;
+        const vacuumSql = `VACUUM ANALYZE "${suggestionRow.schemaname}"."${suggestionRow.tablename}";`;
         tr.appendChild(tdEl(deadPct > 10 ? copyButton(() => vacuumSql, 'VACUUM') : null));
     });
-    t.appendChild(tbody);
-    body.appendChild(t);
+    tableElement.appendChild(tbody);
+    body.appendChild(tableElement);
 }
 
 function renderDbHealth(body, data) {
     body.replaceChildren();
 
-    const db        = data.db;
+    const databaseInfo        = data.db;
     const maxConn   = data.max_conn;
     const activeConn = data.active_conn;
-    const cacheHit  = parseFloat(db.cache_hit_ratio);
+    const cacheHit  = parseFloat(databaseInfo.cache_hit_ratio);
     const connPct   = maxConn > 0 ? Math.round(100 * activeConn / maxConn) : 0;
 
     const grid = document.createElement('div');
@@ -286,19 +286,19 @@ function renderDbHealth(body, data) {
     function kpi(label, value, sub = '', color = 'inherit') {
         const card = document.createElement('div');
         card.style.cssText = 'border:1px solid var(--border); border-radius:6px; padding:14px 16px;';
-        const v = document.createElement('div');
-        v.style.cssText = ` font-weight:700; color:${color};`;
-        v.textContent = value;
-        const l = document.createElement('div');
-        l.style.cssText = '  margin-top:2px;';
-        l.textContent = label;
-        card.appendChild(v);
-        card.appendChild(l);
+        const valueDiv = document.createElement('div');
+        valueDiv.style.cssText = ` font-weight:700; color:${color};`;
+        valueDiv.textContent = value;
+        const labelDiv = document.createElement('div');
+        labelDiv.style.cssText = '  margin-top:2px;';
+        labelDiv.textContent = label;
+        card.appendChild(valueDiv);
+        card.appendChild(labelDiv);
         if (sub) {
-            const s = document.createElement('div');
-            s.style.cssText = '  margin-top:4px;';
-            s.textContent = sub;
-            card.appendChild(s);
+            const suggestion = document.createElement('div');
+            suggestion.style.cssText = '  margin-top:4px;';
+            suggestion.textContent = sub;
+            card.appendChild(suggestion);
         }
         return card;
     }
@@ -315,23 +315,23 @@ function renderDbHealth(body, data) {
         connPct + '% of max_connections',
         connPct > 80 ? 'var(--error)' : connPct > 60 ? 'var(--warn)' : 'var(--ok)'
     ));
-    grid.appendChild(kpi('DB Size', db.db_size));
-    grid.appendChild(kpi('Committed Txns', Number(db.xact_commit).toLocaleString()));
+    grid.appendChild(kpi('DB Size', databaseInfo.db_size));
+    grid.appendChild(kpi('Committed Txns', Number(databaseInfo.xact_commit).toLocaleString()));
     grid.appendChild(kpi(
         'Deadlocks',
-        db.deadlocks,
+        databaseInfo.deadlocks,
         '',
-        parseInt(db.deadlocks) > 0 ? 'var(--error)' : 'var(--ok)'
+        parseInt(databaseInfo.deadlocks) > 0 ? 'var(--error)' : 'var(--ok)'
     ));
-    grid.appendChild(kpi('Rollbacks', Number(db.xact_rollback).toLocaleString()));
+    grid.appendChild(kpi('Rollbacks', Number(databaseInfo.xact_rollback).toLocaleString()));
 
     body.appendChild(grid);
 
     if (data.pg_version) {
-        const ver = document.createElement('p');
-        ver.style.cssText = '  margin:0;';
-        ver.textContent = data.pg_version;
-        body.appendChild(ver);
+        const versionParagraph = document.createElement('p');
+        versionParagraph.style.cssText = '  margin:0;';
+        versionParagraph.textContent = data.pg_version;
+        body.appendChild(versionParagraph);
     }
 }
 
@@ -349,18 +349,18 @@ function renderSchemaWarnings(body, data) {
     sum.textContent = `${warnings.length} warning${warnings.length !== 1 ? 's' : ''} found.`;
     body.appendChild(sum);
 
-    const t = mkTable();
-    mkThead(t, ['Severity', 'Category', 'Table', 'Issue']);
-    const tbody = t.createTBody();
-    warnings.forEach(w => {
+    const tableElement = mkTable();
+    mkThead(tableElement, ['Severity', 'Category', 'Table', 'Issue']);
+    const tbody = tableElement.createTBody();
+    warnings.forEach(warning => {
         const tr = tbody.insertRow();
-        tr.appendChild(tdEl(severityBadge(w.severity)));
-        tr.appendChild(td(w.category, 'white-space:nowrap;'));
-        tr.appendChild(td(w.display || w.table, 'font-weight:600; white-space:nowrap;'));
-        tr.appendChild(td(w.message));
+        tr.appendChild(tdEl(severityBadge(warning.severity)));
+        tr.appendChild(td(warning.category, 'white-space:nowrap;'));
+        tr.appendChild(td(warning.display || warning.table, 'font-weight:600; white-space:nowrap;'));
+        tr.appendChild(td(warning.message));
     });
-    t.appendChild(tbody);
-    body.appendChild(t);
+    tableElement.appendChild(tbody);
+    body.appendChild(tableElement);
 }
 
 async function runSection(apiAction, renderFn, button, body) {
@@ -373,8 +373,8 @@ async function runSection(apiAction, renderFn, button, body) {
         const data = await result.json();
         if (data.status === 'error') throw new Error(data.error || 'Server error');
         renderFn(body, data);
-    } catch (err) {
-        setBodyError(body, 'Error: ' + err.message);
+    } catch (error) {
+        setBodyError(body, 'Error: ' + error.message);
     } finally {
         button.disabled = false;
         button.textContent = 'Scan';
@@ -453,10 +453,10 @@ export function renderPerformancePage(context) {
 
     const panels = buildInnerTabs(wrap, sections);
 
-    const built = sections.map((s, i) => {
-        const { card, btn: button, body } = makeSection(s.title, s.desc);
+    const built = sections.map((suggestion, i) => {
+        const { card, btn: button, body } = makeSection(suggestion.title, suggestion.desc);
         card.id = `perf-section-${i}`;
-        button.addEventListener('click', () => runSection(s.action, s.render, button, body));
+        button.addEventListener('click', () => runSection(suggestion.action, suggestion.render, button, body));
         panels[i].appendChild(card);
         return { btn: button, body, ...s };
     });
@@ -464,7 +464,7 @@ export function renderPerformancePage(context) {
     buttonAll.addEventListener('click', async () => {
         buttonAll.disabled = true;
         buttonAll.textContent = 'Running…';
-        await Promise.all(built.map(s => runSection(s.action, s.render, s.btn, s.body)));
+        await Promise.all(built.map(suggestion => runSection(suggestion.action, suggestion.render, suggestion.btn, suggestion.body)));
         buttonAll.disabled = false;
         buttonAll.textContent = 'Run All';
     });

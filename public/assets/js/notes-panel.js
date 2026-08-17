@@ -29,8 +29,8 @@ function localDateTimeValue(d) {
 
 function toInputValue(stored) {
     if (!stored) return '';
-    const v = String(stored).replace(' ', 'T').slice(0, 16);
-    return v.length === 10 ? v + 'T00:00' : v;
+    const localValue = String(stored).replace(' ', 'T').slice(0, 16);
+    return localValue.length === 10 ? localValue + 'T00:00' : localValue;
 }
 
 function formatReminder(stored) {
@@ -153,7 +153,7 @@ function buildForm(tables, onSubmit, initial = null) {
                 recordSelect.value = String(preselectId);
             }
             recordSelect.disabled = false;
-        } catch (err) {
+        } catch (error) {
             setRecordPlaceholder(I18n.t('notes.load_error'));
         }
     }
@@ -211,8 +211,8 @@ function buildForm(tables, onSubmit, initial = null) {
                 related_id: tableSelect.value ? recordSelect.value : '',
                 reminder_date: dateInput.value,
             });
-        } catch (err) {
-            alert(err.message);
+        } catch (error) {
+            alert(error.message);
         } finally {
             saveButton.disabled = false;
         }
@@ -248,10 +248,10 @@ function buildNoteRow(note, tables, { onSave, onDelete }) {
 
         const link = noteLink(note);
         if (link) {
-            const a = document.createElement('a');
-            a.href = link;
-            a.textContent = I18n.t('notes.open_record');
-            meta.appendChild(a);
+            const linkElement = document.createElement('a');
+            linkElement.href = link;
+            linkElement.textContent = I18n.t('notes.open_record');
+            meta.appendChild(linkElement);
         }
 
         row.appendChild(meta);
@@ -274,8 +274,8 @@ function buildNoteRow(note, tables, { onSave, onDelete }) {
             try {
                 await onDelete(note.id);
                 row.remove();
-            } catch (err) {
-                alert(err.message);
+            } catch (error) {
+                alert(error.message);
             }
         });
 
@@ -344,7 +344,7 @@ export async function openNotesPanel() {
     try {
         await reloadList();
         panel.clearStatus();
-    } catch (err) {
-        panel.setStatus(err.message, true);
+    } catch (error) {
+        panel.setStatus(error.message, true);
     }
 }

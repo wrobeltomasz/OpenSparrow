@@ -16,9 +16,9 @@ async function fetchI18n() {
     } catch (_) {}
 }
 function t(key, vars = {}) {
-    const v = _i18nBundle[key];
-    if (!v) return key.split('.').pop();
-    return String(v).replace(/\{(\w+)\}/g, (_, k) => k in vars ? String(vars[k]) : `{${k}}`);
+    const translation = _i18nBundle[key];
+    if (!translation) return key.split('.').pop();
+    return String(translation).replace(/\{(\w+)\}/g, (_, variableName) => variableName in vars ? String(vars[variableName]) : `{${variableName}}`);
 }
 
 let currentMonth = new Date().getMonth();
@@ -55,12 +55,12 @@ function tableLabel(table) {
 
 let searchTerm = '';
 
-function eventMatchesSearch(ev) {
+function eventMatchesSearch(event) {
     if (!searchTerm) return true;
-    const parts = [ev.title, String(ev.id)];
-    for (const [key, val] of Object.entries(ev.rowData || {})) {
-        if (key.endsWith('__display') || val === null || val === undefined) continue;
-        parts.push(String(ev.rowData[key + '__display'] ?? val));
+    const parts = [event.title, String(event.id)];
+    for (const [key, fieldValue] of Object.entries(event.rowData || {})) {
+        if (key.endsWith('__display') || fieldValue === null || fieldValue === undefined) continue;
+        parts.push(String(event.rowData[key + '__display'] ?? fieldValue));
     }
     return parts.join(' ').toLowerCase().includes(searchTerm);
 }
@@ -94,7 +94,7 @@ function initClearFilters() {
 }
 
 function visibleEvents() {
-    return eventsData.filter(ev => !hiddenTables.has(ev.table) && eventMatchesSearch(ev));
+    return eventsData.filter(event => !hiddenTables.has(event.table) && eventMatchesSearch(event));
 }
 
 function buildSourceChip(source) {
@@ -171,8 +171,8 @@ async function fetchSchema() {
         } else {
             console.error('Failed to load secure schema');
         }
-    } catch (err) {
-        console.error('Failed to fetch schema in calendar', err);
+    } catch (error) {
+        console.error('Failed to fetch schema in calendar', error);
     }
 }
 
@@ -185,8 +185,8 @@ async function fetchEvents(year, month) {
             const data = await result.json();
             eventsData = data.events || [];
         }
-    } catch (err) {
-        console.error('Failed to load calendar events', err);
+    } catch (error) {
+        console.error('Failed to load calendar events', error);
     }
 }
 
@@ -211,10 +211,10 @@ function renderCalendar() {
         t('calendar.day_thu'), t('calendar.day_fri'), t('calendar.day_sat'), t('calendar.day_sun'),
     ];
     days.forEach(day => {
-        const div = document.createElement('div');
-        div.className = 'calendar-day-name';
-        div.textContent = day;
-        container.appendChild(div);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'calendar-day-name';
+        wrapper.textContent = day;
+        container.appendChild(wrapper);
     });
 
     const firstDay = new Date(currentYear, currentMonth, 1);
@@ -247,8 +247,8 @@ function renderCalendar() {
             addButton.textContent = '+';
             addButton.title = t('calendar.add_event');
             addButton.setAttribute('aria-label', t('calendar.add_event'));
-            addButton.addEventListener('click', (e) => {
-                e.stopPropagation();
+            addButton.addEventListener('click', (event) => {
+                event.stopPropagation();
                 openAddEventModal(dateString);
             });
             cell.appendChild(addButton);
@@ -261,9 +261,9 @@ function renderCalendar() {
             cell.classList.add('today');
         }
 
-        cell.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
+        cell.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
             cell.style.outline = '2px solid var(--accent)';
         });
 
@@ -271,20 +271,20 @@ function renderCalendar() {
             cell.style.outline = '';
         });
 
-        cell.addEventListener('drop', async (e) => {
-            e.preventDefault();
+        cell.addEventListener('drop', async (event) => {
+            event.preventDefault();
             cell.style.outline = '';
 
             let payload;
             try {
-                payload = JSON.parse(e.dataTransfer.getData('application/json'));
+                payload = JSON.parse(event.dataTransfer.getData('application/json'));
             } catch {
                 return;
             }
 
             if (payload.date === dateString) return;
 
-            const eventIndex = eventsData.findIndex(ev => ev.id === payload.id && ev.table === payload.table);
+            const eventIndex = eventsData.findIndex(event => event.id === payload.id && event.table === payload.table);
             const originalDate = payload.date;
 
             if (eventIndex !== -1) {
@@ -313,29 +313,29 @@ function renderCalendar() {
                     }
                     console.error('Failed to move event:', data.error ?? result.status);
                 }
-            } catch (err) {
+            } catch (error) {
                 if (eventIndex !== -1) {
                     eventsData[eventIndex].date = originalDate;
                     renderCalendar();
                 }
-                console.error('Network error during event move:', err);
+                console.error('Network error during event move:', error);
             }
         });
 
-        const dayEvents = monthEvents.filter(e => e.date === dateString);
-        dayEvents.forEach(ev => {
+        const dayEvents = monthEvents.filter(event => event.date === dateString);
+        dayEvents.forEach(event => {
             const evElement = document.createElement('div');
             evElement.className = 'calendar-event';
-            evElement.style.backgroundColor = ev.color;
+            evElement.style.backgroundColor = event.color;
 
             evElement.draggable = true;
 
-            evElement.addEventListener('dragstart', (e) => {
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('application/json', JSON.stringify({
-                    id: ev.id,
-                    table: ev.table,
-                    date: ev.date
+            evElement.addEventListener('dragstart', (event) => {
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('application/json', JSON.stringify({
+                    id: event.id,
+                    table: event.table,
+                    date: event.date
                 }));
                 evElement.style.opacity = '0.4';
             });
@@ -344,32 +344,32 @@ function renderCalendar() {
                 evElement.style.opacity = '';
             });
 
-            if (ev.icon) {
-                if (ev.icon.includes('/') || ev.icon.includes('.')) {
+            if (event.icon) {
+                if (event.icon.includes('/') || event.icon.includes('.')) {
                     const image = document.createElement('img');
-                    image.src = ev.icon;
+                    image.src = event.icon;
                     image.style.cssText = 'width:14px; height:14px; vertical-align:middle; margin-right:4px;';
                     evElement.appendChild(image);
                 } else {
                     const iconSpan = document.createElement('span');
                     iconSpan.style.marginRight = '4px';
-                    iconSpan.textContent = ev.icon;
+                    iconSpan.textContent = event.icon;
                     evElement.appendChild(iconSpan);
                 }
             }
 
-            const titleText = document.createTextNode(ev.title);
+            const titleText = document.createTextNode(event.title);
             evElement.appendChild(titleText);
 
-            if (ev.subtitle) {
+            if (event.subtitle) {
                 const subSpan = document.createElement('span');
                 subSpan.className = 'calendar-event-sub';
-                subSpan.textContent = ' · ' + ev.subtitle;
+                subSpan.textContent = ' · ' + event.subtitle;
                 evElement.appendChild(subSpan);
             }
 
             evElement.addEventListener('click', () => {
-                window.location.href = `edit.php?table=${encodeURIComponent(ev.table)}&id=${encodeURIComponent(ev.id)}`;
+                window.location.href = `edit.php?table=${encodeURIComponent(event.table)}&id=${encodeURIComponent(event.id)}`;
             });
 
             if (canEdit) {
@@ -379,18 +379,18 @@ function renderCalendar() {
                 delButton.textContent = '✕';
                 delButton.title = t('calendar.delete_event');
                 delButton.setAttribute('aria-label', t('calendar.delete_event'));
-                delButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteEvent(ev);
+                delButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    deleteEvent(event);
                 });
                 evElement.appendChild(delButton);
             }
 
             evElement.addEventListener('mouseenter', () => {
-                const columns = appSchema?.tables?.[ev.table]?.columns || {};
+                const columns = appSchema?.tables?.[event.table]?.columns || {};
                 showRecordTooltip(evElement, {
-                    title: ev.title,
-                    rows: rowsFromRecord(ev.rowData || {}, columns)
+                    title: event.title,
+                    rows: rowsFromRecord(event.rowData || {}, columns)
                 });
             });
             evElement.addEventListener('mouseleave', hideRecordTooltip);
@@ -402,11 +402,11 @@ function renderCalendar() {
     }
 }
 
-async function deleteEvent(ev) {
+async function deleteEvent(event) {
     hideRecordTooltip();
     if (!window.confirm(t('calendar.delete_confirm'))) return;
 
-    const eventIndex = eventsData.findIndex(e => e.id === ev.id && e.table === ev.table);
+    const eventIndex = eventsData.findIndex(event => event.id === event.id && event.table === event.table);
     if (eventIndex === -1) return;
     const removed = eventsData[eventIndex];
 
@@ -416,7 +416,7 @@ async function deleteEvent(ev) {
     try {
         const result = await apiFetch('api.php', {
             method: 'DELETE',
-            body: { table: ev.table, id: ev.id }
+            body: { table: event.table, id: event.id }
         });
         const data = await result.json().catch(() => ({}));
 
@@ -425,10 +425,10 @@ async function deleteEvent(ev) {
             renderCalendar();
             console.error('Failed to delete event:', data.error ?? result.status);
         }
-    } catch (err) {
+    } catch (error) {
         eventsData.splice(eventIndex, 0, removed);
         renderCalendar();
-        console.error('Network error during event delete:', err);
+        console.error('Network error during event delete:', error);
     }
 }
 
@@ -510,12 +510,12 @@ function openAddEventModal(dateString) {
         backdrop.remove();
     }
 
-    function onKeydown(e) {
-        if (e.key === 'Escape') close();
+    function onKeydown(event) {
+        if (event.key === 'Escape') close();
     }
 
-    backdrop.addEventListener('click', (e) => {
-        if (e.target === backdrop) close();
+    backdrop.addEventListener('click', (event) => {
+        if (event.target === backdrop) close();
     });
     closeButton.addEventListener('click', close);
     cancelButton.addEventListener('click', close);
@@ -524,7 +524,7 @@ function openAddEventModal(dateString) {
     if (confirmButton && select) {
         confirmButton.addEventListener('click', () => {
             const table = select.value;
-            const source = sources.find(s => s.table === table);
+            const source = sources.find(sourceEntry => sourceEntry.table === table);
             if (!source) return;
 
             const columnType = (appSchema?.tables?.[table]?.columns?.[source.date_column]?.type || '').toLowerCase();

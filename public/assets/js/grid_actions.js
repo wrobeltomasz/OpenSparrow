@@ -111,22 +111,22 @@ async function performUpdate(element, table, id, column, value) {
         document.getElementById('addRow')
       );
     }
-  } catch (err) {
-    console.error("Network error during update", err);
+  } catch (error) {
+    console.error("Network error during update", error);
     markCell(td, false);
   }
 }
 
-export function onInputChange(e) {
-  const element = e.target;
+export function onInputChange(event) {
+  const element = event.target;
   const table = getCurrentTable();
   const id = element.dataset.id;
   const column = element.dataset.column;
   const value = normalizeValue(element);
 }
 
-export function onCellBlur(e) {
-  const element = e.target;
+export function onCellBlur(event) {
+  const element = event.target;
   const table = getCurrentTable();
   const id = element.dataset.id;
   const column = element.dataset.column;
@@ -143,16 +143,16 @@ export function onCellBlur(e) {
       try {
           const regex = new RegExp(pattern);
           if (!regex.test(String(value))) {
-              const msg = element.dataset.message || 'Invalid input format';
-              showToast(msg, 'error');
+              const messageElement = element.dataset.message || 'Invalid input format';
+              showToast(messageElement, 'error');
 
               if (element.isContentEditable) element.textContent = original ?? '';
               else element.value = original ?? '';
 
               return;
           }
-      } catch (err) {
-          console.error("Invalid regex pattern provided from schema", err);
+      } catch (error) {
+          console.error("Invalid regex pattern provided from schema", error);
       }
   }
 
@@ -185,8 +185,8 @@ export async function deleteRow(id) {
 
     debugLog("Delete success", { id });
     return payload;
-  } catch (err) {
-    console.error("Network error during delete", err);
+  } catch (error) {
+    console.error("Network error during delete", error);
   }
 }
 
@@ -205,8 +205,8 @@ export async function duplicateRow(id) {
 
     debugLog("Duplicate success", { id, newId: payload?.id });
     return payload;
-  } catch (err) {
-    console.error("Network error during duplicate", err);
+  } catch (error) {
+    console.error("Network error during duplicate", error);
   }
 }
 
@@ -229,7 +229,7 @@ export async function addRow() {
 
     debugLog("Insert success", payload || { ok: true });
     return payload;
-  } catch (err) {
-    console.error("Network error during insert", err);
+  } catch (error) {
+    console.error("Network error during insert", error);
   }
 }

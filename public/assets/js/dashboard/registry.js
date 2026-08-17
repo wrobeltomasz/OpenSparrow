@@ -6,18 +6,18 @@
 const renderers = new Map();
 
 export const WidgetRegistry = {
-    register(type, fn) {
-        renderers.set(type, fn);
+    register(type, handler) {
+        renderers.set(type, handler);
     },
 
     render(widget) {
-        const fn = renderers.get(widget.type);
-        if (!fn) {
+        const handler = renderers.get(widget.type);
+        if (!handler) {
             const error = document.createElement('p');
             error.textContent = window.I18n.t('dashboard.unknown_widget_type', { type: widget.type });
             return error;
         }
-        return fn(widget);
+        return handler(widget);
     },
 
     has(type) {

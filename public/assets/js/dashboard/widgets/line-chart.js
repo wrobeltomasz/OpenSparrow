@@ -27,9 +27,9 @@ function svgElement(tag, attrs) {
 }
 
 function bucketRange(raw, granularity) {
-    const m = String(raw ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (!m) return null;
-    const start = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    const dateMatch = String(raw ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!dateMatch) return null;
+    const start = new Date(Date.UTC(+dateMatch[1], +dateMatch[2] - 1, +dateMatch[3]));
     const end = new Date(start);
     switch (granularity) {
         case 'year':  end.setUTCFullYear(end.getUTCFullYear() + 1); break;
@@ -42,16 +42,16 @@ function bucketRange(raw, granularity) {
 }
 
 function formatBucketLabel(raw, granularity) {
-    const s = String(raw ?? '');
-    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (!m) return s;
-    const [, y, mo, d] = m;
+    const dateString = String(raw ?? '');
+    const dateMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!dateMatch) return dateString;
+    const [, pointY, mo, point] = dateMatch;
     switch (granularity) {
-        case 'year':  return y;
-        case 'month': return `${y}-${mo}`;
+        case 'year':  return pointY;
+        case 'month': return `${pointY}-${mo}`;
         case 'week':
         case 'day':
-        default:      return `${y}-${mo}-${d}`;
+        default:      return `${pointY}-${mo}-${point}`;
     }
 }
 
@@ -59,9 +59,9 @@ function renderLineChart(widget) {
     const wrapper = document.createElement('div');
     wrapper.className = 'dash-line-wrapper';
 
-    const data = (widget.data || []).map(r => ({
-        label: r.label,
-        value: parseFloat(r.value) || 0,
+    const data = (widget.data || []).map(dataRow => ({
+        label: dataRow.label,
+        value: parseFloat(dataRow.value) || 0,
     }));
 
     if (data.length === 0) {
@@ -75,17 +75,17 @@ function renderLineChart(widget) {
     const color = widget.color || DEFAULT_COLOR;
     const area = widget.query?.area === true || widget.query?.area === 'true';
 
-    const maxValue = Math.max(...data.map(d => d.value), 0);
+    const maxValue = Math.max(...data.map(point => point.value), 0);
     const innerW = VB_W - PAD_L - PAD_R;
     const innerH = VB_H - PAD_T - PAD_B;
     const baseY = PAD_T + innerH;
 
-    const pts = data.map((d, i) => {
-        const x = data.length === 1
+    const points = data.map((point, pointIndex) => {
+        const pointX = data.length === 1
             ? PAD_L + innerW / 2
-            : PAD_L + (i / (data.length - 1)) * innerW;
-        const y = maxValue > 0 ? baseY - (d.value / maxValue) * innerH : baseY;
-        return { x, y, ...d };
+            : PAD_L + (pointIndex / (data.length - 1)) * innerW;
+        const pointY = maxValue > 0 ? baseY - (point.value / maxValue) * innerH : baseY;
+        return { x: pointX, y: pointY, ...d };
     });
 
     const svg = svgElement('svg', {
@@ -101,35 +101,35 @@ function renderLineChart(widget) {
         'vector-effect': 'non-scaling-stroke',
     }));
 
-    if (area && pts.length > 1) {
-        const dPath = `M ${pts[0].x} ${baseY} `
-            + pts.map(p => `L ${p.x} ${p.y}`).join(' ')
-            + ` L ${pts[pts.length - 1].x} ${baseY} Z`;
+    if (area && points.length > 1) {
+        const dPath = `M ${points[0].x} ${baseY} `
+            + points.map(point => `L ${point.x} ${point.y}`).join(' ')
+            + ` L ${points[points.length - 1].x} ${baseY} Z`;
         const areaElement = svgElement('path', { class: 'dash-line-area', d: dPath });
         areaElement.style.fill = color;
         svg.appendChild(areaElement);
     }
 
-    if (pts.length > 1) {
+    if (points.length > 1) {
         const line = svgElement('polyline', {
             class: 'dash-line-path',
-            points: pts.map(p => `${p.x},${p.y}`).join(' '),
+            points: points.map(point => `${point.x},${point.y}`).join(' '),
             'vector-effect': 'non-scaling-stroke',
         });
         line.style.stroke = color;
         svg.appendChild(line);
     }
 
-    pts.forEach((p) => {
+    points.forEach((point) => {
         const dot = svgElement('circle', {
             class: 'dash-line-point',
-            cx: p.x, cy: p.y, r: 4,
+            cx: point.x, cy: point.y, r: 4,
         });
         dot.style.fill = color;
         const title = svgElement('title', {});
-        title.textContent = `${formatBucketLabel(p.label, granularity)}: ${p.value}`;
+        title.textContent = `${formatBucketLabel(point.label, granularity)}: ${point.value}`;
         dot.appendChild(title);
-        if (xColumn) applyDrillDown(dot, widget.table, xColumn, p.label, bucketRange(p.label, granularity));
+        if (xColumn) applyDrillDown(dot, widget.table, xColumn, point.label, bucketRange(point.label, granularity));
         svg.appendChild(dot);
     });
 
@@ -138,12 +138,12 @@ function renderLineChart(widget) {
     const axis = document.createElement('div');
     axis.className = 'dash-line-axis';
     const step = Math.max(1, Math.ceil(data.length / MAX_X_LABELS));
-    data.forEach((d, i) => {
+    data.forEach((point, pointIndex) => {
         const span = document.createElement('span');
         span.className = 'dash-line-tick';
 
-        const show = i === 0 || i === data.length - 1 || i % step === 0;
-        span.textContent = show ? formatBucketLabel(d.label, granularity) : '';
+        const show = pointIndex === 0 || pointIndex === data.length - 1 || pointIndex % step === 0;
+        span.textContent = show ? formatBucketLabel(point.label, granularity) : '';
         axis.appendChild(span);
     });
     wrapper.appendChild(axis);

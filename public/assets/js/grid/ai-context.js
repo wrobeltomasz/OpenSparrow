@@ -36,17 +36,17 @@ export function buildGridContext() {
 
     const tableConfig = window.schema?.tables?.[currentTable] || {};
     const columnCfgs  = tableConfig.columns || {};
-    const fks      = tableConfig.foreign_keys || {};
+    const foreignKeys      = tableConfig.foreign_keys || {};
 
     let columns  = displayedColumns.slice();
     const hiddenColumns = Math.max(0, columns.length - MAX_CONTEXT_COLS);
     if (hiddenColumns > 0) {
         columns = columns
-            .map((column, position) => ({ col: column, pos: position, rank: columnRank(column, columnCfgs[column] || {}, !!fks[column]) }))
-            .sort((a, b) => (a.rank - b.rank) || (a.pos - b.pos))
+            .map((column, position) => ({ col: column, pos: position, rank: columnRank(column, columnCfgs[column] || {}, !!foreignKeys[column]) }))
+            .sort((left, right) => (left.rank - right.rank) || (left.pos - right.pos))
             .slice(0, MAX_CONTEXT_COLS)
-            .sort((a, b) => a.pos - b.pos)
-            .map(c => c.col);
+            .sort((left, right) => left.pos - right.pos)
+            .map(columnEntry => columnEntry.col);
     }
 
     const rows       = pageRows.slice(0, MAX_CONTEXT_ROWS);
@@ -56,7 +56,7 @@ export function buildGridContext() {
     const filteredTotal = filteredData.length;
     const totalPages    = Math.max(1, Math.ceil(filteredTotal / pageSize));
     const from          = (currentPage - 1) * pageSize + 1;
-    const to            = from + rows.length - 1;
+    const lastRowNumber            = from + rows.length - 1;
 
     const isCompleteSet = rows.length === filteredTotal
         && totalPages === 1
@@ -69,7 +69,7 @@ export function buildGridContext() {
             + ' included below (current filters applied, page 1 of 1). No rows are missing, so you MAY'
             + ' count, sum and average over these rows.';
     } else {
-        header = `table: ${currentTable} — CURRENT PAGE ONLY: rows ${from}-${to} of ${filteredTotal} matching record(s), `
+        header = `table: ${currentTable} — CURRENT PAGE ONLY: rows ${from}-${lastRowNumber} of ${filteredTotal} matching record(s), `
             + `page ${currentPage} of ${totalPages}`;
         if (wasTruncated && totalRows > filteredTotal) {
             header += `; ${totalRows} record(s) exist in the database beyond the loaded set`;

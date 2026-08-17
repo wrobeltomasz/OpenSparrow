@@ -64,13 +64,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const navList = menuElement?.querySelector('ul') || menuElement;
             if (menuElement) {
-                menuElement.querySelectorAll('a[data-table]').forEach(a => {
-                    a.addEventListener('click', e => {
-                        e.preventDefault();
-                        menuElement.querySelectorAll('a').forEach(l => l.classList.remove('active'));
-                        a.classList.add('active');
+                menuElement.querySelectorAll('a[data-table]').forEach(menuLink => {
+                    menuLink.addEventListener('click', event => {
+                        event.preventDefault();
+                        menuElement.querySelectorAll('a').forEach(link => link.classList.remove('active'));
+                        menuLink.classList.add('active');
                         window.history.pushState({}, document.title, window.location.pathname);
-                        loadTable(window.schema, a.dataset.table, gridTitleElement, addRowButton);
+                        loadTable(window.schema, menuLink.dataset.table, gridTitleElement, addRowButton);
                     });
                 });
             }
@@ -192,23 +192,23 @@ function handleColumnFilterChange() {
         } else {
             const uniqueValues = new Map();
             fullData.forEach(row => {
-                const val = row[column];
-                if (val !== null && val !== undefined && val !== '') {
-                    const label = row[column + '__display'] ?? val;
-                    if (!uniqueValues.has(val)) {
-                        uniqueValues.set(val, label);
+                const value = row[column];
+                if (value !== null && value !== undefined && value !== '') {
+                    const label = row[column + '__display'] ?? value;
+                    if (!uniqueValues.has(value)) {
+                        uniqueValues.set(value, label);
                     }
                 }
             });
-            options = Array.from(uniqueValues.entries()).map(([v, l]) => ({ val: v, label: l }));
+            options = Array.from(uniqueValues.entries()).map(([v, link]) => ({ val: v, label: link }));
         }
 
         options.forEach(oData => {
-            const o = document.createElement('option');
-            o.value = oData.val;
-            o.textContent = oData.label;
-            if (existingFilter.val !== undefined && String(existingFilter.val) === String(oData.val)) o.selected = true;
-            select.appendChild(o);
+            const optionElement = document.createElement('option');
+            optionElement.value = oData.val;
+            optionElement.textContent = oData.label;
+            if (existingFilter.val !== undefined && String(existingFilter.val) === String(oData.val)) optionElement.selected = true;
+            select.appendChild(optionElement);
         });
 
         select.addEventListener('change', () => {
@@ -378,9 +378,9 @@ function applyColumnFiltersOnly(rows) {
 
 async function applySearch() {
     const { fullData, displayedColumns, serverSearchMode } = getState();
-    const q = activeFilters.search.toLowerCase();
+    const searchTerm = activeFilters.search.toLowerCase();
 
-    if (serverSearchMode && q) {
+    if (serverSearchMode && searchTerm) {
         resetPagination();
         await serverSearchRows(window.schema, activeFilters.search);
         if (Object.keys(activeFilters.columns).length > 0) {
@@ -396,11 +396,11 @@ async function applySearch() {
     let rows = fullData.filter(row => {
         if (!rowMatchesColumnFilters(row, activeFilters.columns)) return false;
 
-        if (q) {
+        if (searchTerm) {
             const matchesText = displayedColumns.some(columnName => {
                 const raw = String(row[columnName] ?? '').toLowerCase();
                 const display = (row[columnName + '__display'] ?? '').toString().toLowerCase();
-                return raw.includes(q) || display.includes(q);
+                return raw.includes(searchTerm) || display.includes(searchTerm);
             });
             if (!matchesText) return false;
         }

@@ -12,9 +12,9 @@ async function renderFkCell({ row, col: column, colCfg: columnConfig, schema, is
     const input = document.createElement('input');
     input.type = 'search';
 
-    const dlId = `fk_${state.currentTable}_${col}_${row['id']}`;
+    const dlId = `fk_${state.currentTable}_${columnName}_${row['id']}`;
     input.setAttribute('list', dlId);
-    input.dataset.column = col;
+    input.dataset.column = columnName;
     input.dataset.id = row['id'];
 
     if (columnConfig.readonly || isReadOnly) input.disabled = true;
@@ -22,21 +22,21 @@ async function renderFkCell({ row, col: column, colCfg: columnConfig, schema, is
     const datalist = document.createElement('datalist');
     datalist.id = dlId;
 
-    const fkConfig = schema.tables[state.currentTable].foreign_keys[col];
+    const fkConfig = schema.tables[state.currentTable].foreign_keys[columnName];
     const dispColumns = Array.isArray(fkConfig.display_column)
         ? fkConfig.display_column
         : [fkConfig.display_column || 'id'];
-    const cacheKey = `${state.currentTable}_${col}`;
+    const cacheKey = `${state.currentTable}_${columnName}`;
     let currentDisplay = '';
 
     if (state.fkCache.has(cacheKey)) {
         const referenceData = await state.fkCache.get(cacheKey);
-        referenceData.forEach(r => {
+        referenceData.forEach(referenceRow => {
             const option = document.createElement('option');
-            const displayValue = dispColumns.map(c => r[c + '__display'] ?? r[c] ?? '').join(' - ') || r['id'];
+            const displayValue = dispColumns.map(displayColumn => referenceRow[displayColumn + '__display'] ?? referenceRow[displayColumn] ?? '').join(' - ') || referenceRow['id'];
             option.value = displayValue;
-            option.dataset.realId = r['id'];
-            if (String(r['id']) === String(row[col])) currentDisplay = displayValue;
+            option.dataset.realId = referenceRow['id'];
+            if (String(referenceRow['id']) === String(row[columnName])) currentDisplay = displayValue;
             datalist.appendChild(option);
         });
     }
@@ -45,7 +45,7 @@ async function renderFkCell({ row, col: column, colCfg: columnConfig, schema, is
 
     input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
     input.addEventListener('blur', () => {
-        const isValid = Array.from(datalist.options).some(o => o.value === input.value);
+        const isValid = Array.from(datalist.options).some(datalistOption => datalistOption.value === input.value);
         if (!isValid && input.value !== '') {
             input.value = currentDisplay;
         } else if (isValid) {

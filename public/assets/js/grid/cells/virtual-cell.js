@@ -8,18 +8,18 @@ import { CellRenderer } from './registry.js';
 export function computeVirtual(formula, row) {
     if (!formula?.op || !Array.isArray(formula.cols) || formula.cols.length === 0) return '';
 
-    const rawValues = formula.cols.map(c => row[c] ?? '');
+    const rawValues = formula.cols.map(formulaColumn => row[formulaColumn] ?? '');
 
     switch (formula.op) {
         case 'sum': {
-            return rawValues.reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
+            return rawValues.reduce((runningTotal, rawValue) => runningTotal + (parseFloat(rawValue) || 0), 0);
         }
         case 'subtract': {
-            const [first, ...rest] = rawValues.map(v => parseFloat(v) || 0);
-            return rest.reduce((acc, v) => acc - v, first ?? 0);
+            const [first, ...rest] = rawValues.map(rawValue => parseFloat(rawValue) || 0);
+            return rest.reduce((runningTotal, rawValue) => runningTotal - rawValue, first ?? 0);
         }
         case 'multiply': {
-            return rawValues.reduce((acc, v) => acc * (parseFloat(v) || 0), 1);
+            return rawValues.reduce((runningTotal, rawValue) => runningTotal * (parseFloat(rawValue) || 0), 1);
         }
         case 'divide': {
             const dividend = parseFloat(rawValues[0]) || 0;
@@ -27,12 +27,12 @@ export function computeVirtual(formula, row) {
             return divisor ? dividend / divisor : 0;
         }
         case 'average': {
-            const nums = rawValues.map(v => parseFloat(v)).filter(v => !Number.isNaN(v));
-            return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
+            const nums = rawValues.map(rawValue => parseFloat(rawValue)).filter(rawValue => !Number.isNaN(rawValue));
+            return nums.length ? nums.reduce((total, current) => total + current, 0) / nums.length : 0;
         }
         case 'concat': {
-            const sep = formula.separator ?? ' ';
-            return rawValues.filter(v => v !== '' && v !== null && v !== undefined).join(sep);
+            const separator = formula.separator ?? ' ';
+            return rawValues.filter(rawValue => rawValue !== '' && rawValue !== null && rawValue !== undefined).join(separator);
         }
         default:
             return '';
@@ -48,11 +48,11 @@ function formatVirtualValue(value) {
 
 function renderVirtualCell({ row, col: column, colCfg: columnConfig }) {
     const td = document.createElement('td');
-    td.dataset.column = col;
+    td.dataset.column = columnName;
     td.dataset.id = row['id'];
 
-    const value = row[col] !== undefined
-        ? row[col]
+    const value = row[columnName] !== undefined
+        ? row[columnName]
         : computeVirtual(columnConfig.formula, row);
 
     td.textContent = formatVirtualValue(value);

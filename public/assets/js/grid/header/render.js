@@ -22,15 +22,15 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         callback.className = 'select-all-cb';
         callback.setAttribute('aria-label', I18n.t('grid.select_all_rows'));
         callback.title = I18n.t('grid.select_all_toggle');
-        callback.addEventListener('change', e => {
-            const pageIds = getPageRows().map(r => r.id);
-            if (e.target.checked) {
+        callback.addEventListener('change', event => {
+            const pageIds = getPageRows().map(pageRow => pageRow.id);
+            if (event.target.checked) {
                 pageIds.forEach(id => state.selectedIds.add(id));
             } else {
                 pageIds.forEach(id => state.selectedIds.delete(id));
             }
             document.querySelectorAll('.row-select-cb').forEach(rowCallback => {
-                rowCallback.checked = e.target.checked;
+                rowCallback.checked = event.target.checked;
             });
             document.dispatchEvent(new CustomEvent('selectionChanged'));
         });
@@ -44,10 +44,10 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         headRow.appendChild(th);
     }
 
-    for (const col of state.displayedColumns) {
+    for (const columnName of state.displayedColumns) {
         const th = document.createElement('th');
-        const columnConfig = schema.tables[state.currentTable].columns[col] || {};
-        th.dataset.col = col;
+        const columnConfig = schema.tables[state.currentTable].columns[columnName] || {};
+        th.dataset.col = columnName;
 
         const thLabel = document.createElement('span');
         thLabel.className = 'th-label';
@@ -62,22 +62,22 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
             thLabel.appendChild(badge);
         }
 
-        let labelText = columnConfig.display_name || col;
-        if (state.sortState.column === col) {
+        let labelText = columnConfig.display_name || columnName;
+        if (state.sortState.column === columnName) {
             labelText += state.sortState.asc ? ' ↑' : ' ↓';
         }
         thLabel.appendChild(document.createTextNode(labelText));
         th.appendChild(thLabel);
 
         th.style.cursor = 'pointer';
-        th.addEventListener('click', e => {
-            if (e.target.classList.contains('col-resizer')) return;
-            toggleSortState(col);
+        th.addEventListener('click', event => {
+            if (event.target.classList.contains('col-resizer')) return;
+            toggleSortState(columnName);
             onRerender();
         });
 
         initColumnResize(th);
-        initColumnDnD(th, col, onRerender);
+        initColumnDnD(th, columnName, onRerender);
         headRow.appendChild(th);
     }
 
