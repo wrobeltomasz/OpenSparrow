@@ -1,0 +1,2 @@
+Cypress E2E test upload file.
+This file is used by files.cy.js to test the file upload functionality.

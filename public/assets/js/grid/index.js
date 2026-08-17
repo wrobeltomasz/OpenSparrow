@@ -29,7 +29,7 @@ const isReadOnly = userRole !== 'editor';
 export async function loadTable(schema, table, gridTitleElement, addRowButton) {
     debugLog('Loading table', table);
     try {
-        const urlParameters = new URLSearchParameters(window.location.search);
+        const urlParameters = new URLSearchParams(window.location.search);
         const data = await fetchTableData(table, urlParameters);
 
         state.currentTable = table;
@@ -173,7 +173,7 @@ function applyVirtualColumns(schema, rows) {
 
 export async function appendMoreRows(schema, search = '') {
     try {
-        const urlParameters = new URLSearchParameters(window.location.search);
+        const urlParameters = new URLSearchParams(window.location.search);
         const data = await fetchTableData(state.currentTable, urlParameters, {
             offset: state.loadedOffset,
             search,
@@ -195,7 +195,7 @@ export async function appendMoreRows(schema, search = '') {
 export async function serverSearchRows(schema, search) {
     try {
         state.loadedOffset = 0;
-        const urlParameters = new URLSearchParameters(window.location.search);
+        const urlParameters = new URLSearchParams(window.location.search);
         const data = await fetchTableData(state.currentTable, urlParameters, { search });
         const rows = data.rows || [];
         applyVirtualColumns(schema, rows);
