@@ -39,7 +39,7 @@ $logoPath        = null;
 if ($logoEnabled) {
     $logoPath = is_string($customLogoPath) && $customLogoPath !== ''
         ? htmlspecialchars($customLogoPath, ENT_QUOTES, 'UTF-8')
-        : 'assets/img/logo-blue.png';
+        : 'assets/img/logo.png';
 }
 ?>
 <header>

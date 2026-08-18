@@ -31,7 +31,7 @@ $firstRun          ??= false;
 <header class="admin-header">
     <div class="admin-header-left">
         <a href="/" class="brand-logo">
-            <img src="../assets/img/logo-blue.png" alt="Sparrow Logo">
+            <img src="../assets/img/logo.png" alt="Sparrow Logo">
         </a>
         <span class="brand-name">OpenSparrow Admin</span>
     </div>

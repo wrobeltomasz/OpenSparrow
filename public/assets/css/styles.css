@@ -2895,6 +2895,8 @@ thead th.drag-over {
   color: var(--accent-dark);
   text-align: center;
   margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 .login-box input {
   width: 100%;

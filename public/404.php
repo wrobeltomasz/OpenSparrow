@@ -17,7 +17,7 @@
 
 <header>
     <a href="/" class="brand-logo">
-        <img src="/assets/img/logo-blue.png" alt="OpenSparrow Logo" height="36" />
+        <img src="/assets/img/logo.png" alt="OpenSparrow Logo" height="36" />
     </a>
 </header>
 

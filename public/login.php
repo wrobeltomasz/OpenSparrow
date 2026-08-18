@@ -52,7 +52,7 @@ if (isset($_SESSION['user_id'])) {
     throw new RedirectException(resolve_landing_page());
 }
 
-$loginLogoPath = 'assets/img/logo-brown.png';
+$loginLogoPath = 'assets/img/logo.png';
 if ((bool) settings_value('logo_enabled', false)) {
     $customLogoPath = settings_value('custom_logo_path', null);
     if (is_string($customLogoPath) && $customLogoPath !== '') {
