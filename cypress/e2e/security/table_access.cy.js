@@ -7,6 +7,7 @@ const ALLOWED = 'companies';
 
 let testUserId = null;
 let deniedTable = null;
+let schemaTables = [];
 
 let allowedView = null;
 let deniedView = null;
@@ -67,11 +68,12 @@ describe('Security – per-user table access', () => {
       testUserId = user.id;
     });
 
-    cy.request('/api/schema.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    cy.request({ url: '/api/schema.php', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(result => {
         const names = Object.keys(result.body.tables || {});
         expect(names, 'schema must expose more than one table').to.have.length.greaterThan(1);
         expect(names, `schema must contain ${ALLOWED}`).to.include(ALLOWED);
+        schemaTables = names;
         deniedTable = names.find(n => n !== ALLOWED);
       });
 
@@ -92,6 +94,7 @@ describe('Security – per-user table access', () => {
       expect(result.body, 'board config must parse as JSON').to.be.an('object');
       boards = (result.body.boards || [])
         .filter(b => b && b.id && b.table && b.status_column && !b.hidden)
+        .filter(b => schemaTables.includes(b.table))
         .map(b => ({ id: b.id, table: b.table, menuName: b.menu_name || '' }));
     });
 
@@ -112,6 +115,7 @@ describe('Security – per-user table access', () => {
       workflowWithheldTable = runnableWorkflow ? runnableWorkflow.tables.find(t => t !== ALLOWED) || null : null;
     });
 
+    cy.visit('/admin/');
     cy.then(() => setAccess({
       tables: [ALLOWED],
       views:  allowedView ? [allowedView] : [],
@@ -121,6 +125,7 @@ describe('Security – per-user table access', () => {
 
   after(() => {
     loginAsAdmin();
+    cy.visit('/admin/');
     setAccess();
   });
 
@@ -130,7 +135,7 @@ describe('Security – per-user table access', () => {
     });
 
     it('api/schema.php exposes only the allowed table', () => {
-      cy.request('/api/schema.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      cy.request({ url: '/api/schema.php', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(result => {
           expect(Object.keys(result.body.tables)).to.deep.eq([ALLOWED]);
         });
@@ -341,7 +346,7 @@ describe('Security – per-user table access', () => {
       }
 
       grant({
-        tables: [ALLOWED, ...runnableWf.tables.filter(t => t !== workflowWithheldTable)],
+        tables: [ALLOWED, ...runnableWorkflow.tables.filter(t => t !== workflowWithheldTable)],
         workflows: [runnableWorkflow.id],
       });
 
@@ -358,7 +363,7 @@ describe('Security – per-user table access', () => {
         this.skip();
       }
       grant({
-        tables: [ALLOWED, ...runnableWf.tables.filter(t => t !== workflowWithheldTable)],
+        tables: [ALLOWED, ...runnableWorkflow.tables.filter(t => t !== workflowWithheldTable)],
         workflows: [runnableWorkflow.id],
       });
 
@@ -379,7 +384,7 @@ describe('Security – per-user table access', () => {
         this.skip();
       }
       grant({
-        tables: [ALLOWED, ...runnableWf.tables],
+        tables: [ALLOWED, ...runnableWorkflow.tables],
         workflows: [otherWorkflow.id],
       });
 
@@ -407,7 +412,7 @@ describe('Security – per-user table access', () => {
         this.skip();
       }
       grant({
-        tables: [ALLOWED, ...runnableWf.tables],
+        tables: [ALLOWED, ...runnableWorkflow.tables],
         workflows: [runnableWorkflow.id],
       });
 
@@ -473,8 +478,7 @@ describe('Security – per-user table access', () => {
     }
 
     before(() => {
-      loginAsAdmin();
-      cy.visit('/admin/');
+      grant({ tables: [ALLOWED, deniedTable] });
 
       cy.request({
         url: `/api.php?api=list&table=${deniedTable}&limit=1`,
@@ -505,8 +509,7 @@ describe('Security – per-user table access', () => {
       if (!probeUuid) {
         return;
       }
-      loginAsAdmin();
-      cy.visit('/admin/');
+      grant({ tables: [ALLOWED, deniedTable] });
       cy.csrfToken().then(token => {
         cy.probe({
           method: 'POST',

@@ -106,14 +106,26 @@ function loginAsTestUser2() {
   });
 }
 
+function readCsrfToken(win) {
+  if (win.CSRF_TOKEN) return win.CSRF_TOKEN;
+  const meta = win.document.querySelector('meta[name="csrf-token"]');
+  const token = meta && meta.getAttribute('content');
+  return token || null;
+}
+
 Cypress.Commands.add('csrfToken', () => {
   return cy.window({ log: false }).then(win => {
-    const fromGlobal = win.CSRF_TOKEN;
-    if (fromGlobal) return fromGlobal;
-    const meta = win.document.querySelector('meta[name="csrf-token"]');
-    const token = meta && meta.getAttribute('content');
-    expect(token, 'CSRF token present in document').to.be.a('string').and.not.be.empty;
-    return token;
+    const token = readCsrfToken(win);
+    if (token) return token;
+
+    cy.log('csrfToken: no token on the current page, loading dashboard.php to obtain one');
+    cy.visit(`${BASE}/dashboard.php`);
+
+    return cy.window({ log: false }).then(loaded => {
+      const reloaded = readCsrfToken(loaded);
+      expect(reloaded, 'CSRF token present in document').to.be.a('string').and.not.be.empty;
+      return reloaded;
+    });
   });
 });
 
@@ -145,14 +157,19 @@ function waitForGridOrEmpty({ timeout = TIMEOUTS.long } = {}) {
     const check = () => {
       const grid  = doc.querySelector(gridSelect);
       const empty = doc.querySelector(emptySelect);
+      const rows  = grid ? grid.querySelectorAll('tbody tr').length : 0;
 
-      if (grid) {
-        return cy.wrap(grid).should('exist').then(() => ({ type: 'grid', element: grid }));
+      if (grid && rows > 0) {
+        return cy.wrap(grid).should('exist').then(() => ({ type: 'grid', element: grid, rows }));
       }
       if (empty) {
-        return cy.wrap(empty).should('exist').then(() => ({ type: 'empty', element: empty }));
+        return cy.wrap(empty).should('exist').then(() => ({ type: 'empty', element: empty, rows: 0 }));
       }
       if (Date.now() > deadline) {
+        if (grid) {
+          return cy.wrap(grid).should('exist')
+            .then(() => ({ type: 'grid-empty', element: grid, rows: 0 }));
+        }
         throw new Error(`waitForGridOrEmpty: neither grid nor empty state appeared within ${timeout}ms`);
       }
 
