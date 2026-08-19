@@ -281,9 +281,12 @@ All variables are read by `includes/config.php` on every request — the single 
 | `IP_HASH_SALT` | *(auto)* | HMAC secret for IP pseudonymisation in login rate-limiting. If unset, a 64-char random salt is generated on first request and persisted to `includes/.secret_salt` (chmod 0600, gitignored, web-denied). Set explicitly via env var for multi-server deployments where all nodes must share the same salt. |
 | `LOGIN_MAX_ATTEMPTS_PER_IP` | `20` | Failed login threshold per IP before lockout. |
 | `LOGIN_MAX_ATTEMPTS_PER_USERNAME` | `5` | Failed login threshold per username before lockout. |
-| `LOGIN_LOCKOUT_MINUTES` | `15` | Lockout window in minutes. |
-| `TRUST_PROXY_HEADERS` | `true` | Resolve the client IP from `CF-Connecting-IP` / `X-Real-IP`. Set `false` to always use `REMOTE_ADDR`. |
-| `TRUSTED_PROXY_IPS` | *(empty)* | Comma-separated IPs or CIDR ranges (IPv4 and IPv6) allowed to set those headers. Empty means every client is trusted, so a directly reachable deployment should list its proxy addresses — the resolved IP drives `LOGIN_MAX_ATTEMPTS_PER_IP`. |
+| `LOGIN_LOCKOUT_MINUTES` | `15` | How long a lockout lasts once it triggers, in minutes. |
+| `LOGIN_RATE_LIMIT_WINDOW_MINUTES` | `15` | How far back failed attempts are counted towards the two thresholds above. A lockout fires when that many failures land inside this window, and then lasts `LOGIN_LOCKOUT_MINUTES` from the last of them. |
+| `PASSWORD_MIN_LENGTH` | `12` | Shortest password accepted anywhere in the system — admin user creation, admin password resets and the self-service change in the profile page. The **Users → Global User Settings** policy may raise it, never lower it. Values below `8` are ignored. |
+| `TRUST_PROXY_HEADERS` | `false` | Resolve the client IP from forwarding headers instead of `REMOTE_ADDR`. Off by default so a spoofed header cannot dodge the rate limiter; turn it on only behind a proxy you control. HTTPS auto-detection through `X-Forwarded-Proto` is independent of this switch. |
+| `TRUSTED_PROXY_IPS` | *(empty)* | Comma-separated IPs or CIDR ranges (IPv4 and IPv6) allowed to set those headers. Empty means every client is trusted, so set it together with `TRUST_PROXY_HEADERS=true` — the resolved IP drives `LOGIN_MAX_ATTEMPTS_PER_IP`. |
+| `FORWARDED_HEADER_PRIORITY` | `cf,x-real-ip` | Order in which forwarding headers are consulted once they are trusted. Supported values: `cf` (`CF-Connecting-IP`, only alongside `CF-Ray`), `x-real-ip`, `x-forwarded-for`. Unknown names are dropped, and every candidate must parse as an IP address. |
 | `ARGON2_MEMORY_COST` | `131072` | Password hashing memory in KiB (128 MB). Lower it on constrained hosts; the floor is `8192`. |
 | `ARGON2_TIME_COST` | `4` | Password hashing iterations. |
 | `ARGON2_THREADS` | `1` | Password hashing parallelism. |
@@ -299,6 +302,9 @@ All variables are read by `includes/config.php` on every request — the single 
 | `THUMBNAIL_MAX_WIDTH` | `300` | Max thumbnail width in pixels. |
 | `NOTIFICATIONS_DROPDOWN_LIMIT` | `10` | Max items in the bell notification dropdown. |
 | `HSTS_MAX_AGE` | `31536000` | HSTS `max-age` in seconds (1 year). Set `0` to disable on plain HTTP. |
+| `CSP_REPORT_URI` | *(empty)* | Same-origin path collecting Content-Security-Policy violation reports, appended to every policy the app sends. Empty disables reporting. Values containing whitespace, `;` or `,` are rejected. |
+| `CSP_REPORT_ONLY` | `false` | Send the policy as `Content-Security-Policy-Report-Only`, so violations are logged instead of blocked. Requires `CSP_REPORT_URI`, and never applies to file downloads — those keep their enforced `default-src 'none'`. |
+| `ADMIN_PURGE_MAX_DAYS` | `3650` | Longest retention window an admin log purge will accept, in days. |
 | `HTTP_CLIENT_TIMEOUT` | `30` | Timeout in seconds for outbound requests — automation webhooks and admin Ollama calls. RAG answer generation keeps its own longer limit. |
 | `HTTP_CLIENT_CONNECT_TIMEOUT` | `10` | Connect timeout in seconds for the same outbound requests. |
 
@@ -362,7 +368,7 @@ Configuration lives in `config/database.json`. The web document root is the `pub
 - **Cookies:** `SECURE_COOKIES=true` (default) enforces the `Secure` flag. Set to `false` only on plain HTTP environments.
 - **Authentication:** all roles share a single login page (`/login`). The admin panel (`/admin`) requires role `admin`. Frontend pages require role `editor` or `viewer`. There is no separate admin password file — all accounts live in `spw_users`.
 - **Session security:** sessions include a User-Agent fingerprint and an 8-hour absolute lifetime to guard against hijacking and stale sessions.
-- **Reverse-proxy aware:** `includes/config.php` auto-detects HTTPS through CloudFlare / Nginx / load-balancer headers (`X-Forwarded-Proto`, `CF-Visitor`, `X-Forwarded-SSL`), resolves the real client IP via `CF-Connecting-IP` / `X-Real-IP`, and forces an absolute `session.save_path` so PHP-FPM `chdir` behaviour does not split sessions across script directories.
+- **Reverse-proxy aware:** `includes/config.php` auto-detects HTTPS through CloudFlare / Nginx / load-balancer headers (`X-Forwarded-Proto`, `CF-Visitor`, `X-Forwarded-SSL`) and forces an absolute `session.save_path` so PHP-FPM `chdir` behaviour does not split sessions across script directories. Client-IP headers are a separate, opt-in decision: set `TRUST_PROXY_HEADERS=true` and list the proxy in `TRUSTED_PROXY_IPS` before `CF-Connecting-IP` / `X-Real-IP` / `X-Forwarded-For` are believed.
 - **Session storage hardening:** session files are stored in `storage/sessions/` (resolved to an absolute path by `includes/config.php`), which lives outside the `public/` document root; a `.htaccess` denying HTTP access also ships as defense-in-depth.
 
 ---
