@@ -48,6 +48,7 @@ docker compose up -d
 | `PGSCHEMA` | app | |
 | `DOCKER_IMAGE` | wrobeltom/opensparrow:latest | |
 | `APP_ENV` | production | |
+| `APP_TIMEZONE` | Europe/Warsaw | Timezone used by PHP (`date_default_timezone_set`) and by every database session (`SET TIME ZONE`), so both agree. Must be a PHP timezone identifier; anything else is refused and logged, and the default applies. |
 | `SECURE_COOKIES` | true | Set `false` only on plain HTTP. |
 | `SESSION_MAX_LIFETIME` | 28800 | Hard session expiry (seconds). |
 | `SESSION_IDLE_TIMEOUT` | 0 | Inactivity expiry (seconds). `0` disables it; the hard expiry still applies. |
@@ -63,7 +64,7 @@ docker compose up -d
 | `TRUST_PROXY_HEADERS` | false | Master switch for client-IP headers. Leave off unless the app sits behind a proxy you control. |
 | `TRUSTED_PROXY_IPS` | *(empty)* | Comma-separated IPs/CIDRs allowed to set the forwarding headers. Empty means every client is trusted, so set it together with `TRUST_PROXY_HEADERS=true`. |
 | `FORWARDED_HEADER_PRIORITY` | cf,x-real-ip | Order in which forwarding headers are consulted. Supported: `cf`, `x-real-ip`, `x-forwarded-for`. |
-| `SESSION_SAMESITE` | Lax | Do not set to `Strict` — breaks login redirect. |
+| `SESSION_SAMESITE` | Lax | `Lax`, `Strict` or `None`; anything else is refused and logged. Do not set to `Strict` — breaks login redirect. `None` additionally requires `SECURE_COOKIES=true` and falls back to `Lax` without it, since browsers drop a `SameSite=None` cookie that is not `Secure`. |
 | `SESSION_COOKIE_NAME` | OSSESSID | Session cookie name. Give each installation its own value when several apps share a hostname, otherwise they overwrite each other's sessions. Changing it logs everyone out once. |
 | `IP_HASH_SALT` | *(auto)* | Auto-generated to `includes/.secret_salt` on first request. Set explicitly across all nodes in multi-server deployments so rate-limit hashes match. |
 | `LOGIN_MAX_ATTEMPTS_PER_IP` | 20 | Failed login threshold per IP before lockout. |

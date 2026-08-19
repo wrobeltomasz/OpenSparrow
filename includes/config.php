@@ -295,7 +295,7 @@ define('DB_HOST', get_env('DB_HOST', get_env('PGHOST', 'localhost')));
 
 define('DB_PORT', get_env('DB_PORT', get_env('PGPORT', '5432')));
 
-define('DB_CONNECT_TIMEOUT', (int) get_env('DB_CONNECT_TIMEOUT', '5'));
+define('DB_CONNECT_TIMEOUT', max(1, (int) get_env('DB_CONNECT_TIMEOUT', '5')));
 
 define('DB_NAME', get_env('DB_NAME', get_env('PGDATABASE', '')));
 
@@ -317,11 +317,37 @@ define('DB_SSLMODE', (static function (): string {
 
 define('DB_SSLROOTCERT', trim(get_env('DB_SSLROOTCERT', get_env('PGSSLROOTCERT', ''))));
 
-define('APP_TIMEZONE', get_env('APP_TIMEZONE', 'Europe/Warsaw'));
+define('APP_TIMEZONE', (static function (): string {
+    $timezone = trim(get_env('APP_TIMEZONE', 'Europe/Warsaw'));
+    if ($timezone === '' || !in_array($timezone, DateTimeZone::listIdentifiers(), true)) {
+        error_log(
+            '[config] APP_TIMEZONE is not a known timezone identifier, falling back to Europe/Warsaw: ' . $timezone
+        );
+        return 'Europe/Warsaw';
+    }
+    return $timezone;
+})());
+
+date_default_timezone_set(APP_TIMEZONE);
 
 define('SECURE_COOKIES', get_env('SECURE_COOKIES', 'true') === 'true');
 
-define('SESSION_SAMESITE', get_env('SESSION_SAMESITE', 'Lax'));
+define('SESSION_SAMESITE', (static function (): string {
+    $supported = ['Lax', 'Strict', 'None'];
+    $samesite  = trim(get_env('SESSION_SAMESITE', 'Lax'));
+    foreach ($supported as $candidate) {
+        if (strcasecmp($samesite, $candidate) !== 0) {
+            continue;
+        }
+        if ($candidate === 'None' && !SECURE_COOKIES) {
+            error_log('[config] SESSION_SAMESITE=None requires SECURE_COOKIES=true, falling back to Lax');
+            return 'Lax';
+        }
+        return $candidate;
+    }
+    error_log('[config] SESSION_SAMESITE is not Lax, Strict or None, falling back to Lax: ' . $samesite);
+    return 'Lax';
+})());
 
 define('SESSION_COOKIE_NAME', (static function (): string {
     $name = trim(get_env('SESSION_COOKIE_NAME', 'OSSESSID'));
@@ -332,7 +358,7 @@ define('SESSION_COOKIE_NAME', (static function (): string {
     return $name;
 })());
 
-define('SESSION_MAX_LIFETIME', (int) get_env('SESSION_MAX_LIFETIME', '28800'));
+define('SESSION_MAX_LIFETIME', max(60, (int) get_env('SESSION_MAX_LIFETIME', '28800')));
 
 define('SESSION_IDLE_TIMEOUT', max(0, (int) get_env('SESSION_IDLE_TIMEOUT', '0')));
 
@@ -428,44 +454,44 @@ define('TRUSTED_PROXY_IPS', (static function (): array {
 
 define('DEMO_MODE', get_env('DEMO_MODE', 'false') === 'true');
 
-define('FILES_MAX_SIZE_MB', (int) get_env('FILES_MAX_SIZE_MB', '20'));
+define('FILES_MAX_SIZE_MB', max(1, (int) get_env('FILES_MAX_SIZE_MB', '20')));
 
-define('FILES_PAGE_LIMIT', (int) get_env('FILES_PAGE_LIMIT', '25'));
+define('FILES_PAGE_LIMIT', max(1, (int) get_env('FILES_PAGE_LIMIT', '25')));
 
-define('FILES_PAGE_LIMIT_MAX', (int) get_env('FILES_PAGE_LIMIT_MAX', '100'));
+define('FILES_PAGE_LIMIT_MAX', max(FILES_PAGE_LIMIT, (int) get_env('FILES_PAGE_LIMIT_MAX', '100')));
 
-define('THUMBNAIL_MAX_WIDTH', (int) get_env('THUMBNAIL_MAX_WIDTH', '300'));
+define('THUMBNAIL_MAX_WIDTH', max(16, (int) get_env('THUMBNAIL_MAX_WIDTH', '300')));
 
-define('FILE_CACHE_MAX_AGE', (int) get_env('FILE_CACHE_MAX_AGE', '3600'));
+define('FILE_CACHE_MAX_AGE', max(0, (int) get_env('FILE_CACHE_MAX_AGE', '3600')));
 
-define('THUMBNAIL_CACHE_MAX_AGE', (int) get_env('THUMBNAIL_CACHE_MAX_AGE', '86400'));
+define('THUMBNAIL_CACHE_MAX_AGE', max(0, (int) get_env('THUMBNAIL_CACHE_MAX_AGE', '86400')));
 
-define('COMMENTS_PAGE_LIMIT_MAX', (int) get_env('COMMENTS_PAGE_LIMIT_MAX', '50'));
+define('COMMENTS_PAGE_LIMIT_MAX', max(1, (int) get_env('COMMENTS_PAGE_LIMIT_MAX', '50')));
 
-define('COMMENTS_MINE_LIMIT', (int) get_env('COMMENTS_MINE_LIMIT', '50'));
+define('COMMENTS_MINE_LIMIT', max(1, (int) get_env('COMMENTS_MINE_LIMIT', '50')));
 
-define('NOTIFICATIONS_DROPDOWN_LIMIT', (int) get_env('NOTIFICATIONS_DROPDOWN_LIMIT', '10'));
+define('NOTIFICATIONS_DROPDOWN_LIMIT', max(1, (int) get_env('NOTIFICATIONS_DROPDOWN_LIMIT', '10')));
 
-define('AUTOMATION_EMAIL_FROM', (function (): string {
+define('AUTOMATION_EMAIL_FROM', (static function (): string {
     $environment = get_env('AUTOMATION_EMAIL_FROM', '');
     return $environment !== '' ? $environment : (string) settings_value('automation_email_from', '');
 })());
 
-define('AUTOMATION_EMAIL_BATCH_LIMIT', (int) get_env('AUTOMATION_EMAIL_BATCH_LIMIT', '50'));
+define('AUTOMATION_EMAIL_BATCH_LIMIT', max(1, (int) get_env('AUTOMATION_EMAIL_BATCH_LIMIT', '50')));
 
-define('AUTOMATION_EMAIL_MAX_ATTEMPTS', (int) get_env('AUTOMATION_EMAIL_MAX_ATTEMPTS', '3'));
+define('AUTOMATION_EMAIL_MAX_ATTEMPTS', max(1, (int) get_env('AUTOMATION_EMAIL_MAX_ATTEMPTS', '3')));
 
-define('CONFIG_FILE_MAX_BYTES', (int) get_env('CONFIG_FILE_MAX_BYTES', '524288'));
+define('CONFIG_FILE_MAX_BYTES', max(1024, (int) get_env('CONFIG_FILE_MAX_BYTES', '524288')));
 
-define('MAX_LIST_ROWS', (int) get_env('MAX_LIST_ROWS', '10000'));
+define('MAX_LIST_ROWS', max(1, (int) get_env('MAX_LIST_ROWS', '10000')));
 
-define('HSTS_MAX_AGE', (int) get_env('HSTS_MAX_AGE', '31536000'));
+define('HSTS_MAX_AGE', max(0, (int) get_env('HSTS_MAX_AGE', '31536000')));
 
 define('HTTP_CLIENT_TIMEOUT', max(1, (int) get_env('HTTP_CLIENT_TIMEOUT', '30')));
 
 define('HTTP_CLIENT_CONNECT_TIMEOUT', max(1, (int) get_env('HTTP_CLIENT_CONNECT_TIMEOUT', '10')));
 
-define('RECORD_SNAPSHOTS_ENABLED', (function (): bool {
+define('RECORD_SNAPSHOTS_ENABLED', (static function (): bool {
     $environment = get_env('RECORD_SNAPSHOTS_ENABLED', '');
     if ($environment !== '') {
         return $environment === 'true';
@@ -473,7 +499,7 @@ define('RECORD_SNAPSHOTS_ENABLED', (function (): bool {
     return (bool) settings_value('record_snapshots_enabled', false);
 })());
 
-define('CHAT_BUBBLE_ENABLED', (function (): bool {
+define('CHAT_BUBBLE_ENABLED', (static function (): bool {
     $environment = get_env('CHAT_BUBBLE_ENABLED', '');
     if ($environment !== '') {
         return $environment === 'true';
@@ -487,8 +513,8 @@ define('OLLAMA_MODEL', get_env('OLLAMA_MODEL', 'llama3'));
 
 define('API_RATE_LIMIT_PER_MIN', max(0, (int) get_env('API_RATE_LIMIT_PER_MIN', '120')));
 
-define('RAG_RATE_LIMIT_PER_MIN', (int) get_env('RAG_RATE_LIMIT_PER_MIN', '10'));
+define('RAG_RATE_LIMIT_PER_MIN', max(0, (int) get_env('RAG_RATE_LIMIT_PER_MIN', '10')));
 
-define('RAG_MAX_CONCURRENT', (int) get_env('RAG_MAX_CONCURRENT', '2'));
+define('RAG_MAX_CONCURRENT', max(1, (int) get_env('RAG_MAX_CONCURRENT', '2')));
 
-define('RAG_PAGE_CONTEXT_MAX_CHARS', (int) get_env('RAG_PAGE_CONTEXT_MAX_CHARS', '12000'));
+define('RAG_PAGE_CONTEXT_MAX_CHARS', max(0, (int) get_env('RAG_PAGE_CONTEXT_MAX_CHARS', '12000')));
