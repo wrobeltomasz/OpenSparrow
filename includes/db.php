@@ -25,6 +25,11 @@ function db_config(): array
     return $config;
 }
 
+function db_conninfo_value(string $value): string
+{
+    return "'" . str_replace(["\\", "'"], ["\\\\", "\\'"], $value) . "'";
+}
+
 function db_connect(): \PgSql\Connection
 {
     $host = DB_HOST;
@@ -42,20 +47,24 @@ function db_connect(): \PgSql\Connection
     $sslMode = !empty($config['sslmode']) ? (string) $config['sslmode'] : DB_SSLMODE;
     $sslRootCert = !empty($config['sslrootcert']) ? (string) $config['sslrootcert'] : DB_SSLROOTCERT;
 
-    $connectionString = sprintf(
-        "host=%s port=%s dbname=%s user=%s password=%s connect_timeout=%d sslmode=%s",
-        $host,
-        $port,
-        $dbname,
-        $user,
-        $password,
-        DB_CONNECT_TIMEOUT,
-        $sslMode
-    );
+    $parameters = [
+        'host'            => (string) $host,
+        'port'            => (string) $port,
+        'dbname'          => (string) $dbname,
+        'user'            => (string) $user,
+        'password'        => (string) $password,
+        'connect_timeout' => (string) DB_CONNECT_TIMEOUT,
+        'sslmode'         => $sslMode,
+    ];
     if ($sslRootCert !== '') {
-        $escapedRootCert = str_replace(["\\", "'"], ["\\\\", "\\'"], $sslRootCert);
-        $connectionString .= " sslrootcert='" . $escapedRootCert . "'";
+        $parameters['sslrootcert'] = $sslRootCert;
     }
+
+    $connectionParts = [];
+    foreach ($parameters as $parameterName => $parameterValue) {
+        $connectionParts[] = $parameterName . '=' . db_conninfo_value($parameterValue);
+    }
+    $connectionString = implode(' ', $connectionParts);
 
     $conn = @pg_connect($connectionString);
 

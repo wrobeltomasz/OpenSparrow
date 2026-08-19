@@ -132,7 +132,7 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
         require_once __DIR__ . '/rate_limit.php';
         $endpoint = basename((string) ($_SERVER['SCRIPT_NAME'] ?? 'api'), '.php');
         $bucket = 'api_' . (int) $_SESSION['user_id'] . '_' . $endpoint;
-        if (!os_rate_limit_ok($bucket, (int) $rateLimit, 'api')) {
+        if (!os_rate_limit_ok($bucket, (int) $rateLimit, 'api', false)) {
             header('Retry-After: 60');
             throw HttpException::fromStatus(429, 'Too many requests. Please slow down.');
         }

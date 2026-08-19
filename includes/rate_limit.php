@@ -12,7 +12,7 @@ require_once __DIR__ . '/config.php';
 function os_rate_limit_dir(): string
 {
     $directory = os_storage_path('ratelimit');
-    os_ensure_directory($directory, 0775);
+    os_ensure_directory($directory, 0700);
     os_write_guard_file(
         $directory . '/.htaccess',
         "Require all denied\n"
@@ -20,8 +20,12 @@ function os_rate_limit_dir(): string
     return $directory;
 }
 
-function os_rate_limit_ok(string $bucket, int $maxPerMinute, string $label = 'rate-limit'): bool
-{
+function os_rate_limit_ok(
+    string $bucket,
+    int $maxPerMinute,
+    string $label = 'rate-limit',
+    bool $failClosed = true
+): bool {
     if ($maxPerMinute <= 0) {
         return true;
     }
@@ -30,10 +34,13 @@ function os_rate_limit_ok(string $bucket, int $maxPerMinute, string $label = 'ra
     $file = os_rate_limit_dir() . '/' . $safeBucket . '.json';
     $fileHandle = @fopen($file, 'c+');
     if ($fileHandle === false) {
-        error_log('[' . $label . '] request refused, throttle state unwritable: ' . $file . os_last_error_reason());
-        return false;
+        error_log(
+            '[' . $label . '] throttle state unwritable, request '
+            . ($failClosed ? 'refused' : 'allowed') . ': ' . $file . os_last_error_reason()
+        );
+        return !$failClosed;
     }
-    $allowed = false;
+    $allowed = !$failClosed;
     if (flock($fileHandle, LOCK_EX)) {
         $allowed   = true;
         $rawStamps = stream_get_contents($fileHandle);
@@ -52,7 +59,8 @@ function os_rate_limit_ok(string $bucket, int $maxPerMinute, string $label = 'ra
         flock($fileHandle, LOCK_UN);
     } else {
         error_log(
-            '[' . $label . '] request refused, throttle state could not be locked: ' . $file . os_last_error_reason()
+            '[' . $label . '] throttle state could not be locked, request '
+            . ($failClosed ? 'refused' : 'allowed') . ': ' . $file . os_last_error_reason()
         );
     }
     fclose($fileHandle);

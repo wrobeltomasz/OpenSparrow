@@ -294,7 +294,7 @@ All variables are read by `includes/config.php` on every request — the single 
 | `FORWARDED_HEADER_PRIORITY` | `cf,x-real-ip` | Order in which forwarding headers are consulted once they are trusted. Supported values: `cf` (`CF-Connecting-IP`, only alongside `CF-Ray`), `x-real-ip`, `x-forwarded-for`. Unknown names are dropped, and every candidate must parse as an IP address. |
 | `ARGON2_MEMORY_COST` | `131072` | Password hashing memory in KiB (128 MB). Lower it on constrained hosts; the floor is `8192`. |
 | `ARGON2_TIME_COST` | `4` | Password hashing iterations. |
-| `API_RATE_LIMIT_PER_MIN` | `120` | Requests per minute allowed per logged-in user, counted separately for each API endpoint so one busy endpoint cannot starve the others. Over the budget the endpoint answers `429` with `Retry-After: 60`. The click-statistics collector gets its own `600`/min budget, because `navigator.sendBeacon` fires on every click. `0` disables the limit everywhere, including that collector. Applies to the endpoints booted through `os_api_bootstrap()`; the admin API boots its own way and is not covered. |
+| `API_RATE_LIMIT_PER_MIN` | `120` | Requests per minute allowed per logged-in user, counted separately for each API endpoint so one busy endpoint cannot starve the others. Over the budget the endpoint answers `429` with `Retry-After: 60`. The click-statistics collector gets its own `600`/min budget, because `navigator.sendBeacon` fires on every click. `0` disables the limit everywhere, including that collector. Applies to the endpoints booted through `os_api_bootstrap()`; the admin API boots its own way and is not covered. When the throttle state under `STORAGE_PATH/ratelimit` cannot be written or locked the request is **allowed** and the failure logged — an unwritable directory must not take the whole API down. RAG stays fail-closed there, because a single unmetered answer costs far more than a refused one. |
 | `ARGON2_THREADS` | `1` | Password hashing parallelism. |
 
 #### Application behaviour
@@ -312,7 +312,7 @@ All variables are read by `includes/config.php` on every request — the single 
 | `THUMBNAIL_MAX_WIDTH` | `300` | Max thumbnail width in pixels. |
 | `NOTIFICATIONS_DROPDOWN_LIMIT` | `10` | Max items in the bell notification dropdown. |
 | `HSTS_MAX_AGE` | `31536000` | HSTS `max-age` in seconds (1 year). Set `0` to disable on plain HTTP. |
-| `CSP_REPORT_URI` | *(empty)* | Same-origin path collecting Content-Security-Policy violation reports, appended to every policy the app sends. Empty disables reporting. Values containing whitespace, `;` or `,` are rejected. |
+| `CSP_REPORT_URI` | *(empty)* | Same-origin path collecting Content-Security-Policy violation reports, appended to every policy the app sends. Empty disables reporting. Must start with a single `/` — an absolute or protocol-relative URL would hand violation reports, including the URLs they name, to a third party, so it is refused and logged. Values containing whitespace, `;` or `,` are rejected the same way. |
 | `CSP_REPORT_ONLY` | `false` | Send the policy as `Content-Security-Policy-Report-Only`, so violations are logged instead of blocked. Requires `CSP_REPORT_URI`, and never applies to file downloads — those keep their enforced `default-src 'none'`. |
 | `ADMIN_PURGE_MAX_DAYS` | `3650` | Longest retention window an admin log purge will accept, in days. |
 | `HTTP_CLIENT_TIMEOUT` | `30` | Timeout in seconds for outbound requests — automation webhooks and admin Ollama calls. RAG answer generation keeps its own longer limit. |

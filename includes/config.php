@@ -453,7 +453,18 @@ define('ADMIN_PURGE_MAX_DAYS', max(1, (int) get_env('ADMIN_PURGE_MAX_DAYS', '365
 
 define('CSP_REPORT_URI', (static function (): string {
     $reportUri = trim(get_env('CSP_REPORT_URI', ''));
-    if ($reportUri === '' || preg_match('/[\s;,]/', $reportUri) === 1) {
+    if ($reportUri === '') {
+        return '';
+    }
+    if (
+        preg_match('/[\s;,]/', $reportUri) === 1
+        || $reportUri[0] !== '/'
+        || str_starts_with($reportUri, '//')
+    ) {
+        error_log(
+            '[config] CSP_REPORT_URI must be a same-origin path starting with a single slash and was ignored: '
+            . $reportUri
+        );
         return '';
     }
     return $reportUri;
