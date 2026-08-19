@@ -44,7 +44,7 @@ if ($action === 'health') {
         'app_version'      => $appVersion,
 
         'php_version'      => PHP_VERSION,
-        'php_version_ok'   => version_compare(PHP_VERSION, '8.1.0', '>='),
+        'php_version_ok'   => version_compare(PHP_VERSION, '8.4.0', '>='),
         'memory_limit'     => ini_get('memory_limit'),
         'memory_limit_ok'  => (int) ini_get('memory_limit') >= 64 || ini_get('memory_limit') === '-1',
         'upload_max_filesize'    => ini_get('upload_max_filesize'),
@@ -81,10 +81,37 @@ if ($action === 'health') {
             require_once __DIR__ . '/../config_store.php';
             return is_array(config_get('schema'));
         })(),
-        'security_json_ok' => (static function () {
-            $configPath = __DIR__ . '/../../config/security.json';
-            return file_exists($configPath) && is_array(json_decode((string) @file_get_contents($configPath), true));
-        })(),
+    ];
+    throw ResponseException::encoded($data);
+}
+
+if ($action === 'health_production') {
+    $forwardedProtocol = strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    $https = ($_SERVER['HTTPS'] ?? '') !== '' && strtolower((string) $_SERVER['HTTPS']) !== 'off'
+        || $forwardedProtocol === 'https'
+        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')) === 'on'
+        || strtolower((string) ($_SERVER['HTTP_CF_VISITOR'] ?? '')) !== '' && str_contains(
+            strtolower((string) $_SERVER['HTTP_CF_VISITOR']),
+            '"scheme":"https"'
+        );
+
+    $displayErrors = ini_get('display_errors');
+
+    $data = [
+        'app_env'             => defined('APP_ENV') ? APP_ENV : 'unknown',
+        'demo_mode_off'       => defined('DEMO_MODE') && DEMO_MODE === false,
+        'secure_cookies_on'   => defined('SECURE_COOKIES') && SECURE_COOKIES === true,
+        'https_detected'      => $https,
+        'display_errors_off'  => $displayErrors === '' || $displayErrors == '0'
+            || strtolower((string) $displayErrors) === 'off',
+        'argon2id_ok'         => defined('PASSWORD_ARGON2ID'),
+        'password_min_length' => defined('PASSWORD_MIN_LENGTH') ? PASSWORD_MIN_LENGTH : null,
+        'password_min_length_ok' => defined('PASSWORD_MIN_LENGTH') && PASSWORD_MIN_LENGTH >= 12,
+        'rate_limit_per_min'  => defined('API_RATE_LIMIT_PER_MIN') ? API_RATE_LIMIT_PER_MIN : null,
+        'rate_limit_on'       => defined('API_RATE_LIMIT_PER_MIN') && API_RATE_LIMIT_PER_MIN > 0,
+        'session_samesite'    => defined('SESSION_SAMESITE') ? SESSION_SAMESITE : null,
+        'trust_proxy_headers' => defined('TRUST_PROXY_HEADERS') && TRUST_PROXY_HEADERS === true,
+        'trusted_proxy_ips_set' => defined('TRUSTED_PROXY_IPS') && TRUSTED_PROXY_IPS !== [],
     ];
     throw ResponseException::encoded($data);
 }

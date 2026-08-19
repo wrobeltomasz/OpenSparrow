@@ -1185,6 +1185,21 @@ textarea.adm-input {
 }
 .adm-sec-body { padding: 16px 18px; }
 
+.health-card {
+    padding: 12px 16px;
+    border-left: 4px solid var(--border);
+    background: var(--panel);
+    box-shadow: var(--shadow-sm);
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+.health-card-ok    { border-left-color: var(--ok); }
+.health-card-fail  { border-left-color: var(--error); }
+.health-card-title { display: block; margin-bottom: 4px; }
+.health-card-ok    .health-card-title { color: var(--ok); }
+.health-card-fail  .health-card-title { color: var(--error); }
+.health-section-title { margin: 24px 0 10px; }
+
 .stat-tile {
     padding: 16px 18px;
     text-align: center;

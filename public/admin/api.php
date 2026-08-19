@@ -132,6 +132,7 @@ $adminModules = [
     'sync_schema' => 'schema',
     'get_db_columns' => 'schema',
     'health' => 'health',
+    'health_production' => 'health',
     'backup_tables' => 'backup',
     'list_icons' => 'settings',
     'get_snapshot_setting' => 'settings',
