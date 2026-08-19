@@ -65,6 +65,13 @@ function db_connect(): \PgSql\Connection
 
     pg_query($conn, 'SET TIME ZONE ' . pg_escape_literal($conn, APP_TIMEZONE));
 
+    if (DB_STATEMENT_TIMEOUT > 0 && PHP_SAPI !== 'cli') {
+        pg_query(
+            $conn,
+            'SET statement_timeout = ' . pg_escape_literal($conn, (string) DB_STATEMENT_TIMEOUT)
+        );
+    }
+
     return $conn;
 }
 

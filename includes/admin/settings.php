@@ -169,7 +169,7 @@ if ($action === 'test_smtp_connection') {
         'encryption' => (string) ($body['smtp_encryption'] ?? 'tls'),
         'username'   => trim((string) ($body['smtp_username'] ?? '')),
         'password'   => $password,
-        'timeout'    => 10,
+        'timeout'    => SMTP_TIMEOUT,
     ];
 
     $result = smtp_test_connection($config);

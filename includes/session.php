@@ -16,7 +16,7 @@ function start_session(): void
         session_name(SESSION_COOKIE_NAME);
         session_set_cookie_params([
             'lifetime' => 0,
-            'path'     => '/',
+            'path'     => SESSION_COOKIE_PATH,
             'domain'   => '',
             'secure'   => SECURE_COOKIES,
             'httponly' => true,

@@ -6,6 +6,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 require_once __DIR__ . '/../includes/exception_handler.php';
+require_once __DIR__ . '/../includes/config.php';
 
 use App\Exception\BadRequestException;
 use App\Exception\ControlFlowException;
@@ -16,6 +17,13 @@ ini_set('display_errors', '0');
 os_register_exception_handler('json');
 
 header('Content-Type: application/json');
+
+if (!SETUP_ENABLED) {
+    throw new ForbiddenException('The setup wizard is disabled. Access denied.', [
+        'success' => false,
+        'message' => 'The setup wizard is disabled. Access denied.'
+    ]);
+}
 
 if (file_exists(__DIR__ . '/../config/database.json')) {
     throw new ForbiddenException('System is already configured. Access denied.', [

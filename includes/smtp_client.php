@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/config.php';
+
 if (!function_exists('smtp_read_response')) {
     function smtp_read_response($socket): array
     {
@@ -47,7 +49,7 @@ if (!function_exists('smtp_connect_and_auth')) {
         $encryption = (string) ($config['encryption'] ?? 'tls');
         $username   = (string) ($config['username'] ?? '');
         $password   = (string) ($config['password'] ?? '');
-        $timeout    = (int) ($config['timeout'] ?? 10);
+        $timeout    = max(1, (int) ($config['timeout'] ?? SMTP_TIMEOUT));
 
         if ($host === '') {
             return ['ok' => false, 'sock' => null, 'error' => 'SMTP host is not configured.'];

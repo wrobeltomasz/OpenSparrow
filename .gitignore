@@ -78,6 +78,10 @@ storage/ratelimit/*
 storage/tmp/*
 !storage/tmp/.htaccess
 
+# Application error log (keep the web-deny guard)
+storage/logs/*
+!storage/logs/.htaccess
+
 # Uploaded custom logo (admin → Settings → Custom Logo)
 public/assets/img/uploads/*
 !public/assets/img/uploads/.gitkeep

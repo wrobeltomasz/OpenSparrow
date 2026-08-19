@@ -11,7 +11,7 @@ use App\Exception\RedirectException;
 
 os_register_exception_handler('html');
 
-if (file_exists(__DIR__ . '/../config/database.json')) {
+if (!SETUP_ENABLED || file_exists(__DIR__ . '/../config/database.json')) {
     throw new RedirectException('login.php');
 }
 

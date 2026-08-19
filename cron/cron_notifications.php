@@ -240,6 +240,7 @@ function cron_notifications_main(array $argv): int
             'username'   => (string) ($appSettings['smtp_username'] ?? ''),
             'password'   => $smtpPassword,
             'from'       => AUTOMATION_EMAIL_FROM,
+            'timeout'    => SMTP_TIMEOUT,
         ];
 
         if (AUTOMATION_EMAIL_FROM === '') {

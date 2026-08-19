@@ -242,6 +242,31 @@ define('STORAGE_PATH', (static function (): string {
     return rtrim(str_replace('\\', '/', $base), '/') . '/storage';
 })());
 
+define('ERROR_LOG_PATH', (static function (): string {
+    $environment = trim(str_replace('\\', '/', get_env('ERROR_LOG_PATH', '')));
+    if ($environment !== '') {
+        $directory = dirname($environment);
+        if (!is_dir($directory) || !is_writable($directory)) {
+            error_log(
+                '[config] ERROR_LOG_PATH directory is not writable, keeping the php.ini destination: ' . $environment
+            );
+            return '';
+        }
+        return $environment;
+    }
+    $logPath = os_storage_path('logs');
+    if (!os_ensure_directory($logPath, 0700) || !is_writable($logPath)) {
+        return '';
+    }
+    os_write_guard_file($logPath . '/.htaccess', "Require all denied\n");
+    return $logPath . '/app.log';
+})());
+
+if (ERROR_LOG_PATH !== '') {
+    ini_set('log_errors', '1');
+    ini_set('error_log', ERROR_LOG_PATH);
+}
+
 $environmentSessionPath = get_env('SESSION_SAVE_PATH', '');
 if ($environmentSessionPath !== '') {
     ini_set('session.save_path', $environmentSessionPath);
@@ -296,6 +321,8 @@ define('DB_HOST', get_env('DB_HOST', get_env('PGHOST', 'localhost')));
 define('DB_PORT', get_env('DB_PORT', get_env('PGPORT', '5432')));
 
 define('DB_CONNECT_TIMEOUT', max(1, (int) get_env('DB_CONNECT_TIMEOUT', '5')));
+
+define('DB_STATEMENT_TIMEOUT', max(0, (int) get_env('DB_STATEMENT_TIMEOUT', '30000')));
 
 define('DB_NAME', get_env('DB_NAME', get_env('PGDATABASE', '')));
 
@@ -356,6 +383,17 @@ define('SESSION_COOKIE_NAME', (static function (): string {
         return 'OSSESSID';
     }
     return $name;
+})());
+
+define('SESSION_COOKIE_PATH', (static function (): string {
+    $path = trim(get_env('SESSION_COOKIE_PATH', '/'));
+    if ($path === '' || $path[0] !== '/' || preg_match('/[\s;,]/', $path) === 1) {
+        error_log(
+            '[config] SESSION_COOKIE_PATH must be an absolute path without separators, falling back to /: ' . $path
+        );
+        return '/';
+    }
+    return $path;
 })());
 
 define('SESSION_MAX_LIFETIME', max(60, (int) get_env('SESSION_MAX_LIFETIME', '28800')));
@@ -454,6 +492,8 @@ define('TRUSTED_PROXY_IPS', (static function (): array {
 
 define('DEMO_MODE', get_env('DEMO_MODE', 'false') === 'true');
 
+define('SETUP_ENABLED', get_env('SETUP_ENABLED', 'true') === 'true');
+
 define('FILES_MAX_SIZE_MB', max(1, (int) get_env('FILES_MAX_SIZE_MB', '20')));
 
 define('FILES_PAGE_LIMIT', max(1, (int) get_env('FILES_PAGE_LIMIT', '25')));
@@ -476,6 +516,8 @@ define('AUTOMATION_EMAIL_FROM', (static function (): string {
     $environment = get_env('AUTOMATION_EMAIL_FROM', '');
     return $environment !== '' ? $environment : (string) settings_value('automation_email_from', '');
 })());
+
+define('SMTP_TIMEOUT', max(1, (int) get_env('SMTP_TIMEOUT', '10')));
 
 define('AUTOMATION_EMAIL_BATCH_LIMIT', max(1, (int) get_env('AUTOMATION_EMAIL_BATCH_LIMIT', '50')));
 
