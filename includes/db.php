@@ -29,9 +29,9 @@ function db_connect(): \PgSql\Connection
 {
     $host = DB_HOST;
     $port = DB_PORT;
-    $dbname = getenv('PGDATABASE') ?: '';
-    $user = getenv('PGUSER') ?: '';
-    $password = getenv('PGPASSWORD') ?: '';
+    $dbname = DB_NAME;
+    $user = DB_USER;
+    $password = DB_PASSWORD;
 
     $config = db_config();
     $host = !empty($config['host']) ? $config['host'] : $host;
@@ -67,7 +67,7 @@ function sys_schema(): string
     if ($schema !== null) {
         return $schema;
     }
-    $schema = getenv('PGSCHEMA') ?: 'app';
+    $schema = DB_SCHEMA;
     $config = db_config();
     if (!empty($config['schema'])) {
         $schema = (string) $config['schema'];

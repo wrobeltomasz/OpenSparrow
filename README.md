@@ -259,10 +259,10 @@ All variables are read by `includes/config.php` on every request — the single 
 | `DB_PORT` | `5432` | PostgreSQL port. Falls back to `PGPORT`. |
 | `DB_CONNECT_TIMEOUT` | `5` | Seconds before connection attempt times out. |
 | `APP_TIMEZONE` | `Europe/Warsaw` | IANA timezone applied per PostgreSQL session. |
-| `PGDATABASE` | — | PostgreSQL database name. |
-| `PGUSER` | — | PostgreSQL user. |
-| `PGPASSWORD` | — | PostgreSQL password. |
-| `PGSCHEMA` | `app` | Schema for `spw_*` tables. Overridden by `schema` key in `database.json`. |
+| `DB_NAME` | — | PostgreSQL database name. Falls back to `PGDATABASE`. |
+| `DB_USER` | — | PostgreSQL user. Falls back to `PGUSER`. |
+| `DB_PASSWORD` | — | PostgreSQL password. Falls back to `PGPASSWORD`. |
+| `DB_SCHEMA` | `app` | Schema for `spw_*` tables. Falls back to `PGSCHEMA`. Overridden by the `schema` key in `database.json`. |
 
 #### Session & cookies
 
@@ -270,7 +270,8 @@ All variables are read by `includes/config.php` on every request — the single 
 |---|---|---|
 | `SECURE_COOKIES` | `true` | Set `false` on plain HTTP (local dev). |
 | `SESSION_SAMESITE` | `Lax` | Cookie SameSite policy. Do not change to `Strict` — it causes `ERR_TOO_MANY_REDIRECTS` on the login→admin redirect. |
-| `SESSION_MAX_LIFETIME` | `28800` | Hard session expiry in seconds (8 h). |
+| `SESSION_MAX_LIFETIME` | `28800` | Hard session expiry in seconds (8 h), counted from login. |
+| `SESSION_IDLE_TIMEOUT` | `0` | Inactivity expiry in seconds — the session ends after this long without a request. `0` disables it; the hard expiry above always applies. |
 | `SESSION_SAVE_PATH` | *(auto)* | Absolute path for PHP session storage. When unset, defaults to `storage/sessions/` inside the project root — overriding any server-level `session.save_path`, which on some shared hosts (e.g. home.pl) differs per subdirectory and may point to a system `/tmp` blocked by `open_basedir`. Set explicitly when your host requires a specific path or for shared storage across nodes. |
 
 #### Authentication & rate limiting
@@ -281,6 +282,11 @@ All variables are read by `includes/config.php` on every request — the single 
 | `LOGIN_MAX_ATTEMPTS_PER_IP` | `20` | Failed login threshold per IP before lockout. |
 | `LOGIN_MAX_ATTEMPTS_PER_USERNAME` | `5` | Failed login threshold per username before lockout. |
 | `LOGIN_LOCKOUT_MINUTES` | `15` | Lockout window in minutes. |
+| `TRUST_PROXY_HEADERS` | `true` | Resolve the client IP from `CF-Connecting-IP` / `X-Real-IP`. Set `false` to always use `REMOTE_ADDR`. |
+| `TRUSTED_PROXY_IPS` | *(empty)* | Comma-separated IPs or CIDR ranges (IPv4 and IPv6) allowed to set those headers. Empty means every client is trusted, so a directly reachable deployment should list its proxy addresses — the resolved IP drives `LOGIN_MAX_ATTEMPTS_PER_IP`. |
+| `ARGON2_MEMORY_COST` | `131072` | Password hashing memory in KiB (128 MB). Lower it on constrained hosts; the floor is `8192`. |
+| `ARGON2_TIME_COST` | `4` | Password hashing iterations. |
+| `ARGON2_THREADS` | `1` | Password hashing parallelism. |
 
 #### Application behaviour
 
@@ -293,6 +299,8 @@ All variables are read by `includes/config.php` on every request — the single 
 | `THUMBNAIL_MAX_WIDTH` | `300` | Max thumbnail width in pixels. |
 | `NOTIFICATIONS_DROPDOWN_LIMIT` | `10` | Max items in the bell notification dropdown. |
 | `HSTS_MAX_AGE` | `31536000` | HSTS `max-age` in seconds (1 year). Set `0` to disable on plain HTTP. |
+| `HTTP_CLIENT_TIMEOUT` | `30` | Timeout in seconds for outbound requests — automation webhooks and admin Ollama calls. RAG answer generation keeps its own longer limit. |
+| `HTTP_CLIENT_CONNECT_TIMEOUT` | `10` | Connect timeout in seconds for the same outbound requests. |
 
 #### AI / RAG (Knowledge Base)
 

@@ -715,7 +715,7 @@ function rag_call_ollama(
         CURLOPT_POSTFIELDS      => $payload,
         CURLOPT_HTTPHEADER      => $headers,
         CURLOPT_TIMEOUT         => $timeout,
-        CURLOPT_CONNECTTIMEOUT  => 10,
+        CURLOPT_CONNECTTIMEOUT  => HTTP_CLIENT_CONNECT_TIMEOUT,
         CURLOPT_SSL_VERIFYPEER  => $sslVerify,
         CURLOPT_SSL_VERIFYHOST  => $sslVerify ? 2 : 0,
     ]);

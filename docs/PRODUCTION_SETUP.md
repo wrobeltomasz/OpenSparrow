@@ -50,6 +50,15 @@ docker compose up -d
 | `APP_ENV` | production | |
 | `SECURE_COOKIES` | true | Set `false` only on plain HTTP. |
 | `SESSION_MAX_LIFETIME` | 28800 | Hard session expiry (seconds). |
+| `SESSION_IDLE_TIMEOUT` | 0 | Inactivity expiry (seconds). `0` disables it; the hard expiry still applies. |
+| `DB_NAME` / `DB_USER` / `DB_PASSWORD` | *(from `PGDATABASE`/`PGUSER`/`PGPASSWORD`)* | Database credentials. `config/database.json` still wins over both. |
+| `DB_SCHEMA` | app | System schema; falls back to `PGSCHEMA`. |
+| `ARGON2_MEMORY_COST` | 131072 | Password hashing memory in KiB. Lower it on constrained hosts (minimum 8192). |
+| `ARGON2_TIME_COST` | 4 | Password hashing iterations. |
+| `ARGON2_THREADS` | 1 | Password hashing parallelism. |
+| `HTTP_CLIENT_TIMEOUT` | 30 | Outbound request timeout (seconds) for webhooks and Ollama admin calls. |
+| `HTTP_CLIENT_CONNECT_TIMEOUT` | 10 | Outbound connect timeout (seconds). |
+| `TRUSTED_PROXY_IPS` | *(empty)* | Comma-separated IPs/CIDRs allowed to set `CF-Connecting-IP` / `X-Real-IP`. Empty means every client is trusted — set it whenever the app is reachable directly. |
 | `SESSION_SAMESITE` | Lax | Do not set to `Strict` — breaks login redirect. |
 | `IP_HASH_SALT` | *(auto)* | Auto-generated to `includes/.secret_salt` on first request. Set explicitly across all nodes in multi-server deployments so rate-limit hashes match. |
 | `LOGIN_MAX_ATTEMPTS_PER_IP` | 20 | Failed login threshold per IP before lockout. |
@@ -69,6 +78,12 @@ OpenSparrow auto-detects HTTPS through `X-Forwarded-Proto`, `CF-Visitor`, and
 `X-Forwarded-SSL` headers, and resolves the real client IP via
 `CF-Connecting-IP` / `X-Real-IP`. **No configuration required** behind a
 properly configured reverse proxy.
+
+Those client-IP headers are accepted from any source unless `TRUSTED_PROXY_IPS`
+lists the proxy addresses. Because the resolved IP feeds
+`LOGIN_MAX_ATTEMPTS_PER_IP`, a directly reachable deployment should set it, for
+example `TRUSTED_PROXY_IPS=173.245.48.0/20,103.21.244.0/22` or the internal
+address of the load balancer.
 
 ---
 

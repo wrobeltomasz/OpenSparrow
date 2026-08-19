@@ -17,11 +17,74 @@ if (!function_exists('get_env')) {
     }
 }
 
+if (!function_exists('os_ip_matches_cidr')) {
+    function os_ip_matches_cidr(string $ip, string $range): bool
+    {
+        $range = trim($range);
+        if ($range === '') {
+            return false;
+        }
+        if (strpos($range, '/') === false) {
+            $binaryLiteral = @inet_pton($range);
+            $binaryClient  = @inet_pton($ip);
+            return $binaryLiteral !== false && $binaryClient !== false && $binaryClient === $binaryLiteral;
+        }
+        [$subnet, $prefixText] = explode('/', $range, 2);
+        $binaryClient = @inet_pton($ip);
+        $binarySubnet = @inet_pton(trim($subnet));
+        if (
+            $binaryClient === false || $binarySubnet === false
+            || strlen($binaryClient) !== strlen($binarySubnet)
+        ) {
+            return false;
+        }
+        $prefixLength = (int) $prefixText;
+        if ($prefixLength < 0 || $prefixLength > strlen($binaryClient) * 8) {
+            return false;
+        }
+        $wholeBytes = intdiv($prefixLength, 8);
+        if (
+            $wholeBytes > 0
+            && substr($binaryClient, 0, $wholeBytes) !== substr($binarySubnet, 0, $wholeBytes)
+        ) {
+            return false;
+        }
+        $remainingBits = $prefixLength % 8;
+        if ($remainingBits === 0) {
+            return true;
+        }
+        $mask = ~((1 << (8 - $remainingBits)) - 1) & 0xFF;
+        return (ord($binaryClient[$wholeBytes]) & $mask) === (ord($binarySubnet[$wholeBytes]) & $mask);
+    }
+}
+
+if (!function_exists('os_is_trusted_proxy')) {
+    function os_is_trusted_proxy(string $remoteAddress): bool
+    {
+        if (!defined('TRUSTED_PROXY_IPS') || TRUSTED_PROXY_IPS === []) {
+            return true;
+        }
+        if ($remoteAddress === '') {
+            return false;
+        }
+        foreach (TRUSTED_PROXY_IPS as $range) {
+            if (os_ip_matches_cidr($remoteAddress, $range)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 if (!function_exists('client_ip')) {
     function client_ip(): string
     {
+        $remoteAddress = $_SERVER['REMOTE_ADDR'] ?? '';
         if (defined('TRUST_PROXY_HEADERS') && !TRUST_PROXY_HEADERS) {
-            return $_SERVER['REMOTE_ADDR'] ?? '';
+            return $remoteAddress;
+        }
+        if (!os_is_trusted_proxy($remoteAddress)) {
+            return $remoteAddress;
         }
         if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']) && !empty($_SERVER['HTTP_CF_RAY'])) {
             return $_SERVER['HTTP_CF_CONNECTING_IP'];
@@ -29,7 +92,7 @@ if (!function_exists('client_ip')) {
         if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
             return $_SERVER['HTTP_X_REAL_IP'];
         }
-        return $_SERVER['REMOTE_ADDR'] ?? '';
+        return $remoteAddress;
     }
 }
 
@@ -167,6 +230,14 @@ define('DB_PORT', get_env('DB_PORT', get_env('PGPORT', '5432')));
 
 define('DB_CONNECT_TIMEOUT', (int) get_env('DB_CONNECT_TIMEOUT', '5'));
 
+define('DB_NAME', get_env('DB_NAME', get_env('PGDATABASE', '')));
+
+define('DB_USER', get_env('DB_USER', get_env('PGUSER', '')));
+
+define('DB_PASSWORD', get_env('DB_PASSWORD', get_env('PGPASSWORD', '')));
+
+define('DB_SCHEMA', get_env('DB_SCHEMA', get_env('PGSCHEMA', 'app')));
+
 define('APP_TIMEZONE', get_env('APP_TIMEZONE', 'Europe/Warsaw'));
 
 define('SECURE_COOKIES', get_env('SECURE_COOKIES', 'true') === 'true');
@@ -174,6 +245,8 @@ define('SECURE_COOKIES', get_env('SECURE_COOKIES', 'true') === 'true');
 define('SESSION_SAMESITE', get_env('SESSION_SAMESITE', 'Lax'));
 
 define('SESSION_MAX_LIFETIME', (int) get_env('SESSION_MAX_LIFETIME', '28800'));
+
+define('SESSION_IDLE_TIMEOUT', max(0, (int) get_env('SESSION_IDLE_TIMEOUT', '0')));
 
 ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
 
@@ -208,7 +281,11 @@ ini_set('session.gc_maxlifetime', (string) SESSION_MAX_LIFETIME);
 })();
 require_once __DIR__ . '/crypto.php';
 
-define('ARGON2_OPTIONS', ['memory_cost' => 1 << 17, 'time_cost' => 4, 'threads' => 1]);
+define('ARGON2_OPTIONS', [
+    'memory_cost' => max(8192, (int) get_env('ARGON2_MEMORY_COST', (string) (1 << 17))),
+    'time_cost'   => max(1, (int) get_env('ARGON2_TIME_COST', '4')),
+    'threads'     => max(1, (int) get_env('ARGON2_THREADS', '1')),
+]);
 
 define('LOGIN_MAX_ATTEMPTS_PER_IP', (int) get_env('LOGIN_MAX_ATTEMPTS_PER_IP', '20'));
 
@@ -217,6 +294,21 @@ define('LOGIN_MAX_ATTEMPTS_PER_USERNAME', (int) get_env('LOGIN_MAX_ATTEMPTS_PER_
 define('LOGIN_LOCKOUT_MINUTES', (int) get_env('LOGIN_LOCKOUT_MINUTES', '15'));
 
 define('TRUST_PROXY_HEADERS', get_env('TRUST_PROXY_HEADERS', 'true') === 'true');
+
+define('TRUSTED_PROXY_IPS', (static function (): array {
+    $raw = get_env('TRUSTED_PROXY_IPS', '');
+    if (trim($raw) === '') {
+        return [];
+    }
+    $ranges = [];
+    foreach (explode(',', $raw) as $entry) {
+        $entry = trim($entry);
+        if ($entry !== '') {
+            $ranges[] = $entry;
+        }
+    }
+    return $ranges;
+})());
 
 define('DEMO_MODE', get_env('DEMO_MODE', 'false') === 'true');
 
@@ -252,6 +344,10 @@ define('CONFIG_FILE_MAX_BYTES', (int) get_env('CONFIG_FILE_MAX_BYTES', '524288')
 define('MAX_LIST_ROWS', (int) get_env('MAX_LIST_ROWS', '10000'));
 
 define('HSTS_MAX_AGE', (int) get_env('HSTS_MAX_AGE', '31536000'));
+
+define('HTTP_CLIENT_TIMEOUT', max(1, (int) get_env('HTTP_CLIENT_TIMEOUT', '30')));
+
+define('HTTP_CLIENT_CONNECT_TIMEOUT', max(1, (int) get_env('HTTP_CLIENT_CONNECT_TIMEOUT', '10')));
 
 define('RECORD_SNAPSHOTS_ENABLED', (function (): bool {
     $environment = get_env('RECORD_SNAPSHOTS_ENABLED', '');

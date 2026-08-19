@@ -491,8 +491,8 @@ if ($action === 'rag_ollama_check') {
         }
         curl_setopt_array($curlHandle, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT        => HTTP_CLIENT_TIMEOUT,
+            CURLOPT_CONNECTTIMEOUT => HTTP_CLIENT_CONNECT_TIMEOUT,
             CURLOPT_SSL_VERIFYPEER => $sslVerify,
             CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
             CURLOPT_HTTPHEADER     => $authenticationHeaders,
@@ -528,8 +528,8 @@ if ($action === 'rag_ollama_check') {
         if ($versionCurlHandle !== false) {
             curl_setopt_array($versionCurlHandle, [
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT        => 10,
-                CURLOPT_CONNECTTIMEOUT => 5,
+                CURLOPT_TIMEOUT        => HTTP_CLIENT_TIMEOUT,
+                CURLOPT_CONNECTTIMEOUT => HTTP_CLIENT_CONNECT_TIMEOUT,
                 CURLOPT_SSL_VERIFYPEER => $sslVerify,
                 CURLOPT_SSL_VERIFYHOST => $sslVerify ? 2 : 0,
                 CURLOPT_HTTPHEADER     => $authenticationHeaders,

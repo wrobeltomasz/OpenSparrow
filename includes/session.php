@@ -56,9 +56,22 @@ function send_security_headers(
     });
 }
 
+function session_touch(): void
+{
+    if (SESSION_IDLE_TIMEOUT > 0 && !empty($_SESSION['user_id'])) {
+        $_SESSION['last_seen_at'] = time();
+    }
+}
+
 function session_is_stale(): bool
 {
     if (isset($_SESSION['created_at']) && (time() - (int) $_SESSION['created_at']) > SESSION_MAX_LIFETIME) {
+        return true;
+    }
+    if (
+        SESSION_IDLE_TIMEOUT > 0 && isset($_SESSION['last_seen_at'])
+        && (time() - (int) $_SESSION['last_seen_at']) > SESSION_IDLE_TIMEOUT
+    ) {
         return true;
     }
     $bound = $_SESSION['user_agent'] ?? null;
@@ -80,6 +93,7 @@ function enforce_session_json(): void
         session_destroy();
         throw new \App\Exception\UnauthorizedException('Session expired', ['error' => 'Session expired']);
     }
+    session_touch();
 }
 
 function enforce_session_redirect(string $loginUrl = 'login.php'): void
@@ -91,4 +105,5 @@ function enforce_session_redirect(string $loginUrl = 'login.php'): void
         session_destroy();
         throw new \App\Exception\RedirectException($loginUrl);
     }
+    session_touch();
 }
