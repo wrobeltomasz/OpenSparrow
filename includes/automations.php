@@ -711,6 +711,11 @@ function auto_resolve_template(string $value, array $record, int $userId, ?array
     $value = preg_replace('/\{\{\s*current_user\.id\s*\}\}/', (string) $userId, $value) ?? $value;
     $value = preg_replace('/\{\{\s*today\s*\}\}/', date('Y-m-d'), $value) ?? $value;
     $value = preg_replace_callback(
+        '/\{\{\s*app_url\s*\}\}/',
+        static fn(array $matches): string => APP_URL,
+        $value
+    ) ?? $value;
+    $value = preg_replace_callback(
         '/\{\{\s*record\.(\w+)\s*\}\}/',
         static function (array $matches) use ($record): string {
             return (string) ($record[$matches[1]] ?? '');

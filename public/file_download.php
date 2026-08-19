@@ -75,10 +75,10 @@ if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
     }
 }
 
-$filePath = __DIR__ . '/../' . $row['storage_path'];
-$realBase = realpath(__DIR__ . '/../storage');
+$filePath = os_storage_path($row['storage_path']);
+$realBase = realpath(os_storage_path());
 $realFile = realpath($filePath);
-if ($realFile === false || !str_starts_with($realFile, $realBase . DIRECTORY_SEPARATOR)) {
+if ($realBase === false || $realFile === false || !str_starts_with($realFile, $realBase . DIRECTORY_SEPARATOR)) {
     throw new ForbiddenException('Access denied');
 }
 

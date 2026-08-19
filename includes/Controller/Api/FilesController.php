@@ -285,7 +285,7 @@ final class FilesController
 
         $uuid        = $this->generateUuid();
         $filename    = $uuid . '.' . $extension;
-        $directory         = rtrim(__DIR__ . '/../../../' . ($config['storage_path'] ?? 'storage/files'), '/');
+        $directory         = rtrim(os_storage_path($config['storage_path'] ?? 'storage/files'), '/');
         os_ensure_directory($directory, 0750);
         os_write_guard_file($directory . '/.htaccess', "Require all denied\n");
 

@@ -13,7 +13,7 @@ require_once __DIR__ . '/../../includes/clickstats.php';
 
 use App\Controller\Api\ClickstatsController;
 
-os_api_bootstrap(['connect' => false, 'csrf' => 'manual', 'gate' => false]);
+os_api_bootstrap(['connect' => false, 'csrf' => 'manual', 'gate' => false, 'rate_limit' => 600]);
 
 $controller = new ClickstatsController(os_boot_app());
 

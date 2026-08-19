@@ -55,7 +55,13 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGSCHEMA: ${PGSCHEMA:-app}
       APP_ENV: ${APP_ENV:-production}
+      APP_URL: ${APP_URL:-}
       SECURE_COOKIES: ${SECURE_COOKIES:-true}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-OSSESSID}
+      DB_SSLMODE: ${DB_SSLMODE:-prefer}
+      DB_SSLROOTCERT: ${DB_SSLROOTCERT:-}
+      STORAGE_PATH: ${STORAGE_PATH:-}
+      API_RATE_LIMIT_PER_MIN: ${API_RATE_LIMIT_PER_MIN:-120}
     volumes:
       - ./includes:/var/www/html/includes:rw
       - ./storage:/var/www/html/storage:rw
@@ -116,6 +122,10 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGSCHEMA: ${PGSCHEMA:-app}
       APP_ENV: ${APP_ENV:-production}
+      APP_URL: ${APP_URL:-}
+      DB_SSLMODE: ${DB_SSLMODE:-prefer}
+      DB_SSLROOTCERT: ${DB_SSLROOTCERT:-}
+      STORAGE_PATH: ${STORAGE_PATH:-}
     volumes:
       - ./includes:/var/www/html/includes:ro
       - ./storage:/var/www/html/storage:rw

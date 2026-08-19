@@ -53,6 +53,8 @@ docker compose up -d
 | `SESSION_IDLE_TIMEOUT` | 0 | Inactivity expiry (seconds). `0` disables it; the hard expiry still applies. |
 | `DB_NAME` / `DB_USER` / `DB_PASSWORD` | *(from `PGDATABASE`/`PGUSER`/`PGPASSWORD`)* | Database credentials. `config/database.json` still wins over both. |
 | `DB_SCHEMA` | app | System schema; falls back to `PGSCHEMA`. |
+| `DB_SSLMODE` | prefer | libpq TLS mode: `disable`, `allow`, `prefer`, `require`, `verify-ca`, `verify-full`. Use `require` or stronger whenever Postgres is not on localhost. Falls back to `PGSSLMODE`; an unknown value is refused and logged. |
+| `DB_SSLROOTCERT` | *(empty)* | CA bundle path, needed by `verify-ca`/`verify-full`. Falls back to `PGSSLROOTCERT`. |
 | `ARGON2_MEMORY_COST` | 131072 | Password hashing memory in KiB. Lower it on constrained hosts (minimum 8192). |
 | `ARGON2_TIME_COST` | 4 | Password hashing iterations. |
 | `ARGON2_THREADS` | 1 | Password hashing parallelism. |
@@ -62,6 +64,7 @@ docker compose up -d
 | `TRUSTED_PROXY_IPS` | *(empty)* | Comma-separated IPs/CIDRs allowed to set the forwarding headers. Empty means every client is trusted, so set it together with `TRUST_PROXY_HEADERS=true`. |
 | `FORWARDED_HEADER_PRIORITY` | cf,x-real-ip | Order in which forwarding headers are consulted. Supported: `cf`, `x-real-ip`, `x-forwarded-for`. |
 | `SESSION_SAMESITE` | Lax | Do not set to `Strict` — breaks login redirect. |
+| `SESSION_COOKIE_NAME` | OSSESSID | Session cookie name. Give each installation its own value when several apps share a hostname, otherwise they overwrite each other's sessions. Changing it logs everyone out once. |
 | `IP_HASH_SALT` | *(auto)* | Auto-generated to `includes/.secret_salt` on first request. Set explicitly across all nodes in multi-server deployments so rate-limit hashes match. |
 | `LOGIN_MAX_ATTEMPTS_PER_IP` | 20 | Failed login threshold per IP before lockout. |
 | `LOGIN_MAX_ATTEMPTS_PER_USERNAME` | 5 | Failed login threshold per user before lockout. |
@@ -71,6 +74,9 @@ docker compose up -d
 | `ADMIN_PURGE_MAX_DAYS` | 3650 | Upper bound for log retention windows accepted by admin purges. |
 | `CSP_REPORT_URI` | *(empty)* | Same-origin path collecting CSP violation reports. Empty disables reporting. |
 | `CSP_REPORT_ONLY` | false | Sends the policy as `Content-Security-Policy-Report-Only`. Needs `CSP_REPORT_URI`; never applies to file downloads. |
+| `STORAGE_PATH` | *(project root)*`/storage` | Writable data directory holding `sessions/`, `tmp/`, `files/`, `ratelimit/`. Point it at a mounted volume to keep the code tree read-only. Paths already stored in `spw_files.storage_path` keep working. |
+| `APP_URL` | *(empty)* | Absolute base URL of the installation, e.g. `https://crm.example.com`. Available as the `{{ app_url }}` automation placeholder so e-mails queued by cron can carry working links. A value that is not an absolute http(s) URL is ignored and logged. |
+| `API_RATE_LIMIT_PER_MIN` | 120 | Requests per minute per user, counted separately for each API endpoint; over the budget the endpoint answers 429 with `Retry-After: 60`. The click collector gets its own 600/min budget. `0` disables the limit everywhere. |
 | `HTTP_PORT` | 80 | |
 
 Generate strong password / salt:

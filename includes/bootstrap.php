@@ -14,6 +14,7 @@ require_once __DIR__ . '/../src/Security/UserRole.php';
 
 use App\Exception\ControlFlowException;
 use App\Exception\ForbiddenException;
+use App\Exception\HttpException;
 use App\Exception\RedirectException;
 use App\Exception\UnauthorizedException;
 use App\Http\PhpRequest;
@@ -125,6 +126,17 @@ function os_api_bootstrap(array $options = []): ?\PgSql\Connection
     }
 
     enforce_session_json();
+
+    $rateLimit = API_RATE_LIMIT_PER_MIN > 0 ? (int) ($options['rate_limit'] ?? API_RATE_LIMIT_PER_MIN) : 0;
+    if ($rateLimit > 0) {
+        require_once __DIR__ . '/rate_limit.php';
+        $endpoint = basename((string) ($_SERVER['SCRIPT_NAME'] ?? 'api'), '.php');
+        $bucket = 'api_' . (int) $_SESSION['user_id'] . '_' . $endpoint;
+        if (!os_rate_limit_ok($bucket, (int) $rateLimit, 'api')) {
+            header('Retry-After: 60');
+            throw HttpException::fromStatus(429, 'Too many requests. Please slow down.');
+        }
+    }
 
     if (
         !empty($options['require_ajax'])

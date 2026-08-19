@@ -39,16 +39,23 @@ function db_connect(): \PgSql\Connection
     $dbname = !empty($config['dbname']) ? $config['dbname'] : $dbname;
     $user = !empty($config['user']) ? $config['user'] : $user;
     $password = $config['password'] ?? $password;
+    $sslMode = !empty($config['sslmode']) ? (string) $config['sslmode'] : DB_SSLMODE;
+    $sslRootCert = !empty($config['sslrootcert']) ? (string) $config['sslrootcert'] : DB_SSLROOTCERT;
 
     $connectionString = sprintf(
-        "host=%s port=%s dbname=%s user=%s password=%s connect_timeout=%d",
+        "host=%s port=%s dbname=%s user=%s password=%s connect_timeout=%d sslmode=%s",
         $host,
         $port,
         $dbname,
         $user,
         $password,
-        DB_CONNECT_TIMEOUT
+        DB_CONNECT_TIMEOUT,
+        $sslMode
     );
+    if ($sslRootCert !== '') {
+        $escapedRootCert = str_replace(["\\", "'"], ["\\\\", "\\'"], $sslRootCert);
+        $connectionString .= " sslrootcert='" . $escapedRootCert . "'";
+    }
 
     $conn = @pg_connect($connectionString);
 

@@ -263,6 +263,8 @@ All variables are read by `includes/config.php` on every request — the single 
 | `DB_USER` | — | PostgreSQL user. Falls back to `PGUSER`. |
 | `DB_PASSWORD` | — | PostgreSQL password. Falls back to `PGPASSWORD`. |
 | `DB_SCHEMA` | `app` | Schema for `spw_*` tables. Falls back to `PGSCHEMA`. Overridden by the `schema` key in `database.json`. |
+| `DB_SSLMODE` | `prefer` | libpq TLS mode for the database connection: `disable`, `allow`, `prefer`, `require`, `verify-ca`, `verify-full`. `prefer` is what libpq negotiated on its own before this variable existed, so the default changes nothing; raise it to `require` or stronger whenever PostgreSQL is not on localhost. Falls back to `PGSSLMODE`. A value outside the list is refused and logged, and the connection falls back to `prefer`. Overridden by the `sslmode` key in `database.json`. |
+| `DB_SSLROOTCERT` | *(empty)* | Path to the CA bundle used to verify the server certificate — required by `verify-ca` and `verify-full`, ignored by the weaker modes. Falls back to `PGSSLROOTCERT`. Overridden by the `sslrootcert` key in `database.json`. |
 
 #### Session & cookies
 
@@ -270,6 +272,7 @@ All variables are read by `includes/config.php` on every request — the single 
 |---|---|---|
 | `SECURE_COOKIES` | `true` | Set `false` on plain HTTP (local dev). |
 | `SESSION_SAMESITE` | `Lax` | Cookie SameSite policy. Do not change to `Strict` — it causes `ERR_TOO_MANY_REDIRECTS` on the login→admin redirect. |
+| `SESSION_COOKIE_NAME` | `OSSESSID` | Name of the session cookie. The default used to be PHP's own `PHPSESSID`, which two applications sharing a hostname silently overwrite for each other — give every installation its own name when that applies. Accepts letters, digits and underscores (max 64 characters, not all digits); anything else is refused and logged, and `OSSESSID` is used. Changing the name logs every active user out once. |
 | `SESSION_MAX_LIFETIME` | `28800` | Hard session expiry in seconds (8 h), counted from login. |
 | `SESSION_IDLE_TIMEOUT` | `0` | Inactivity expiry in seconds — the session ends after this long without a request. `0` disables it; the hard expiry above always applies. |
 | `SESSION_SAVE_PATH` | *(auto)* | Absolute path for PHP session storage. When unset, defaults to `storage/sessions/` inside the project root — overriding any server-level `session.save_path`, which on some shared hosts (e.g. home.pl) differs per subdirectory and may point to a system `/tmp` blocked by `open_basedir`. Set explicitly when your host requires a specific path or for shared storage across nodes. |
@@ -289,6 +292,7 @@ All variables are read by `includes/config.php` on every request — the single 
 | `FORWARDED_HEADER_PRIORITY` | `cf,x-real-ip` | Order in which forwarding headers are consulted once they are trusted. Supported values: `cf` (`CF-Connecting-IP`, only alongside `CF-Ray`), `x-real-ip`, `x-forwarded-for`. Unknown names are dropped, and every candidate must parse as an IP address. |
 | `ARGON2_MEMORY_COST` | `131072` | Password hashing memory in KiB (128 MB). Lower it on constrained hosts; the floor is `8192`. |
 | `ARGON2_TIME_COST` | `4` | Password hashing iterations. |
+| `API_RATE_LIMIT_PER_MIN` | `120` | Requests per minute allowed per logged-in user, counted separately for each API endpoint so one busy endpoint cannot starve the others. Over the budget the endpoint answers `429` with `Retry-After: 60`. The click-statistics collector gets its own `600`/min budget, because `navigator.sendBeacon` fires on every click. `0` disables the limit everywhere, including that collector. Applies to the endpoints booted through `os_api_bootstrap()`; the admin API boots its own way and is not covered. |
 | `ARGON2_THREADS` | `1` | Password hashing parallelism. |
 
 #### Application behaviour
@@ -296,6 +300,8 @@ All variables are read by `includes/config.php` on every request — the single 
 | Variable | Default | Description |
 |---|---|---|
 | `APP_ENV` | `production` | Runtime environment. |
+| `APP_URL` | *(empty)* | Absolute base URL of this installation, e.g. `https://crm.example.com` (a trailing slash is trimmed). Exposed to automations as the `{{ app_url }}` placeholder, so e-mail bodies and links queued from cron — where there is no request to derive a host from — can carry working absolute URLs. A value that is not an absolute `http`/`https` URL is ignored and logged. |
+| `STORAGE_PATH` | *(project root)*`/storage` | Absolute path of the writable data directory holding `sessions/`, `tmp/`, `files/`, `ratelimit/` and migration backups. Point it at a mounted volume to keep the code tree read-only, or at shared storage across nodes. Paths already recorded in `spw_files.storage_path` keep resolving, so no migration is needed. `SESSION_SAVE_PATH` still wins for sessions alone. |
 | `DEMO_MODE` | `false` | Set `true` to block all write operations in the admin API (safe for public demos). |
 | `RECORD_SNAPSHOTS_ENABLED` | `false` | Enable record snapshot capture after every INSERT/UPDATE. Overrides the admin panel toggle stored in the `settings` configuration. |
 | `FILES_MAX_SIZE_MB` | `20` | Default upload size limit when not set in the `files` configuration. |
@@ -369,7 +375,9 @@ Configuration lives in `config/database.json`. The web document root is the `pub
 - **Authentication:** all roles share a single login page (`/login`). The admin panel (`/admin`) requires role `admin`. Frontend pages require role `editor` or `viewer`. There is no separate admin password file — all accounts live in `spw_users`.
 - **Session security:** sessions include a User-Agent fingerprint and an 8-hour absolute lifetime to guard against hijacking and stale sessions.
 - **Reverse-proxy aware:** `includes/config.php` auto-detects HTTPS through CloudFlare / Nginx / load-balancer headers (`X-Forwarded-Proto`, `CF-Visitor`, `X-Forwarded-SSL`) and forces an absolute `session.save_path` so PHP-FPM `chdir` behaviour does not split sessions across script directories. Client-IP headers are a separate, opt-in decision: set `TRUST_PROXY_HEADERS=true` and list the proxy in `TRUSTED_PROXY_IPS` before `CF-Connecting-IP` / `X-Real-IP` / `X-Forwarded-For` are believed.
-- **Session storage hardening:** session files are stored in `storage/sessions/` (resolved to an absolute path by `includes/config.php`), which lives outside the `public/` document root; a `.htaccess` denying HTTP access also ships as defense-in-depth.
+- **Session storage hardening:** session files are stored in `storage/sessions/` (resolved to an absolute path by `includes/config.php`, relocatable with `STORAGE_PATH`), which lives outside the `public/` document root; a `.htaccess` denying HTTP access also ships as defense-in-depth.
+- **Database TLS:** `DB_SSLMODE` sets the libpq TLS mode on every connection. The default `prefer` matches what libpq negotiated before the setting existed; use `require` or `verify-full` (with `DB_SSLROOTCERT`) whenever PostgreSQL is reached over a network you do not own.
+- **API rate limiting:** authenticated API endpoints are capped per user per endpoint by `API_RATE_LIMIT_PER_MIN` (default 120/min, `429` with `Retry-After` when exceeded), independently of the login lockout thresholds.
 
 ---
 

@@ -13,6 +13,7 @@ require_once __DIR__ . '/i18n.php';
 function start_session(): void
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_name(SESSION_COOKIE_NAME);
         session_set_cookie_params([
             'lifetime' => 0,
             'path'     => '/',

@@ -4,6 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 const SEED_TOKEN = 'cypress-dev-seed';
+const SESSION_COOKIE = Cypress.env('sessionCookie') || 'OSSESSID';
 
 function loginPageToken() {
   return cy.probe({ url: '/login.php' }).then(result => {
@@ -40,24 +41,25 @@ describe('Security – session cookie flags', () => {
   it('the session cookie is HttpOnly and SameSite-constrained', () => {
     cy.clearCookies();
     cy.probe({ url: '/login.php' }).then(result => {
-      const raw = [].concat(result.headers['set-cookie'] || []).find(c => /^PHPSESSID=/.test(c));
-      expect(raw, 'Set-Cookie for PHPSESSID').to.be.a('string');
+      const raw = [].concat(result.headers['set-cookie'] || [])
+        .find(c => c.startsWith(`${SESSION_COOKIE}=`));
+      expect(raw, `Set-Cookie for ${SESSION_COOKIE}`).to.be.a('string');
 
       expect(raw, 'HttpOnly flag').to.match(/;\s*HttpOnly/i);
       expect(raw, 'SameSite flag').to.match(/;\s*SameSite=(Lax|Strict)/i);
 
-      cy.task('log', `[security] PHPSESSID Secure flag: ${/;\s*Secure/i.test(raw)}`);
+      cy.task('log', `[security] ${SESSION_COOKIE} Secure flag: ${/;\s*Secure/i.test(raw)}`);
     });
   });
 
   it('the session identifier is rotated on successful login', () => {
     cy.clearCookies();
     cy.probe({ url: '/login.php' });
-    cy.getCookie('PHPSESSID').then(pre => {
+    cy.getCookie(SESSION_COOKIE).then(pre => {
       expect(pre, 'pre-login session cookie').to.not.be.null;
       submitLogin('test', 'test').then(result => {
         expect(result.status, 'login redirects on success').to.be.oneOf([302, 303]);
-        cy.getCookie('PHPSESSID').then(post => {
+        cy.getCookie(SESSION_COOKIE).then(post => {
           expect(post.value, 'session id must change across login').to.not.eq(pre.value);
         });
       });
@@ -67,13 +69,13 @@ describe('Security – session cookie flags', () => {
   it('logout invalidates the session for the old cookie', () => {
     cy.clearCookies();
     submitLogin('test', 'test');
-    cy.getCookie('PHPSESSID').then(cookie => {
+    cy.getCookie(SESSION_COOKIE).then(cookie => {
       cy.probe({ url: '/dashboard.php' }).its('status').should('eq', 200);
       cy.probe({ url: '/logout.php' });
 
       cy.probe({
         url: '/dashboard.php',
-        headers: { Cookie: `PHPSESSID=${cookie.value}` },
+        headers: { Cookie: `${SESSION_COOKIE}=${cookie.value}` },
       }).then(result => {
         expect(result.status, 'destroyed session must not authorise').to.be.oneOf([302, 303]);
         expect(result.headers.location).to.match(/login\.php/);

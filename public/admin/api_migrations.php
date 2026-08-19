@@ -295,7 +295,7 @@ if ($action === 'apply') {
     }
 
     $versionSlug = preg_replace('/[^a-zA-Z0-9._-]/', '_', $version);
-    $backupDirectory   = $root . '/storage/migrations_backup/' . $versionSlug;
+    $backupDirectory   = os_storage_path('migrations_backup/' . $versionSlug);
     $userId      = (int) ($_SESSION['user_id'] ?? 0);
     $log         = [];
     $warnings    = [];

@@ -69,9 +69,9 @@ if ($action === 'health') {
         'pg_version'         => $pg_version,
 
         'dir_writable'          => is_writable(__DIR__ . '/../../config'),
-        'storage_writable'      => is_dir(__DIR__ . '/../../storage') && is_writable(__DIR__ . '/../../storage'),
-        'storage_files_writable' => is_dir(__DIR__ . '/../../storage/files')
-            && is_writable(__DIR__ . '/../../storage/files'),
+        'storage_writable'      => is_dir(os_storage_path()) && is_writable(os_storage_path()),
+        'storage_files_writable' => is_dir(os_storage_path('files'))
+            && is_writable(os_storage_path('files')),
 
         'database_json_ok' => (static function () {
             $configPath = __DIR__ . '/../../config/database.json';

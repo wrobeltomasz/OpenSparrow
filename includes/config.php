@@ -145,6 +145,20 @@ if (!function_exists('settings_value')) {
     }
 }
 
+if (!function_exists('os_storage_path')) {
+    function os_storage_path(string $relative = ''): string
+    {
+        $base = defined('STORAGE_PATH') ? STORAGE_PATH : dirname(__DIR__) . '/storage';
+        $relative = trim(str_replace('\\', '/', $relative), '/');
+        if ($relative === 'storage') {
+            $relative = '';
+        } elseif (str_starts_with($relative, 'storage/')) {
+            $relative = substr($relative, 8);
+        }
+        return $relative === '' ? $base : $base . '/' . $relative;
+    }
+}
+
 if (!function_exists('os_last_error_reason')) {
     function os_last_error_reason(): string
     {
@@ -218,39 +232,64 @@ if (
     $_SERVER['SERVER_PORT'] = 443;
 }
 
-$_projectRoot = realpath(__DIR__ . '/..');
-$environmentSessPath = get_env('SESSION_SAVE_PATH', '');
-if ($environmentSessPath !== '') {
-    ini_set('session.save_path', $environmentSessPath);
-} elseif ($_projectRoot !== false) {
-    $_absPath = $_projectRoot . '/storage/sessions';
-    os_ensure_directory($_absPath, 0700);
-    if (is_dir($_absPath) && is_writable($_absPath)) {
-        ini_set('session.save_path', $_absPath);
-        os_write_guard_file($_absPath . '/.htaccess', "Require all denied\n");
+define('STORAGE_PATH', (static function (): string {
+    $environment = trim(get_env('STORAGE_PATH', ''));
+    if ($environment !== '') {
+        return rtrim(str_replace('\\', '/', $environment), '/');
     }
-    unset($_absPath);
-}
-unset($_projectRoot, $environmentSessPath);
+    $projectRoot = realpath(__DIR__ . '/..');
+    $base = $projectRoot !== false ? $projectRoot : dirname(__DIR__);
+    return rtrim(str_replace('\\', '/', $base), '/') . '/storage';
+})());
 
-$_projectRoot = realpath(__DIR__ . '/..');
-$environmentTemporaryPath  = get_env('SYS_TEMP_DIR', '');
+$environmentSessionPath = get_env('SESSION_SAVE_PATH', '');
+if ($environmentSessionPath !== '') {
+    ini_set('session.save_path', $environmentSessionPath);
+} else {
+    $sessionPath = os_storage_path('sessions');
+    os_ensure_directory($sessionPath, 0700);
+    if (is_dir($sessionPath) && is_writable($sessionPath)) {
+        ini_set('session.save_path', $sessionPath);
+        os_write_guard_file($sessionPath . '/.htaccess', "Require all denied\n");
+    }
+    unset($sessionPath);
+}
+unset($environmentSessionPath);
+
+$environmentTemporaryPath = get_env('SYS_TEMP_DIR', '');
 if ($environmentTemporaryPath !== '') {
     ini_set('sys_temp_dir', $environmentTemporaryPath);
     putenv('TMPDIR=' . $environmentTemporaryPath);
-} elseif ($_projectRoot !== false) {
-    $absTemporary = $_projectRoot . '/storage/tmp';
-    os_ensure_directory($absTemporary, 0700);
-    if (is_dir($absTemporary) && is_writable($absTemporary)) {
-        ini_set('sys_temp_dir', $absTemporary);
-        putenv('TMPDIR=' . $absTemporary);
-        os_write_guard_file($absTemporary . '/.htaccess', "Require all denied\n");
+} else {
+    $temporaryPath = os_storage_path('tmp');
+    os_ensure_directory($temporaryPath, 0700);
+    if (is_dir($temporaryPath) && is_writable($temporaryPath)) {
+        ini_set('sys_temp_dir', $temporaryPath);
+        putenv('TMPDIR=' . $temporaryPath);
+        os_write_guard_file($temporaryPath . '/.htaccess', "Require all denied\n");
     }
-    unset($absTemporary);
+    unset($temporaryPath);
 }
-unset($_projectRoot, $environmentTemporaryPath);
+unset($environmentTemporaryPath);
 
 define('APP_ENV', get_env('APP_ENV', 'production'));
+
+define('APP_URL', (static function (): string {
+    $url = trim(get_env('APP_URL', ''));
+    if ($url === '') {
+        return '';
+    }
+    $parts = parse_url($url);
+    if (
+        $parts === false
+        || !isset($parts['scheme'], $parts['host'])
+        || !in_array(strtolower($parts['scheme']), ['http', 'https'], true)
+    ) {
+        error_log('[config] APP_URL is not an absolute http(s) URL and was ignored: ' . $url);
+        return '';
+    }
+    return rtrim($url, '/');
+})());
 
 define('DB_HOST', get_env('DB_HOST', get_env('PGHOST', 'localhost')));
 
@@ -266,11 +305,32 @@ define('DB_PASSWORD', get_env('DB_PASSWORD', get_env('PGPASSWORD', '')));
 
 define('DB_SCHEMA', get_env('DB_SCHEMA', get_env('PGSCHEMA', 'app')));
 
+define('DB_SSLMODE', (static function (): string {
+    $supported = ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'];
+    $mode = strtolower(trim(get_env('DB_SSLMODE', get_env('PGSSLMODE', 'prefer'))));
+    if (!in_array($mode, $supported, true)) {
+        error_log('[config] DB_SSLMODE is not a libpq sslmode, falling back to prefer: ' . $mode);
+        return 'prefer';
+    }
+    return $mode;
+})());
+
+define('DB_SSLROOTCERT', trim(get_env('DB_SSLROOTCERT', get_env('PGSSLROOTCERT', ''))));
+
 define('APP_TIMEZONE', get_env('APP_TIMEZONE', 'Europe/Warsaw'));
 
 define('SECURE_COOKIES', get_env('SECURE_COOKIES', 'true') === 'true');
 
 define('SESSION_SAMESITE', get_env('SESSION_SAMESITE', 'Lax'));
+
+define('SESSION_COOKIE_NAME', (static function (): string {
+    $name = trim(get_env('SESSION_COOKIE_NAME', 'OSSESSID'));
+    if (preg_match('/^[A-Za-z0-9_]{1,64}$/', $name) !== 1 || ctype_digit($name)) {
+        error_log('[config] SESSION_COOKIE_NAME is not a usable cookie name, falling back to OSSESSID: ' . $name);
+        return 'OSSESSID';
+    }
+    return $name;
+})());
 
 define('SESSION_MAX_LIFETIME', (int) get_env('SESSION_MAX_LIFETIME', '28800'));
 
@@ -424,6 +484,8 @@ define('CHAT_BUBBLE_ENABLED', (function (): bool {
 define('OLLAMA_URL', get_env('OLLAMA_URL', 'http://localhost:11434'));
 
 define('OLLAMA_MODEL', get_env('OLLAMA_MODEL', 'llama3'));
+
+define('API_RATE_LIMIT_PER_MIN', max(0, (int) get_env('API_RATE_LIMIT_PER_MIN', '120')));
 
 define('RAG_RATE_LIMIT_PER_MIN', (int) get_env('RAG_RATE_LIMIT_PER_MIN', '10'));
 

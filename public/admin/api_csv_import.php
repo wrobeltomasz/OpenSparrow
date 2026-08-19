@@ -635,8 +635,7 @@ if ($action === 'csv_import_upload') {
         $rowCount++;
     }
 
-    $importDirectory = realpath(__DIR__ . '/../../storage/files')
-        . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR;
+    $importDirectory = os_storage_path('files') . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR;
     if (!is_dir($importDirectory)) {
         mkdir($importDirectory, 0750, true);
 
@@ -695,7 +694,7 @@ if ($action === 'csv_import_execute') {
         csv_fail('No column mapping provided.');
     }
 
-    $csvPath = realpath(__DIR__ . '/../../storage/files')
+    $csvPath = os_storage_path('files')
         . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR . $temporaryName;
 
     if (!file_exists($csvPath)) {
