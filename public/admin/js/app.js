@@ -199,7 +199,7 @@ function getColumnMeta(tableName, columnName) {
 
 async function loadConfigFile(fileName) {
     activeSaveHandler = null;
-    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print') {
+    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print' || fileName === 'clickstats') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
