@@ -37,8 +37,71 @@ parameters:
 
     # Registers the App\ PSR-4 autoloader so src/ classes resolve the same way they
     # do at runtime. Side-effect free — it only calls spl_autoload_register().
+    # scripts/phpstan-constants.php mirrors every constant includes/config.php
+    # defines. config.php itself cannot be loaded here: it creates storage
+    # directories and generates secrets on first run. Without the mirror every
+    # use of a config constant is a "Constant X not found" error, which buries
+    # the missing-require findings this analysis exists to surface.
     bootstrapFiles:
         - includes/autoload.php
+        - scripts/phpstan-constants.php
+
+    # Deployment-time values. The bootstrap above only has to make the names
+    # resolve; pinning their analysis-time values would let PHPStan rule out
+    # comparisons that are decided by the environment, not by the code.
+    dynamicConstantNames:
+        - APP_ENV
+        - DB_HOST
+        - DB_PORT
+        - DB_CONNECT_TIMEOUT
+        - DB_NAME
+        - DB_USER
+        - DB_PASSWORD
+        - DB_SCHEMA
+        - APP_TIMEZONE
+        - SECURE_COOKIES
+        - SESSION_SAMESITE
+        - SESSION_MAX_LIFETIME
+        - SESSION_IDLE_TIMEOUT
+        - IP_HASH_SALT
+        - APP_ENCRYPTION_KEY
+        - ARGON2_OPTIONS
+        - PASSWORD_MIN_LENGTH
+        - LOGIN_MAX_ATTEMPTS_PER_IP
+        - LOGIN_MAX_ATTEMPTS_PER_USERNAME
+        - LOGIN_LOCKOUT_MINUTES
+        - LOGIN_RATE_LIMIT_WINDOW_MINUTES
+        - ADMIN_PURGE_MAX_DAYS
+        - CSP_REPORT_URI
+        - CSP_REPORT_ONLY
+        - TRUST_PROXY_HEADERS
+        - FORWARDED_HEADER_PRIORITY
+        - TRUSTED_PROXY_IPS
+        - DEMO_MODE
+        - FILES_MAX_SIZE_MB
+        - FILES_PAGE_LIMIT
+        - FILES_PAGE_LIMIT_MAX
+        - THUMBNAIL_MAX_WIDTH
+        - FILE_CACHE_MAX_AGE
+        - THUMBNAIL_CACHE_MAX_AGE
+        - COMMENTS_PAGE_LIMIT_MAX
+        - COMMENTS_MINE_LIMIT
+        - NOTIFICATIONS_DROPDOWN_LIMIT
+        - AUTOMATION_EMAIL_FROM
+        - AUTOMATION_EMAIL_BATCH_LIMIT
+        - AUTOMATION_EMAIL_MAX_ATTEMPTS
+        - CONFIG_FILE_MAX_BYTES
+        - MAX_LIST_ROWS
+        - HSTS_MAX_AGE
+        - HTTP_CLIENT_TIMEOUT
+        - HTTP_CLIENT_CONNECT_TIMEOUT
+        - RECORD_SNAPSHOTS_ENABLED
+        - CHAT_BUBBLE_ENABLED
+        - OLLAMA_URL
+        - OLLAMA_MODEL
+        - RAG_RATE_LIMIT_PER_MIN
+        - RAG_MAX_CONCURRENT
+        - RAG_PAGE_CONTEXT_MAX_CHARS
 
     # The baseline records what was already there on the day PHPStan was introduced.
     # It is a ratchet: it may shrink, never grow. When a change would add an entry,

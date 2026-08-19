@@ -76,21 +76,49 @@ if (!function_exists('os_is_trusted_proxy')) {
     }
 }
 
+if (!function_exists('os_first_forwarded_ip')) {
+    function os_first_forwarded_ip(string $headerValue): string
+    {
+        foreach (explode(',', $headerValue) as $candidate) {
+            $candidate = trim($candidate);
+            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP) !== false) {
+                return $candidate;
+            }
+        }
+        return '';
+    }
+}
+
+if (!function_exists('os_forwarded_ip')) {
+    function os_forwarded_ip(string $source): string
+    {
+        return match ($source) {
+            'cf' => !empty($_SERVER['HTTP_CF_CONNECTING_IP']) && !empty($_SERVER['HTTP_CF_RAY'])
+                ? os_first_forwarded_ip((string) $_SERVER['HTTP_CF_CONNECTING_IP'])
+                : '',
+            'x-real-ip'       => os_first_forwarded_ip((string) ($_SERVER['HTTP_X_REAL_IP'] ?? '')),
+            'x-forwarded-for' => os_first_forwarded_ip((string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '')),
+            default           => '',
+        };
+    }
+}
+
 if (!function_exists('client_ip')) {
     function client_ip(): string
     {
         $remoteAddress = $_SERVER['REMOTE_ADDR'] ?? '';
-        if (defined('TRUST_PROXY_HEADERS') && !TRUST_PROXY_HEADERS) {
+        if (!defined('TRUST_PROXY_HEADERS') || !TRUST_PROXY_HEADERS) {
             return $remoteAddress;
         }
         if (!os_is_trusted_proxy($remoteAddress)) {
             return $remoteAddress;
         }
-        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']) && !empty($_SERVER['HTTP_CF_RAY'])) {
-            return $_SERVER['HTTP_CF_CONNECTING_IP'];
-        }
-        if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
-            return $_SERVER['HTTP_X_REAL_IP'];
+        $sources = defined('FORWARDED_HEADER_PRIORITY') ? FORWARDED_HEADER_PRIORITY : [];
+        foreach ($sources as $source) {
+            $forwarded = os_forwarded_ip($source);
+            if ($forwarded !== '') {
+                return $forwarded;
+            }
         }
         return $remoteAddress;
     }
@@ -287,13 +315,41 @@ define('ARGON2_OPTIONS', [
     'threads'     => max(1, (int) get_env('ARGON2_THREADS', '1')),
 ]);
 
-define('LOGIN_MAX_ATTEMPTS_PER_IP', (int) get_env('LOGIN_MAX_ATTEMPTS_PER_IP', '20'));
+define('PASSWORD_MIN_LENGTH', max(8, (int) get_env('PASSWORD_MIN_LENGTH', '12')));
 
-define('LOGIN_MAX_ATTEMPTS_PER_USERNAME', (int) get_env('LOGIN_MAX_ATTEMPTS_PER_USERNAME', '5'));
+define('LOGIN_MAX_ATTEMPTS_PER_IP', max(1, (int) get_env('LOGIN_MAX_ATTEMPTS_PER_IP', '20')));
 
-define('LOGIN_LOCKOUT_MINUTES', (int) get_env('LOGIN_LOCKOUT_MINUTES', '15'));
+define('LOGIN_MAX_ATTEMPTS_PER_USERNAME', max(1, (int) get_env('LOGIN_MAX_ATTEMPTS_PER_USERNAME', '5')));
 
-define('TRUST_PROXY_HEADERS', get_env('TRUST_PROXY_HEADERS', 'true') === 'true');
+define('LOGIN_LOCKOUT_MINUTES', max(1, (int) get_env('LOGIN_LOCKOUT_MINUTES', '15')));
+
+define('LOGIN_RATE_LIMIT_WINDOW_MINUTES', max(1, (int) get_env('LOGIN_RATE_LIMIT_WINDOW_MINUTES', '15')));
+
+define('ADMIN_PURGE_MAX_DAYS', max(1, (int) get_env('ADMIN_PURGE_MAX_DAYS', '3650')));
+
+define('CSP_REPORT_URI', (static function (): string {
+    $reportUri = trim(get_env('CSP_REPORT_URI', ''));
+    if ($reportUri === '' || preg_match('/[\s;,]/', $reportUri) === 1) {
+        return '';
+    }
+    return $reportUri;
+})());
+
+define('CSP_REPORT_ONLY', CSP_REPORT_URI !== '' && get_env('CSP_REPORT_ONLY', 'false') === 'true');
+
+define('TRUST_PROXY_HEADERS', get_env('TRUST_PROXY_HEADERS', 'false') === 'true');
+
+define('FORWARDED_HEADER_PRIORITY', (static function (): array {
+    $supported = ['cf', 'x-real-ip', 'x-forwarded-for'];
+    $sources   = [];
+    foreach (explode(',', get_env('FORWARDED_HEADER_PRIORITY', 'cf,x-real-ip')) as $entry) {
+        $entry = strtolower(trim($entry));
+        if (in_array($entry, $supported, true) && !in_array($entry, $sources, true)) {
+            $sources[] = $entry;
+        }
+    }
+    return $sources;
+})());
 
 define('TRUSTED_PROXY_IPS', (static function (): array {
     $raw = get_env('TRUSTED_PROXY_IPS', '');

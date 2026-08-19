@@ -97,8 +97,6 @@ function admin_require_log_table(\PgSql\Connection $conn, string $table): void
     ], 0);
 }
 
-const ADMIN_PURGE_MAX_DAYS = 3650;
-
 function admin_purge_days(array $input): ?int
 {
     if (!array_key_exists('days', $input) || $input['days'] === null) {

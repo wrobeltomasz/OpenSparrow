@@ -232,7 +232,7 @@ async function renderManageUsers(panel, context) {
             return;
         }
 
-        const minPasswordLength = policy.status === 'success' ? policy.min_password_length : 8;
+        const minPasswordLength = policy.status === 'success' ? policy.min_password_length : 12;
         const defaultRole = policy.status === 'success' ? policy.default_role : 'editor';
 
         const hasContact = data.contact_columns !== false;
@@ -723,7 +723,7 @@ async function renderUserSettings(panel, context) {
             <div style="max-width:400px;">
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Minimum password length</label>
-                    <input type="number" id="policyMinPasswordLength" class="adm-input" style="width:100%;" min="6" step="1" value="${escHtml(data.min_password_length)}">
+                    <input type="number" id="policyMinPasswordLength" class="adm-input" style="width:100%;" min="${escHtml(data.password_min_length)}" step="1" value="${escHtml(data.min_password_length)}">
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Default role for new users</label>

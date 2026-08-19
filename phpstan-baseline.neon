@@ -1,12 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Constant AUTOMATION_EMAIL_FROM not found\.$#'
-			identifier: constant.notFound
-			count: 2
-			path: cron/cron_notifications.php
-
-		-
 			message: '#^Variable \$action might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
@@ -139,36 +133,6 @@ parameters:
 			path: includes/automations.php
 
 		-
-			message: '#^Constant APP_ENCRYPTION_KEY not found\.$#'
-			identifier: constant.notFound
-			count: 2
-			path: includes/crypto.php
-
-		-
-			message: '#^Constant APP_TIMEZONE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: includes/db.php
-
-		-
-			message: '#^Constant DB_HOST not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: includes/db.php
-
-		-
-			message: '#^Constant DB_PORT not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: includes/db.php
-
-		-
-			message: '#^Constant SESSION_SAMESITE not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: includes/session.php
-
-		-
 			message: '#^Variable \$action might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
@@ -179,36 +143,6 @@ parameters:
 			identifier: variable.undefined
 			count: 2
 			path: public/admin/demo/seed.php
-
-		-
-			message: '#^Constant RECORD_SNAPSHOTS_ENABLED not found\.$#'
-			identifier: constant.notFound
-			count: 3
-			path: includes/frontapi/record.php
-
-		-
-			message: '#^Constant RECORD_SNAPSHOTS_ENABLED not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: includes/Controller/CreateController.php
-
-		-
-			message: '#^Constant APP_ENV not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: public/cypress_seed.php
-
-		-
-			message: '#^Constant RECORD_SNAPSHOTS_ENABLED not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: includes/Controller/EditController.php
-
-		-
-			message: '#^Constant IP_HASH_SALT not found\.$#'
-			identifier: constant.notFound
-			count: 1
-			path: public/login.php
 
 		-
 			message: '#^Variable \$userRole on left side of \?\? is never defined\.$#'

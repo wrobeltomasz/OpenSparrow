@@ -58,12 +58,19 @@ docker compose up -d
 | `ARGON2_THREADS` | 1 | Password hashing parallelism. |
 | `HTTP_CLIENT_TIMEOUT` | 30 | Outbound request timeout (seconds) for webhooks and Ollama admin calls. |
 | `HTTP_CLIENT_CONNECT_TIMEOUT` | 10 | Outbound connect timeout (seconds). |
-| `TRUSTED_PROXY_IPS` | *(empty)* | Comma-separated IPs/CIDRs allowed to set `CF-Connecting-IP` / `X-Real-IP`. Empty means every client is trusted — set it whenever the app is reachable directly. |
+| `TRUST_PROXY_HEADERS` | false | Master switch for client-IP headers. Leave off unless the app sits behind a proxy you control. |
+| `TRUSTED_PROXY_IPS` | *(empty)* | Comma-separated IPs/CIDRs allowed to set the forwarding headers. Empty means every client is trusted, so set it together with `TRUST_PROXY_HEADERS=true`. |
+| `FORWARDED_HEADER_PRIORITY` | cf,x-real-ip | Order in which forwarding headers are consulted. Supported: `cf`, `x-real-ip`, `x-forwarded-for`. |
 | `SESSION_SAMESITE` | Lax | Do not set to `Strict` — breaks login redirect. |
 | `IP_HASH_SALT` | *(auto)* | Auto-generated to `includes/.secret_salt` on first request. Set explicitly across all nodes in multi-server deployments so rate-limit hashes match. |
 | `LOGIN_MAX_ATTEMPTS_PER_IP` | 20 | Failed login threshold per IP before lockout. |
 | `LOGIN_MAX_ATTEMPTS_PER_USERNAME` | 5 | Failed login threshold per user before lockout. |
-| `LOGIN_LOCKOUT_MINUTES` | 15 | Lockout window. |
+| `LOGIN_LOCKOUT_MINUTES` | 15 | How long a lockout lasts once it triggers. |
+| `LOGIN_RATE_LIMIT_WINDOW_MINUTES` | 15 | How far back failed attempts are counted towards the threshold. |
+| `PASSWORD_MIN_LENGTH` | 12 | Floor for every password the app sets. The admin user policy may raise it, never lower it. Minimum 8. |
+| `ADMIN_PURGE_MAX_DAYS` | 3650 | Upper bound for log retention windows accepted by admin purges. |
+| `CSP_REPORT_URI` | *(empty)* | Same-origin path collecting CSP violation reports. Empty disables reporting. |
+| `CSP_REPORT_ONLY` | false | Sends the policy as `Content-Security-Policy-Report-Only`. Needs `CSP_REPORT_URI`; never applies to file downloads. |
 | `HTTP_PORT` | 80 | |
 
 Generate strong password / salt:
@@ -79,11 +86,12 @@ OpenSparrow auto-detects HTTPS through `X-Forwarded-Proto`, `CF-Visitor`, and
 `CF-Connecting-IP` / `X-Real-IP`. **No configuration required** behind a
 properly configured reverse proxy.
 
-Those client-IP headers are accepted from any source unless `TRUSTED_PROXY_IPS`
-lists the proxy addresses. Because the resolved IP feeds
-`LOGIN_MAX_ATTEMPTS_PER_IP`, a directly reachable deployment should set it, for
-example `TRUSTED_PROXY_IPS=173.245.48.0/20,103.21.244.0/22` or the internal
-address of the load balancer.
+Client-IP headers are ignored by default: set `TRUST_PROXY_HEADERS=true` to
+honour them, and list the proxy addresses in `TRUSTED_PROXY_IPS`, for example
+`TRUSTED_PROXY_IPS=173.245.48.0/20,103.21.244.0/22` or the internal address of
+the load balancer. Left empty, every client is trusted to name its own IP,
+which is what `LOGIN_MAX_ATTEMPTS_PER_IP` counts against. HTTPS auto-detection
+through `X-Forwarded-Proto` is unaffected by this switch.
 
 ---
 

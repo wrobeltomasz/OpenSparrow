@@ -93,25 +93,62 @@ if ($request->isPost()) {
         $maxAttemptsPerIp       = LOGIN_MAX_ATTEMPTS_PER_IP;
         $maxAttemptsPerUsername = LOGIN_MAX_ATTEMPTS_PER_USERNAME;
         $lockoutMinutes         = LOGIN_LOCKOUT_MINUTES;
+        $rateLimitWindowMinutes = LOGIN_RATE_LIMIT_WINDOW_MINUTES;
+        $lookbackMinutes        = $lockoutMinutes + $rateLimitWindowMinutes;
+        $attemptsTable          = sys_table('login_attempts');
 
         $sqlCheck = "
             SELECT
-                SUM(CASE WHEN ip_hash  = \$1 THEN 1 ELSE 0 END) AS cnt_ip,
-                SUM(CASE WHEN username = \$2 THEN 1 ELSE 0 END) AS cnt_user
-            FROM " . sys_table('login_attempts') . "
-            WHERE attempted_at > now() - (\$3 * interval '1 minute')
-              AND (ip_hash = \$1 OR username = \$2)
+                (SELECT EXTRACT(EPOCH FROM MAX(attempted_at)) FROM {$attemptsTable}
+                  WHERE ip_hash = \$1
+                    AND attempted_at > now() - (\$3 * interval '1 minute')) AS newest_ip,
+                (SELECT EXTRACT(EPOCH FROM attempted_at) FROM {$attemptsTable}
+                  WHERE ip_hash = \$1
+                    AND attempted_at > now() - (\$3 * interval '1 minute')
+                  ORDER BY attempted_at DESC OFFSET \$4 LIMIT 1) AS nth_ip,
+                (SELECT EXTRACT(EPOCH FROM MAX(attempted_at)) FROM {$attemptsTable}
+                  WHERE username = \$2
+                    AND attempted_at > now() - (\$3 * interval '1 minute')) AS newest_username,
+                (SELECT EXTRACT(EPOCH FROM attempted_at) FROM {$attemptsTable}
+                  WHERE username = \$2
+                    AND attempted_at > now() - (\$3 * interval '1 minute')
+                  ORDER BY attempted_at DESC OFFSET \$5 LIMIT 1) AS nth_username,
+                EXTRACT(EPOCH FROM now()) AS now_epoch
         ";
-        $checkResult = pg_query_params($conn, $sqlCheck, [$ipHash, $username, $lockoutMinutes]);
+        $checkResult = pg_query_params($conn, $sqlCheck, [
+            $ipHash,
+            $username,
+            $lookbackMinutes,
+            $maxAttemptsPerIp - 1,
+            $maxAttemptsPerUsername - 1,
+        ]);
 
         if (!$checkResult) {
             $error = 'Technical error. Contact administrator.';
         } else {
             $row = pg_fetch_assoc($checkResult);
+            $nowEpoch = (float) ($row['now_epoch'] ?? 0);
 
-            if ((int)$row['cnt_ip'] >= $maxAttemptsPerIp) {
+            $isLockedOut = static function (
+                mixed $newest,
+                mixed $nth
+            ) use (
+                $nowEpoch,
+                $rateLimitWindowMinutes,
+                $lockoutMinutes
+            ): bool {
+                if ($nth === null || $newest === null) {
+                    return false;
+                }
+                $newestEpoch = (float) $newest;
+                $burstSeconds = $newestEpoch - (float) $nth;
+                return $burstSeconds <= $rateLimitWindowMinutes * 60
+                    && ($nowEpoch - $newestEpoch) < $lockoutMinutes * 60;
+            };
+
+            if ($isLockedOut($row['newest_ip'] ?? null, $row['nth_ip'] ?? null)) {
                 $error = 'Too many failed attempts. Please try again later.';
-            } elseif ((int)$row['cnt_user'] >= $maxAttemptsPerUsername) {
+            } elseif ($isLockedOut($row['newest_username'] ?? null, $row['nth_username'] ?? null)) {
                 $error = 'Too many failed attempts. Please try again later.';
             }
         }

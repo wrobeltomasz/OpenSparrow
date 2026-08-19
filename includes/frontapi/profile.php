@@ -57,8 +57,11 @@ function frontapi_profile_change_password(\PgSql\Connection $conn, array $body, 
     if ($current === '' || $new === '') {
         throw new BadRequestException('Both passwords are required.');
     }
-    if (strlen($new) < 8) {
-        throw HttpException::fromStatus(422, 'New password must be at least 8 characters.');
+    if (strlen($new) < PASSWORD_MIN_LENGTH) {
+        throw HttpException::fromStatus(
+            422,
+            'New password must be at least ' . PASSWORD_MIN_LENGTH . ' characters.'
+        );
     }
 
     $sqlFetch = 'SELECT password_hash, salt FROM ' . sys_table('users') . ' WHERE id = $1';

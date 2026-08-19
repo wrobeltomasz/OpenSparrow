@@ -18,7 +18,10 @@ function admin_user_policy(): array
 {
     $policy = config_get('user_policy') ?? [];
     return [
-        'min_password_length' => (int) ($policy['min_password_length'] ?? 8),
+        'min_password_length' => max(
+            PASSWORD_MIN_LENGTH,
+            (int) ($policy['min_password_length'] ?? PASSWORD_MIN_LENGTH)
+        ),
         'default_role' => in_array($policy['default_role'] ?? '', USER_ROLES, true)
             ? $policy['default_role']
             : 'editor',
@@ -397,7 +400,9 @@ if ($action === 'users_stats') {
 }
 
 if ($action === 'user_policy_get') {
-    throw ResponseException::encoded(['status' => 'success'] + admin_user_policy());
+    throw ResponseException::encoded(
+        ['status' => 'success', 'password_min_length' => PASSWORD_MIN_LENGTH] + admin_user_policy()
+    );
 }
 
 if ($action === 'user_policy_save') {
@@ -407,8 +412,8 @@ if ($action === 'user_policy_save') {
     $minimumLength = (int) ($data['min_password_length'] ?? 0);
     $defaultRole = $data['default_role'] ?? '';
 
-    if ($minimumLength < 6) {
-        admin_err('Minimum password length must be at least 6.');
+    if ($minimumLength < PASSWORD_MIN_LENGTH) {
+        admin_err('Minimum password length must be at least ' . PASSWORD_MIN_LENGTH . '.');
     }
     if (!in_array($defaultRole, USER_ROLES, true)) {
         admin_err('Invalid default role.');

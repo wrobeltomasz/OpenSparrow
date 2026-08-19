@@ -525,15 +525,21 @@ ${_h4(strings.s12_env_head)}
         <tr><td class="adm-td"><code>LOGIN_MAX_ATTEMPTS_PER_IP</code></td><td class="adm-td"><code>20</code></td><td class="adm-td">${strings.env_ip_attempts}</td></tr>
         <tr><td class="adm-td"><code>LOGIN_MAX_ATTEMPTS_PER_USERNAME</code></td><td class="adm-td"><code>5</code></td><td class="adm-td">${strings.env_user_attempts}</td></tr>
         <tr><td class="adm-td"><code>LOGIN_LOCKOUT_MINUTES</code></td><td class="adm-td"><code>15</code></td><td class="adm-td">${strings.env_lockout}</td></tr>
+        <tr><td class="adm-td"><code>LOGIN_RATE_LIMIT_WINDOW_MINUTES</code></td><td class="adm-td"><code>15</code></td><td class="adm-td">${strings.env_ratewindow}</td></tr>
+        <tr><td class="adm-td"><code>PASSWORD_MIN_LENGTH</code></td><td class="adm-td"><code>12</code></td><td class="adm-td">${strings.env_pwdmin}</td></tr>
+        <tr><td class="adm-td"><code>ADMIN_PURGE_MAX_DAYS</code></td><td class="adm-td"><code>3650</code></td><td class="adm-td">${strings.env_purgemax}</td></tr>
         <tr><td class="adm-td"><code>DEMO_MODE</code></td><td class="adm-td"><code>false</code></td><td class="adm-td">${strings.env_demo}</td></tr>
         <tr><td class="adm-td"><code>FILES_MAX_SIZE_MB</code></td><td class="adm-td"><code>20</code></td><td class="adm-td">${strings.env_files}</td></tr>
         <tr><td class="adm-td"><code>RECORD_SNAPSHOTS_ENABLED</code></td><td class="adm-td"><code>false</code></td><td class="adm-td">${strings.env_snapshots}</td></tr>
         <tr><td class="adm-td"><code>PGSCHEMA</code></td><td class="adm-td"><code>app</code></td><td class="adm-td">${strings.env_pgschema}</td></tr>
         <tr><td class="adm-td"><code>APP_ENCRYPTION_KEY</code></td><td class="adm-td"><em>${strings.env_autogen}</em></td><td class="adm-td">${strings.env_enckey}</td></tr>
-        <tr><td class="adm-td"><code>TRUST_PROXY_HEADERS</code></td><td class="adm-td"><code>true</code></td><td class="adm-td">${strings.env_proxy}</td></tr>
+        <tr><td class="adm-td"><code>TRUST_PROXY_HEADERS</code></td><td class="adm-td"><code>false</code></td><td class="adm-td">${strings.env_proxy}</td></tr>
+        <tr><td class="adm-td"><code>FORWARDED_HEADER_PRIORITY</code></td><td class="adm-td"><code>cf,x-real-ip</code></td><td class="adm-td">${strings.env_forwarded}</td></tr>
         <tr><td class="adm-td"><code>SESSION_SAMESITE</code></td><td class="adm-td"><code>Lax</code></td><td class="adm-td">${strings.env_samesite}</td></tr>
         <tr><td class="adm-td"><code>SESSION_SAVE_PATH</code></td><td class="adm-td"><em>${strings.env_none}</em></td><td class="adm-td">${strings.env_savepath}</td></tr>
         <tr><td class="adm-td"><code>HSTS_MAX_AGE</code></td><td class="adm-td"><code>31536000</code></td><td class="adm-td">${strings.env_hsts}</td></tr>
+        <tr><td class="adm-td"><code>CSP_REPORT_URI</code></td><td class="adm-td"><em>${strings.env_none}</em></td><td class="adm-td">${strings.env_cspreport}</td></tr>
+        <tr><td class="adm-td"><code>CSP_REPORT_ONLY</code></td><td class="adm-td"><code>false</code></td><td class="adm-td">${strings.env_csponly}</td></tr>
         <tr><td class="adm-td"><code>AUTOMATION_EMAIL_FROM</code></td><td class="adm-td"><em>${strings.env_none}</em></td><td class="adm-td">${strings.env_mailfrom}</td></tr>
     </tbody>
 </table>
