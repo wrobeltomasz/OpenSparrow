@@ -14,7 +14,7 @@
 - **Language:** JavaScript (ES6+)
 - **Target:** OpenSparrow web application (PHP/PostgreSQL)
 - **Base URL:** http://localhost:8080
-- **Current Test Files** (30 specs, grouped by area under `cypress/e2e/`):
+- **Current Test Files** (32 specs, grouped by area under `cypress/e2e/`):
 
 | Spec | Covers |
 |---|---|
@@ -32,6 +32,7 @@
 | `modules/board.cy.js` | Kanban board, dragging cards between status lanes |
 | `modules/calendar.cy.js` | Calendar view and date-based records |
 | `modules/comments.cy.js` | Threaded record comments, grid badge, Edit-form tab |
+| `modules/comments-full.cy.js` | User-menu "My Comments" panel — requires `PHP_CLI_SERVER_WORKERS` |
 | `modules/dashboard.cy.js` | Dashboard widgets and aggregations |
 | `modules/files.cy.js` | File manager, attachments, tagging and search |
 | `modules/notifications.cy.js` | Notification bell, dropdown, reminders |
@@ -54,6 +55,7 @@
 | `security/headers_upload.cy.js` | Hardening headers, CSP nonce, the upload gauntlet |
 | `security/idor.cy.js` | Row-level ownership across grid, edit, PATCH, DELETE, bulk |
 | `security/injection.cy.js` | SQLi probes, stored XSS, path traversal |
+| `security/table_access.cy.js` | Per-user table/view/board/workflow access restrictions, enforced server-side |
 
 The auth (401), CSRF (403) and role (403) gates live only in `security/` — those
 specs assert the exact status code *and* that the body leaks no server internals

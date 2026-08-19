@@ -93,6 +93,7 @@ https://github.com/user-attachments/assets/62611274-d6e3-41ee-9b88-6e84f8f18827
 - **Visual table builder** — create PostgreSQL tables from the admin UI with per-column type, NOT NULL, default value, index (btree/hash/unique), column comment (`COMMENT ON COLUMN`), and foreign key constraints. Timestamps preset adds `created_at`/`updated_at` automatically. Tables are registered in the app schema configuration in the same step.
 - **Per-user access control** — beyond the three roles, each frontend account can be restricted to a subset of tables, views, printouts, boards and workflows from **System → Users → Access**. The groups are independent, ticking nothing leaves a group unrestricted, and enforcement is server-side on every endpoint — menus, grids, forms, subtable tabs, bulk tools, files and the RAG context all follow the restriction.
 - **Audit logging & record snapshots** — every write is logged to `spw_users_log`; an optional record-snapshot module saves a full JSONB copy of each record after INSERT/UPDATE to `spw_record_snapshots`, toggled from the admin panel or via env var.
+- **Click Statistics** — optional UI-interaction analytics (**System → Click Statistics**), off by default: while disabled nothing is emitted, no collector script loads and no request is made. Once enabled, clicks on buttons, links and elements carrying a `data-stat` attribute are batched client-side and delivered via `navigator.sendBeacon` to `spw_clickstats`, recording who clicked, when, which element, and the table/record in context where applicable. Retention is configurable (90 days by default) and enforced by the notification cron.
 - **CSV export & pagination** — built-in grid utilities.
 - **Workflows builder** — multi-step wizards linking parent/child records across tables. Each step can also upload an image or call a PostgreSQL stored procedure, so server-side logic runs as part of the wizard.
 - **File management** — per-record attachments with tagging and search, configurable via the admin panel.
@@ -238,7 +239,7 @@ Granting a board or a workflow does not grant the tables it uses — both ticks 
 2. **Before uploading** — export your configuration from the admin panel: **Configuration → Export config**. Keep this backup safe.
 3. Extract the ZIP and upload all files to your server via FTP, overwriting existing files.
 4. Your `config/database.json` is **not included** in the ZIP and your schema, dashboards, and all other settings live in the database — configuration is preserved automatically.
-5. Log in to `/admin` → **System → Migrations** → **Initialize System Tables** to apply any new system table migrations. Release 3.1 ships two: `3.1_table_comments` (adds `COMMENT ON` descriptions to every `spw_*` table — metadata only) and `3.1_notes_reminder_time` (widens `spw_notes.reminder_date` from `date` to `timestamp`; existing reminders keep their day at 00:00).
+5. Log in to `/admin` → **System → Migrations** → **Initialize System Tables** to apply any new system table migrations. Release 3.3 ships two: `3.3_user_contact` (adds nullable first name / last name / email / phone columns to `spw_users`) and `3.3_clickstats` (creates the `spw_clickstats` table backing the optional Click Statistics module). See `config/migrations.json` for the full per-release history.
 6. Check **System → Health Check** — the version shown should match the release tag you just uploaded.
 
 ---
@@ -391,14 +392,14 @@ Configuration lives in `config/database.json`. The web document root is the `pub
 
 Testing tooling is **dev-only** — none of it is needed to run the application.
 
-**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer, the admin API guards (CSRF / demo-mode / migration registry) and the language-file contract; no database required. **237 tests, 385 assertions** across 19 files under `Tests\`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
+**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer, the admin API guards (CSRF / demo-mode / migration registry) and the language-file contract; no database required. **427 tests, 1067 assertions** across 36 files under `Tests\`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
 
 ```bash
 composer install          # once
 vendor/bin/phpunit
 ```
 
-**Cypress — E2E tests.** 30 suites covering authentication, admin panel, grid operations, CRUD workflows, dashboard, calendar, board, print, files, record image galleries, comments, notifications, views, workflows, mass edit, CSV import, data cleanup, ETL, anonymization, i18n, keyboard shortcuts, API contracts, authorization/IDOR, session security, CSRF, injection, upload/header hardening, and the RAG chat. Requires Node.js 16+ and a running instance (default `http://localhost:8080`).
+**Cypress — E2E tests.** 32 suites covering authentication, admin panel, grid operations, CRUD workflows, dashboard, calendar, board, print, files, record image galleries, comments, notifications, views, workflows, mass edit, CSV import, data cleanup, ETL, anonymization, i18n, keyboard shortcuts, API contracts, authorization/IDOR, session security, CSRF, injection, upload/header hardening, and the RAG chat. Requires Node.js 16+ and a running instance (default `http://localhost:8080`).
 
 ```bash
 npm install               # once
