@@ -79,7 +79,7 @@ Managing the board module from the admin panel is equally easy — open the Boar
 
 The personal modules — My Notes, My Records and My Comments — are managed from the same admin panel and need almost no setup. Each one is simply switched on and pointed at the data it should show, so users immediately get a private view of the records they own, the notes they wrote and the comments they left. Ownership is resolved automatically from the logged-in user, which means you don't have to build separate tables or filters for every person. As with the other modules, everything is configured and saved directly in the panel, with no configuration files to edit by hand.
 
-https://github.com/user-attachments/assets/62611274-d6e3-41ee-9b88-6e84f8f18827
+<img width="1797" height="981" alt="user_menu" src="https://github.com/user-attachments/assets/1509c524-4bbc-44f4-8263-f944ce5b78cf" />
 
 ---
 
