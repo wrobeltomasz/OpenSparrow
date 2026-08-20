@@ -58,19 +58,22 @@ Pick the path that matches your environment. Every path ends at the same place: 
 
 Setting up the RAG module in the admin panel is straightforward — just open the RAG tab, pick which tables and columns should be indexed, and save. You can feed the knowledge base either from uploaded documents (files attached to records) or directly from database views, so existing data can be exposed to search without duplicating it. Embeddings and answers can be generated locally through Ollama or via a cloud API, whichever you configure in the settings.
 
-https://github.com/user-attachments/assets/034bbe0c-f246-4152-9779-edabc84d781c
+<img width="1544" height="842" alt="rag" src="https://github.com/user-attachments/assets/10228ffb-27f9-413b-a645-9c5f59b75c80" />
+
 
 ## Calendar module Demo Video
 
 Managing the calendar module from the admin panel is just as simple — open the Calendar tab and point it at the table that holds your events. You choose which columns provide the title, the start and end dates, and optionally a color or category, so any existing table can become a calendar without restructuring your data. Everything is saved straight from the panel and takes effect immediately, with no configuration files to edit by hand.
 
-https://github.com/user-attachments/assets/4c8c136f-ce1d-44eb-9fb5-a34ad478c588
+<img width="1035" height="686" alt="calendar" src="https://github.com/user-attachments/assets/868f7144-7b71-4819-aa2c-9b7b5eb9159f" />
+
 
 ## Board module Demo Video
 
 Managing the board module from the admin panel is equally easy — open the Board tab and select the table whose records should appear as cards. You define which column drives the status lanes and which fields show up on the card face, so any table with a status-like column turns into a working Kanban board straight away. Cards are then dragged between lanes in the front end, and every setting is saved from the panel with no files to edit manually.
 
-https://github.com/user-attachments/assets/28222785-a025-4d11-9ea1-cbb5a516ed1a
+<img width="1035" height="686" alt="board_view" src="https://github.com/user-attachments/assets/7cc2ec05-ceb7-498c-994c-71a9747249f7" />
+
 
 ## User Menu module Demo Video
 
