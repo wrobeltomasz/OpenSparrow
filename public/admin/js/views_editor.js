@@ -246,6 +246,33 @@ export function renderViewsEditor(context) {
                 if (viewName) currentConfig.hidden = true;
                 else delete currentConfig.hidden;
             }, false));
+
+        const dangerGroup = document.createElement('div');
+        dangerGroup.className = 'form-group';
+        dangerGroup.style.cssText = 'margin-top:28px; border-top:1px solid var(--border); padding-top:20px;';
+
+        const clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.className = 'btn btn-danger';
+        clearButton.textContent = 'Clear Entire Config';
+        clearButton.addEventListener('click', () => {
+            if (!confirm('Are you sure you want to completely clear the Views configuration?')) return;
+            currentConfig.views = {};
+            currentConfig.schemas = [];
+            delete currentConfig.menu_icon;
+            delete currentConfig.hidden;
+            currentConfig.menu_name = 'Views';
+            markDirty();
+            renderList();
+        });
+        dangerGroup.appendChild(clearButton);
+
+        const clearHelp = document.createElement('span');
+        clearHelp.className = 'help-text';
+        clearHelp.textContent = 'Removes all views and resets the menu name, icon and visibility. Press "Save config" in the top bar to apply.';
+        dangerGroup.appendChild(clearHelp);
+
+        listElement.appendChild(dangerGroup);
     }
 
     function buildViewCard(vName, config) {

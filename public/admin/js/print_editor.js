@@ -5,6 +5,7 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { createIconPicker, buildInnerTabs } from './ui.js';
+import { markDirty } from './app.js';
 
 export function renderPrintEditor(context) {
     const { workspaceEl: workspaceElement, setSaveHandler } = context;
@@ -39,6 +40,29 @@ export function renderPrintEditor(context) {
     globalDescription.textContent = 'Printouts have no module-wide settings yet — each template configures its own view, parameters and blocks below. Use "All Printouts" to add and edit templates.';
     globalPanel.appendChild(globalHeading);
     globalPanel.appendChild(globalDescription);
+
+    const dangerGroup = document.createElement('div');
+    dangerGroup.className = 'form-group';
+    dangerGroup.style.cssText = 'margin-top:28px; border-top:1px solid var(--border); padding-top:20px;';
+
+    const clearButton = document.createElement('button');
+    clearButton.type = 'button';
+    clearButton.className = 'btn btn-danger';
+    clearButton.textContent = 'Clear Entire Config';
+    clearButton.addEventListener('click', () => {
+        if (!confirm('Are you sure you want to completely clear the Printouts configuration?')) return;
+        prints = {};
+        markDirty();
+        renderList();
+    });
+    dangerGroup.appendChild(clearButton);
+
+    const clearHelp = document.createElement('span');
+    clearHelp.className = 'help-text';
+    clearHelp.textContent = 'Removes all printout templates. Press "Save config" in the top bar to apply.';
+    dangerGroup.appendChild(clearHelp);
+
+    globalPanel.appendChild(dangerGroup);
 
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
