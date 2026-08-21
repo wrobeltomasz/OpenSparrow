@@ -339,7 +339,7 @@ function demo_install_run(
             $workflowsConfig['menu_name'] = 'Workflows';
         }
         if (!isset($workflowsConfig['menu_icon'])) {
-            $workflowsConfig['menu_icon'] = 'assets/icons/automation.png';
+            $workflowsConfig['menu_icon'] = 'assets/icons/material/automation.svg';
         }
 
         $workflowConfigOrdered = [
@@ -364,7 +364,7 @@ function demo_install_run(
                 $filesConfig['menu_name'] = 'Files';
             }
             if (!isset($filesConfig['menu_icon'])) {
-                $filesConfig['menu_icon'] = 'assets/icons/upload.png';
+                $filesConfig['menu_icon'] = 'assets/icons/material/upload.svg';
             }
             if (!isset($filesConfig['max_file_size_mb'])) {
                 $filesConfig['max_file_size_mb'] = 20;

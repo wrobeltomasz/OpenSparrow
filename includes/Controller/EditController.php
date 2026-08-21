@@ -39,12 +39,12 @@ final class EditController
     private const JSON_FLAGS = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
 
     private const FILE_ICONS = [
-        'image'       => 'assets/icons/image.png',
+        'image'       => 'assets/icons/material/image.svg',
         'pdf'         => 'assets/icons/picture_as_pdf.png',
-        'doc'         => 'assets/icons/docs.png',
+        'doc'         => 'assets/icons/material/docs.svg',
         'spreadsheet' => 'assets/icons/grid_on.png',
         'archive'     => 'assets/icons/folder_zip.png',
-        'other'       => 'assets/icons/file_present.png',
+        'other'       => 'assets/icons/material/file_present.svg',
     ];
 
     private readonly RecordOwnershipService $ownership;
@@ -429,9 +429,9 @@ final class EditController
             $tabs[] = ['id' => $panel['id'], 'label' => $panel['label'], 'icon' => $panel['icon']];
         }
         if ($imagesPanel) {
-            $tabs[] = ['id' => 'tab-images', 'label' => $imagesPanel['label'], 'icon' => 'assets/icons/image.png'];
+            $tabs[] = ['id' => 'tab-images', 'label' => $imagesPanel['label'], 'icon' => 'assets/icons/material/image.svg'];
         }
-        $tabs[] = ['id' => 'tab-files', 'label' => t('form.tab_files'), 'icon' => 'assets/icons/folder_open.png'];
+        $tabs[] = ['id' => 'tab-files', 'label' => t('form.tab_files'), 'icon' => 'assets/icons/material/folder_open.svg'];
         $tabs[] = ['id' => 'tab-comments', 'label' => t('form.tab_comments'), 'icon' => ''];
         $tabs[] = ['id' => 'tab-history', 'label' => t('form.tab_history'), 'icon' => ''];
 

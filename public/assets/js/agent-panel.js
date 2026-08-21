@@ -188,7 +188,7 @@ function buildFab() {
     fabElement.type      = 'button';
     fabElement.setAttribute('aria-label', translate('agent.title'));
     const image   = document.createElement('img');
-    image.src     = 'assets/icons/comment.png';
+    image.src     = 'assets/icons/material/comment.svg';
     image.alt     = '';
     image.width   = 24;
     image.height  = 24;

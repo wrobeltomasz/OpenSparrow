@@ -411,7 +411,7 @@ export function renderPerformancePage(context) {
         },
         {
             label:  'Unused Indexes',
-            icon:   'data_thresholding.png',
+            icon:   'material/data_thresholding.svg',
             title:  '2. Unused Indexes',
             desc:   'Finds existing indexes with zero scans — candidates for removal to speed up writes.',
             action: 'performance_unused_indexes',
@@ -419,7 +419,7 @@ export function renderPerformancePage(context) {
         },
         {
             label:  'Slow Queries',
-            icon:   'watch_screentime.png',
+            icon:   'material/watch_screentime.svg',
             title:  '3. Slow Query Analyzer',
             desc:   'Top 15 slowest queries by avg execution time (requires pg_stat_statements extension).',
             action: 'performance_slow_queries',
@@ -427,7 +427,7 @@ export function renderPerformancePage(context) {
         },
         {
             label:  'Table Stats',
-            icon:   'data_table.png',
+            icon:   'material/data_table.svg',
             title:  '4. Table Statistics & Bloat',
             desc:   'Dead row ratio, seq vs index scans, last vacuum/analyze per table.',
             action: 'performance_table_stats',
@@ -435,7 +435,7 @@ export function renderPerformancePage(context) {
         },
         {
             label:  'DB Health',
-            icon:   'health_and_safety.png',
+            icon:   'material/health_and_safety.svg',
             title:  '5. Database Health',
             desc:   'Cache hit ratio, connection usage, deadlocks, committed transactions.',
             action: 'performance_db_health',
@@ -443,7 +443,7 @@ export function renderPerformancePage(context) {
         },
         {
             label:  'Schema Warnings',
-            icon:   'checklist_rtl.png',
+            icon:   'material/checklist_rtl.svg',
             title:  '6. Schema Configuration Warnings',
             desc:   'Tables missing load limits, widgets without row caps, subtables without column lists.',
             action: 'performance_schema_warnings',

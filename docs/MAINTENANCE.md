@@ -2097,6 +2097,94 @@ against `git show HEAD` copies of all three files served side by side on
   touching this" — byte-for-byte identical; the write routes were exercised against
   real rows and the rows removed again.
 
+## Icon set: Material Symbols (2026-08-21)
+
+`public/assets/icons/` now holds **two separate sets**, and the split is binding.
+
+- The **root** keeps only the handful of PNG icons the system still references by
+  name (`book_3s`, `delete`, `folder_zip`, `grid_on`, `notifications`,
+  `picture_as_pdf`, `search`, `settings`). The other 84 were removed on
+  2026-08-21 and every reference to them was repointed to `material/`. Icon paths
+  are stored in `spw_config` (`menu_icon`, `tables[].icon`), so **renaming or
+  deleting one of the remaining files silently breaks existing installations** —
+  and a database configured before that cleanup can still name a deleted PNG.
+  The fetcher never writes to the root.
+- **`public/assets/icons/material/`** holds the complete Material Symbols
+  Outlined set — 3 899 SVG files, ~1.8 MB — plus two generated manifests.
+
+### The fetcher owns that folder
+
+`scripts/fetch-material-icons.php` (dev-only; `scripts` is in
+`.github/release-excludes.txt`) is the only thing that writes there:
+
+```bash
+php scripts/fetch-material-icons.php --all             # whole set
+php scripts/fetch-material-icons.php --add=forklift    # one more icon later
+php scripts/fetch-material-icons.php --manifest-only   # rebuild the manifests only
+```
+
+It refuses to write into the icon root, validates every name against
+`/^[a-z0-9_]+$/`, skips files already present unless `--force`, and writes
+through a temp file plus `rename`.
+
+`index.json`, `tags.json` and `README.txt` are **generated output — never
+hand-edit them, and never sweep `README.txt` away**: it is the Apache-2.0 §4(b)
+notice sitting next to the files it describes, and `NOTICE` points at it.
+They are rebuilt from whatever `.svg` files are on disk, so deleting an icon and
+re-running `--manifest-only` is the supported way to shrink the set.
+
+### Why one variant per icon
+
+Upstream ships an axis matrix (`wght`/`grad`/`fill`/`opsz`) of roughly 200 SVG
+per icon per style — that is why the repository is 4.7 GB. We take exactly one
+file: **Outlined, optical size 24**, because real display sizes here are 18–24 px
+(`nav li a img` is 18×18).
+
+The fetcher then rewrites `width`/`height` to **48**, leaving `viewBox` and the
+path untouched. That is not cosmetic: the PNG icons are 48×48, and any `<img>`
+without an explicit CSS size would otherwise render new icons at half the size.
+`NOTICE` records this normalisation — keep the two in sync.
+
+Material Symbols has **no official PNG export** (`.../24px.png` is a 404), and
+the legacy `png/` tree in the upstream repo is a different, older icon set that
+lacks most of the names this project already uses. There is also no local SVG
+rasteriser (no GD, no Imagick, no ImageMagick), so "just convert them to PNG" is
+not an available option.
+
+### Two traps the fetcher already handles
+
+- **PHP CLI here has no `curl.cainfo`**, so every download failed TLS verification
+  while git-bash `curl` worked fine. The script resolves a CA bundle
+  (`--cainfo` → `CURL_CA_BUNDLE`/`SSL_CERT_FILE` → php.ini → known paths) and
+  never disables verification.
+- **Two icon names are numeric** (`123`, `360`). PHP normalises numeric array
+  keys, so `array_keys($catalog)` hands back `int`, which `preg_match()` rejects
+  outright. Names are cast to string on the way in. `--add` never hit this;
+  only `--all` did.
+
+### The picker reads the manifests, not the API
+
+`list_icons` (`includes/admin/settings.php`) is deliberately left scanning **one
+level only** — it still returns just the 92 project icons, so the response stays
+small. `createIconPicker` in `public/admin/js/ui.js` fetches
+`material/index.json` eagerly (160 KB) and `material/tags.json` lazily in the
+background (1.6 MB, 35 tags per icon), then searches client-side.
+
+No backend or security change was needed: the icon whitelist
+(`#^assets/[a-z0-9_\-/.]+\.(png|svg|gif|jpe?g|webp)$#i`, two synchronised copies)
+already allows sub-directories and `svg`.
+
+**Do not trim the tag lists.** An early version capped them at ten tags per icon
+to shrink the manifest and searching for `invoice` stopped returning anything —
+that tag sits at position 11–16, and `receipt_long` has no "invoice" in its name.
+The nonobvious hits are the entire point of the tag index.
+
+Polish queries are mapped through `ICON_PICKER_SYNONYMS`. Its values are
+**comma-separated phrases, not space-separated words**, and that matters: while
+the values were split on spaces, `ciężarówka → 'local shipping truck'` produced
+the bare term `local` and ranked `local_cafe` and `local_mall` above
+`local_shipping`, and `usuń` surfaced `close` ahead of `delete`.
+
 ## Where binding rules live
 
 This document is the authoritative, version-controlled home for binding UI and

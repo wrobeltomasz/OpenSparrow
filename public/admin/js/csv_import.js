@@ -58,9 +58,9 @@ export async function renderCsvImportPage(context) {
     wrap.appendChild(heading);
 
     const { panels, activate } = buildCsvTabs(wrap, [
-        { id: 'import',  label: 'Import',         icon: 'upload.png' },
-        { id: 'config',  label: 'Configuration',  icon: 'car_gear.png' },
-        { id: 'history', label: 'Import History', icon: 'manage_history.png' },
+        { id: 'import',  label: 'Import',         icon: 'material/upload.svg' },
+        { id: 'config',  label: 'Configuration',  icon: 'material/settings.svg' },
+        { id: 'history', label: 'Import History', icon: 'material/manage_history.svg' },
     ]);
 
     const importPanel  = panels['import'];
@@ -160,7 +160,7 @@ export async function renderCsvImportPage(context) {
     dropZone.style.cssText = 'border:2px dashed var(--border);border-radius:8px;padding:32px 20px;text-align:center;background:#fff;cursor:pointer;transition:border-color .2s,background .2s;margin-top:16px;';
 
     const uploadIcon = document.createElement('img');
-    uploadIcon.src = '../assets/icons/upload.png';
+    uploadIcon.src = '../assets/icons/material/upload.svg';
     uploadIcon.alt = '';
     uploadIcon.style.cssText = 'width:36px;height:36px;margin-bottom:8px;pointer-events:none;opacity:0.5;';
 

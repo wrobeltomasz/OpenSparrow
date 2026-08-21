@@ -360,12 +360,12 @@ function tabIcon(name) {
 }
 
 function itemTabIcon() {
-    const name = currentFile === 'schema'    ? 'data_table.png'
-               : currentFile === 'dashboard' ? 'bar_chart.png'
-               : currentFile === 'calendar'  ? 'calendar.png'
-               : currentFile === 'workflows' ? 'build.png'
-               : currentFile === 'board'     ? 'account_tree.png'
-               : 'file_present.png';
+    const name = currentFile === 'schema'    ? 'material/data_table.svg'
+               : currentFile === 'dashboard' ? 'material/bar_chart.svg'
+               : currentFile === 'calendar'  ? 'material/calendar_month.svg'
+               : currentFile === 'workflows' ? 'material/build.svg'
+               : currentFile === 'board'     ? 'material/account_tree.svg'
+               : 'material/file_present.svg';
     return tabIcon(name);
 }
 
@@ -414,35 +414,35 @@ function renderSidebar() {
         const menuButton = document.createElement('button');
         menuButton.type = 'button';
         menuButton.className = 'item-btn' + (currentItemKey === 'MENU_PREVIEW' ? ' active' : '');
-        menuButton.append(tabIcon('table_edit.png'), document.createTextNode('Menu Preview'));
+        menuButton.append(tabIcon('material/table_edit.svg'), document.createTextNode('Menu Preview'));
         menuButton.onclick = () => { currentItemKey = 'MENU_PREVIEW'; renderSidebar(); renderEditor('MENU_PREVIEW', null, false); };
         itemsRow.appendChild(menuButton);
 
         const addTableButton = document.createElement('button');
         addTableButton.type = 'button';
         addTableButton.className = 'item-btn' + (currentItemKey === 'ADD_TABLE' ? ' active' : '');
-        addTableButton.append(tabIcon('build.png'), document.createTextNode('Add New Table'));
+        addTableButton.append(tabIcon('material/build.svg'), document.createTextNode('Add New Table'));
         addTableButton.onclick = () => { currentItemKey = 'ADD_TABLE'; renderSidebar(); renderEditor('ADD_TABLE', null, false); };
         itemsRow.appendChild(addTableButton);
 
         const m2mButton = document.createElement('button');
         m2mButton.type = 'button';
         m2mButton.className = 'item-btn' + (currentItemKey === 'M2M_BUILDER' ? ' active' : '');
-        m2mButton.append(tabIcon('account_tree.png'), document.createTextNode('M2M Builder'));
+        m2mButton.append(tabIcon('material/account_tree.svg'), document.createTextNode('M2M Builder'));
         m2mButton.onclick = () => { currentItemKey = 'M2M_BUILDER'; renderSidebar(); renderEditor('M2M_BUILDER', null, false); };
         itemsRow.appendChild(m2mButton);
 
         const mapButton = document.createElement('button');
         mapButton.type = 'button';
         mapButton.className = 'item-btn' + (currentItemKey === 'SCHEMA_MAP' ? ' active' : '');
-        mapButton.append(tabIcon('account_tree.png'), document.createTextNode('Schema Map'));
+        mapButton.append(tabIcon('material/account_tree.svg'), document.createTextNode('Schema Map'));
         mapButton.onclick = () => { currentItemKey = 'SCHEMA_MAP'; renderSidebar(); renderEditor('SCHEMA_MAP', null, false); };
         itemsRow.appendChild(mapButton);
 
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'item-btn' + (currentItemKey === 'GLOBAL_SCHEMA' ? ' active' : '');
-        button.append(tabIcon('car_gear.png'), document.createTextNode('Global Grid Settings'));
+        button.append(tabIcon('material/car_gear.svg'), document.createTextNode('Global Grid Settings'));
         button.onclick = () => { currentItemKey = 'GLOBAL_SCHEMA'; renderSidebar(); renderEditor('GLOBAL_SCHEMA', null, false); };
         itemsRow.appendChild(button);
     }
@@ -451,14 +451,14 @@ function renderSidebar() {
         const explorerButton = document.createElement('button');
         explorerButton.type = 'button';
         explorerButton.className = 'item-btn' + (currentItemKey === 'MANAGER' ? ' active' : '');
-        explorerButton.append(tabIcon('folder_open.png'), document.createTextNode('File Explorer'));
+        explorerButton.append(tabIcon('material/folder_open.svg'), document.createTextNode('File Explorer'));
         explorerButton.onclick = () => { currentItemKey = 'MANAGER'; renderSidebar(); renderEditor('MANAGER', null, false); };
         itemsRow.appendChild(explorerButton);
 
         const settingsButton = document.createElement('button');
         settingsButton.type = 'button';
         settingsButton.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
-        settingsButton.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
+        settingsButton.append(tabIcon('material/car_gear.svg'), document.createTextNode('Global Settings'));
         settingsButton.onclick = () => { currentItemKey = 'LAYOUT'; renderSidebar(); renderEditor('LAYOUT', null, false); };
         itemsRow.appendChild(settingsButton);
         return;
@@ -468,7 +468,7 @@ function renderSidebar() {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
-        button.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
+        button.append(tabIcon('material/car_gear.svg'), document.createTextNode('Global Settings'));
         button.onclick = () => { currentItemKey = 'LAYOUT'; renderSidebar(); renderEditor('LAYOUT', null, false); };
         itemsRow.appendChild(button);
     }
@@ -479,8 +479,8 @@ function renderSidebar() {
                          : 'ALL';
 
         [
-            { key: 'N8N', label: 'n8n Automations',    icon: 'arrow_split.png' },
-            { key: 'ALL', label: 'Record Automations', icon: 'automation.png' },
+            { key: 'N8N', label: 'n8n Automations',    icon: 'material/arrow_split.svg' },
+            { key: 'ALL', label: 'Record Automations', icon: 'material/automation.svg' },
         ].forEach(mode => {
             const button = document.createElement('button');
             button.type = 'button';
@@ -500,11 +500,11 @@ function renderSidebar() {
         const buttonAll = document.createElement('button');
         buttonAll.type = 'button';
         buttonAll.className = 'item-btn' + (currentItemKey === null ? ' active' : '');
-        const allIcon = currentFile === 'schema'       ? 'data_table.png'
-                       : currentFile === 'dashboard'    ? 'dashboard.png'
-                       : currentFile === 'workflows'    ? 'build.png'
-                       : currentFile === 'board'        ? 'account_tree.png'
-                       : 'calendar.png';
+        const allIcon = currentFile === 'schema'       ? 'material/data_table.svg'
+                       : currentFile === 'dashboard'    ? 'material/dashboard.svg'
+                       : currentFile === 'workflows'    ? 'material/build.svg'
+                       : currentFile === 'board'        ? 'material/account_tree.svg'
+                       : 'material/calendar_month.svg';
         const allLabel = currentFile === 'schema'       ? 'All PostgreSQL tables'
                            : currentFile === 'dashboard'    ? 'All Widgets'
                            : currentFile === 'workflows'    ? 'All Workflows'

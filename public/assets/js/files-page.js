@@ -44,12 +44,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectAllCallback     = document.querySelector('#filesGrid .select-all-cb');
 
     const icons = {
-        image:       'assets/icons/image.png',
+        image:       'assets/icons/material/image.svg',
         pdf:         'assets/icons/picture_as_pdf.png',
-        doc:         'assets/icons/docs.png',
+        doc:         'assets/icons/material/docs.svg',
         spreadsheet: 'assets/icons/grid_on.png',
         archive:     'assets/icons/folder_zip.png',
-        other:       'assets/icons/file_present.png'
+        other:       'assets/icons/material/file_present.svg'
     };
 
     const relationCache = {};
@@ -575,7 +575,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${date}</td>
                     <td class="td-actions">
                         <a href="file_download.php?uuid=${encodeURIComponent(fileEntry.uuid)}" target="_blank" rel="noopener noreferrer" class="btn-icon" data-action="download-file" title="${TEXT.download}">
-                            <img src="assets/icons/download.png" alt="${TEXT.download}">
+                            <img src="assets/icons/material/download.svg" alt="${TEXT.download}">
                         </a>
                         ${deleteButton}
                     </td>

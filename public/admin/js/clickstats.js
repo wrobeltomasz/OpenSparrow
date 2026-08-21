@@ -56,8 +56,8 @@ export async function renderClickstatsPage(context) {
     ));
 
     const [settingsPanel, logPanel] = buildInnerTabs(wrap, [
-        { label: 'Settings', icon: 'build.png' },
-        { label: 'Log', icon: 'bar_chart.png' },
+        { label: 'Settings', icon: 'material/settings.svg' },
+        { label: 'Log', icon: 'material/bar_chart.svg' },
     ]);
     renderSettings(settingsPanel, state);
     renderLog(logPanel, state);

@@ -9,6 +9,7 @@ Material Symbols / Material Icons
 -------------------------------------------------------------------------------
 
 Files:      public/assets/icons/*.png
+            public/assets/icons/material/*.svg
 Origin:     Google Fonts — https://fonts.google.com/icons
 Copyright:  Copyright (C) Google LLC
 License:    Apache License, Version 2.0 (see licenses/Apache-2.0.txt)
@@ -16,6 +17,25 @@ License:    Apache License, Version 2.0 (see licenses/Apache-2.0.txt)
 The icon glyphs shipped in public/assets/icons/ are exported from the Google
 Material Symbols / Material Icons set. They are used unmodified in shape and
 are redistributed under the terms of the Apache License, Version 2.0.
+
+One file in public/assets/icons/ has been changed from its exported form:
+book_3s.png is a renamed copy of the "book_3" glyph. Its shape is unchanged.
+
+public/assets/css/styles.css embeds the "arrow_drop_down" glyph as a data URI to
+draw the dropdown arrow on select elements, recoloured white. Its path data is
+unchanged.
+
+The SVG files in public/assets/icons/material/ are fetched by
+scripts/fetch-material-icons.php from the Material Symbols Outlined set at
+optical size 24. Their geometry is untouched — the viewBox and every path are
+byte-for-byte the upstream ones — while the width and height attributes are
+normalised to 48 so the files carry the same intrinsic size as the PNG icons
+next to them. The accompanying index.json and tags.json are generated from the
+icon metadata published at https://fonts.google.com/metadata/icons.
+
+That directory also carries its own README.txt stating the same origin, licence
+and modification next to the files themselves; the script rewrites it on every
+run.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use these files except in compliance with the License.

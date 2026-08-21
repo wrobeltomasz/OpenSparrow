@@ -211,25 +211,25 @@ export async function renderOverviewPage(context) {
     statisticsRow.className = 'ov-stats-row';
 
     statisticsRow.appendChild(ovStatCard(
-        'fact_check.png', 'Anonymization',
+        'material/fact_check.svg', 'Anonymization',
         ovFormatNumber(data.anonymization_rule_count),
         data.anonymization_enabled ? 'enabled' : 'disabled',
         'anonymization'
     ));
     statisticsRow.appendChild(ovStatCard(
-        'automation.png', 'Automations',
+        'material/automation.svg', 'Automations',
         ovFormatNumber(data.automation_count),
         'rules',
         'automations'
     ));
     statisticsRow.appendChild(ovStatCard(
-        'database.png', 'ETL Jobs',
+        'material/database.svg', 'ETL Jobs',
         ovFormatNumber(data.etl_job_count),
         'configured',
         'etl'
     ));
     statisticsRow.appendChild(ovStatCard(
-        'upload.png', 'Files',
+        'material/folder_open.svg', 'Files',
         ovFormatNumber(data.file_count),
         ovFormatBytes(data.file_size_bytes),
         'files'
@@ -238,7 +238,7 @@ export async function renderOverviewPage(context) {
     const lastCronTime = lastCronRaw ? lastCronRaw.slice(11) : 'Never';
     const lastCronDate = lastCronRaw ? lastCronRaw.slice(0, 10) : '';
     statisticsRow.appendChild(ovStatCard(
-        'manage_history.png', 'Last Cron',
+        'material/notifications_active.svg', 'Last Cron',
         lastCronTime,
         lastCronDate,
         'cron'
@@ -250,37 +250,37 @@ export async function renderOverviewPage(context) {
         'print'
     ));
     statisticsRow.appendChild(ovStatCard(
-        'docs.png', 'RAG Docs',
+        'material/docs.svg', 'RAG Docs',
         ovFormatNumber(data.rag_count),
         'documents',
         'rag'
     ));
     statisticsRow.appendChild(ovStatCard(
-        'database.png', 'Records',
+        'material/table_rows.svg', 'Records',
         ovFormatNumber(data.total_records),
         data.table_count + ' tables',
         'schema'
     ));
     statisticsRow.appendChild(ovStatCard(
-        'data_table.png', 'Tables',
+        'material/data_table.svg', 'Tables',
         ovFormatNumber(data.table_count),
         'in schema',
         'schema'
     ));
     statisticsRow.appendChild(ovStatCard(
-        'user_attributes.png', 'Users',
+        'material/user_attributes.svg', 'Users',
         ovFormatNumber(data.user_total),
         data.user_active + ' active',
         'users'
     ));
     statisticsRow.appendChild(ovStatCard(
-        'table_chart_view.png', 'Views',
+        'material/table_chart_view.svg', 'Views',
         ovFormatNumber(data.view_count),
         'configured',
         'views'
     ));
     statisticsRow.appendChild(ovStatCard(
-        'build.png', 'Workflows',
+        'material/build.svg', 'Workflows',
         ovFormatNumber(data.workflow_count),
         'configured',
         'workflows'

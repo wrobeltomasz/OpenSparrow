@@ -29,8 +29,8 @@ export function renderUserRecordsEditor(context) {
     ));
 
     const [columnsPanel, settingsPanel] = buildInnerTabs(wrap, [
-        { label: 'Column Mapping', icon: 'table_edit.png' },
-        { label: 'Global Settings', icon: 'car_gear.png' },
+        { label: 'Column Mapping', icon: 'material/table_edit.svg' },
+        { label: 'Global Settings', icon: 'material/settings.svg' },
     ]);
 
     renderColumnsPanel(columnsPanel, currentConfig);

@@ -143,7 +143,7 @@ header select {
   color: #fff;
   font-size: 13px;
   appearance: none;
-  background-image: url('/assets/icons/chevron-down-white.svg');
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960' fill='%23ffffff'%3E%3Cpath d='M480-360 280-560h400L480-360Z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
   background-size: 16px;

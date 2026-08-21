@@ -606,12 +606,12 @@ export function renderCronPage(context) {
     ));
 
     const [p0, p1, p2, p3, p4, p5] = buildInnerTabs(wrap, [
-        { label: 'Run', icon: 'autorenew.png' },
-        { label: 'History', icon: 'manage_history.png' },
-        { label: 'Statistics', icon: 'bar_chart.png' },
-        { label: 'Setup', icon: 'car_gear.png' },
-        { label: 'Cleanup', icon: 'folder_zip.png' },
-        { label: 'Email', icon: 'mail.png' },
+        { label: 'Run', icon: 'material/autorenew.svg' },
+        { label: 'History', icon: 'material/manage_history.svg' },
+        { label: 'Statistics', icon: 'material/bar_chart.svg' },
+        { label: 'Setup', icon: 'material/terminal.svg' },
+        { label: 'Cleanup', icon: 'material/delete_sweep.svg' },
+        { label: 'Email', icon: 'material/mail.svg' },
     ]);
 
     p0.appendChild(buildManualRunSection());

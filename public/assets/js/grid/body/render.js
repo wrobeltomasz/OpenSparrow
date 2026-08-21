@@ -132,7 +132,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     const trigger = makeIconButton({
         cy: 'row-actions-toggle',
         title: I18n.t('grid.more_actions'),
-        icon: 'assets/icons/more_vert.png',
+        icon: 'assets/icons/material/more_vert.svg',
         onClick: event => {
             event.stopPropagation();
             closeAllActionMenus(menu);
@@ -147,7 +147,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     panel.appendChild(makeIconButton({
         cy: 'row-edit',
         title: I18n.t('common.edit'),
-        icon: 'assets/icons/edit_square.png',
+        icon: 'assets/icons/material/edit_square.svg',
         onClick: () => {
             window.location.href = `edit.php?table=${state.currentTable}&id=${row['id']}`;
         },
@@ -156,7 +156,7 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
     panel.appendChild(makeIconButton({
         cy: 'row-duplicate',
         title: I18n.t('grid.duplicate'),
-        icon: 'assets/icons/content_copy.png',
+        icon: 'assets/icons/material/content_copy.svg',
         onClick: async () => {
             const result = await duplicateRow(row['id']);
             if (result?.ok) await onTableReload();

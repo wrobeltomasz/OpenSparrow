@@ -47,9 +47,9 @@ export function renderViewsEditor(context) {
         image.style.cssText = 'width:15px;height:15px;opacity:.6;';
         return image;
     }
-    pgTab.append(tabIcon('table_chart_view.png'), document.createTextNode('PostgreSQL Views'));
-    schemasTab.append(tabIcon('database.png'), document.createTextNode('Schemas'));
-    settingsTab.append(tabIcon('car_gear.png'), document.createTextNode('Global Settings'));
+    pgTab.append(tabIcon('material/table_chart_view.svg'), document.createTextNode('PostgreSQL Views'));
+    schemasTab.append(tabIcon('material/database.svg'), document.createTextNode('Schemas'));
+    settingsTab.append(tabIcon('material/car_gear.svg'), document.createTextNode('Global Settings'));
     tabBar.appendChild(pgTab);
     tabBar.appendChild(schemasTab);
     tabBar.appendChild(settingsTab);
@@ -123,7 +123,7 @@ export function renderViewsEditor(context) {
                 if (!views[vName]) {
                     const cols = {};
                     Object.keys(dbColumns[vName] ?? {}).forEach(columnKey => { cols[columnKey] = { display_name: columnKey, color_rules: [] }; });
-                    views[vName] = { display_name: vName, menu_name: vName, description: '', icon: 'assets/icons/table_chart_view.png', hidden: false, source: currentSource, columns: cols, drill_down: { enabled: false, levels: [] } };
+                    views[vName] = { display_name: vName, menu_name: vName, description: '', icon: 'assets/icons/material/table_chart_view.svg', hidden: false, source: currentSource, columns: cols, drill_down: { enabled: false, levels: [] } };
                 } else {
                     views[vName].source = currentSource;
                     Object.keys(dbColumns[vName] ?? {}).forEach(columnKey => {
@@ -360,7 +360,7 @@ export function renderViewsEditor(context) {
         frag.appendChild(fg('Display name', 'text', config.display_name ?? vName, viewName => { views[vName].display_name = viewName; }));
         frag.appendChild(fg('Menu name',    'text', config.menu_name    ?? vName, viewName => { views[vName].menu_name    = viewName; }));
         frag.appendChild(fgArea('Description', config.description ?? '', viewName => { views[vName].description = viewName; }));
-        frag.appendChild(createIconPicker('icon', 'Icon', config.icon ?? 'assets/icons/table_chart_view.png', viewName => { views[vName].icon = viewName; markDirty(); }));
+        frag.appendChild(createIconPicker('icon', 'Icon', config.icon ?? 'assets/icons/material/table_chart_view.svg', viewName => { views[vName].icon = viewName; markDirty(); }));
 
         const divider1 = document.createElement('hr');
         divider1.style.cssText = 'border:none; border-top:1px solid var(--border-light); margin:20px 0;';

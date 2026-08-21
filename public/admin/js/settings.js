@@ -38,11 +38,11 @@ export async function renderSettingsPage(context) {
     wrap.appendChild(createPageHeader('Application Settings'));
 
     const [languagePanel, chatBubblePanel, brandingPanel, databasePanel, auditPanel] = buildInnerTabs(wrap, [
-        { label: 'Language', icon: 'menu_book.png' },
-        { label: 'Chat Bubble', icon: 'comment.png' },
-        { label: 'Branding', icon: 'image.png' },
-        { label: 'Database', icon: 'database.png' },
-        { label: 'Audit & Snapshots', icon: 'fact_check.png' },
+        { label: 'Language', icon: 'material/translate.svg' },
+        { label: 'Chat Bubble', icon: 'material/comment.svg' },
+        { label: 'Branding', icon: 'material/image.svg' },
+        { label: 'Database', icon: 'material/database.svg' },
+        { label: 'Audit & Snapshots', icon: 'material/fact_check.svg' },
     ]);
 
     renderDatabaseSection(databasePanel);

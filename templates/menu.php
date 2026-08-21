@@ -100,7 +100,7 @@ $menuCatalog = [
         'type'   => 'dashboard',
         'href'   => 'dashboard.php',
         'name'   => $dashConfig['menu_name']  ?? 'Dashboard',
-        'icon'   => $dashConfig['menu_icon']  ?? 'assets/icons/dashboard.png',
+        'icon'   => $dashConfig['menu_icon']  ?? 'assets/icons/material/dashboard.svg',
         'hidden' => !empty($dashConfig['hidden']),
         'active' => $currentPage === 'dashboard.php',
     ],
@@ -108,7 +108,7 @@ $menuCatalog = [
         'type'   => 'calendar',
         'href'   => 'calendar.php',
         'name'   => $calendarConfig['menu_name']   ?? 'Calendar',
-        'icon'   => $calendarConfig['menu_icon']   ?? 'assets/icons/calendar.png',
+        'icon'   => $calendarConfig['menu_icon']   ?? 'assets/icons/material/calendar_month.svg',
         'hidden' => !empty($calendarConfig['hidden']),
         'active' => $currentPage === 'calendar.php',
     ],
@@ -116,7 +116,7 @@ $menuCatalog = [
         'type'   => 'files',
         'href'   => 'files.php',
         'name'   => $filesConfig['menu_name'] ?? 'Files',
-        'icon'   => $filesConfig['menu_icon'] ?? 'assets/icons/folder_open.png',
+        'icon'   => $filesConfig['menu_icon'] ?? 'assets/icons/material/folder_open.svg',
         'hidden' => !empty($filesConfig['hidden']),
         'active' => $currentPage === 'files.php',
     ],
@@ -149,7 +149,7 @@ if (!empty($boardChildren)) {
         'type'     => 'board',
         'href'     => $boardChildren[0]['href'],
         'name'     => $boardConfig['menu_name'] ?? 'Board',
-        'icon'     => $boardConfig['menu_icon'] ?? 'assets/icons/account_tree.png',
+        'icon'     => $boardConfig['menu_icon'] ?? 'assets/icons/material/account_tree.svg',
         'hidden'   => !empty($boardConfig['hidden']),
         'active'   => $currentPage === 'board.php',
         'children' => $boardChildren,
@@ -209,7 +209,7 @@ if (!empty($viewChildren)) {
         'type'     => 'views',
         'href'     => 'views.php',
         'name'     => $viewsConfig['menu_name'] ?? 'Views',
-        'icon'     => $viewsConfig['menu_icon'] ?? 'assets/icons/table_chart_view.png',
+        'icon'     => $viewsConfig['menu_icon'] ?? 'assets/icons/material/table_chart_view.svg',
         'hidden'   => !empty($viewsConfig['hidden']),
         'active'   => $currentPage === 'views.php' && $currentView === '',
         'children' => $viewChildren,
@@ -322,7 +322,7 @@ if (!function_exists('renderMenuLink')) {
         }
         $icon = renderMenuIcon((string)($item['icon'] ?? ''));
         if ($icon === '') {
-            $icon = '<img src="assets/icons/table_chart_view.png" alt="" />';
+            $icon = '<img src="assets/icons/material/table_chart_view.svg" alt="" />';
         }
         if (!empty($item['active'])) {
             $attributes .= ' aria-current="page"';

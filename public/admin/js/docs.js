@@ -140,6 +140,7 @@ ${_ul([
     `<strong>${strings.s2_synccols_label}:</strong> ${strings.s2_synccols}`,
     `<strong>${strings.s2_coldesc_label}:</strong> ${strings.s2_coldesc}`,
     `<strong>${strings.s2_preview_label}:</strong> ${strings.s2_preview}`,
+    `<strong>${strings.s2_iconpicker_label}:</strong> ${strings.s2_iconpicker}`,
     `<strong>${strings.s2_typemap_label}:</strong> ${strings.s2_typemap}`,
     `<strong>${strings.s2_remove_label}:</strong> ${strings.s2_remove}`,
     `<strong>${strings.s2_fksearch_label}:</strong> ${strings.s2_fksearch}`,

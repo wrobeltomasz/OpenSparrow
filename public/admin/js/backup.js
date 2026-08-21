@@ -177,9 +177,9 @@ export async function renderBackupPage(context) {
         + ' Data and column structure are copied; indexes and constraints are not.'));
 
     const [appPanel, sysPanel, globalPanel] = buildInnerTabs(wrap, [
-        { label: 'Application Tables', icon: 'data_table.png' },
-        { label: 'System Tables (spw_*)', icon: 'database.png' },
-        { label: 'Global Settings', icon: 'car_gear.png' },
+        { label: 'Application Tables', icon: 'material/data_table.svg' },
+        { label: 'System Tables (spw_*)', icon: 'material/database.svg' },
+        { label: 'Global Settings', icon: 'material/settings.svg' },
     ]);
 
     buildGroupPanel(appPanel, userTables);

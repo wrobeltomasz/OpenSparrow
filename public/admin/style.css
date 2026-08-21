@@ -1168,6 +1168,86 @@ textarea.adm-input {
 .adm-modal-msg     { min-height: 18px; margin: 4px 0 12px; }
 .adm-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
+.adm-modal-icons {
+    width: min(880px, 92vw);
+}
+.icon-picker-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0;
+}
+.icon-picker-status {
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+.icon-picker-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.icon-picker-chip {
+    text-transform: capitalize;
+}
+.icon-picker-chip.is-active {
+    border-color: var(--accent);
+    background: var(--accent-mid);
+}
+.icon-picker-scroll {
+    max-height: 58vh;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+.icon-picker-section-title {
+    margin: 14px 0 8px;
+    color: var(--muted);
+    font-size: 13px;
+}
+.icon-picker-section-title:first-child {
+    margin-top: 0;
+}
+.icon-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+    gap: 10px;
+}
+.icon-picker-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+}
+.icon-picker-cell:hover {
+    border-color: var(--accent);
+    background: var(--accent-mid);
+}
+.icon-picker-cell img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+.icon-picker-name {
+    font-size: 11px;
+    line-height: 1.25;
+    text-align: center;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+.icon-picker-more {
+    margin-top: 14px;
+}
+.icon-picker-empty {
+    color: var(--muted);
+}
+
 .adm-sec-card {
     border: 1px solid var(--border);
     border-radius: 8px;

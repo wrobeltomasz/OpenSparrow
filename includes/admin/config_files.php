@@ -31,7 +31,7 @@ if ($action === 'menu_config' && os_request()->method() === 'GET') {
     $catalog['dashboard'] = [
         'type' => 'dashboard', 'key' => 'dashboard',
         'name'   => $dashRaw['menu_name'] ?? 'Dashboard',
-        'icon'   => $menuSanitizeIcon((string)($dashRaw['menu_icon'] ?? 'assets/icons/dashboard.png')),
+        'icon'   => $menuSanitizeIcon((string)($dashRaw['menu_icon'] ?? 'assets/icons/material/dashboard.svg')),
         'hidden' => !empty($dashRaw['hidden']),
         'children' => [],
     ];
@@ -40,7 +40,7 @@ if ($action === 'menu_config' && os_request()->method() === 'GET') {
     $catalog['calendar'] = [
         'type' => 'calendar', 'key' => 'calendar',
         'name'   => $calendarRaw['menu_name'] ?? 'Calendar',
-        'icon'   => $menuSanitizeIcon((string)($calendarRaw['menu_icon'] ?? 'assets/icons/calendar.png')),
+        'icon'   => $menuSanitizeIcon((string)($calendarRaw['menu_icon'] ?? 'assets/icons/material/calendar_month.svg')),
         'hidden' => !empty($calendarRaw['hidden']),
         'children' => [],
     ];
@@ -49,7 +49,7 @@ if ($action === 'menu_config' && os_request()->method() === 'GET') {
     $catalog['files'] = [
         'type' => 'files', 'key' => 'files',
         'name'   => $filesRaw['menu_name'] ?? 'Files',
-        'icon'   => $menuSanitizeIcon((string)($filesRaw['menu_icon'] ?? 'assets/icons/folder_open.png')),
+        'icon'   => $menuSanitizeIcon((string)($filesRaw['menu_icon'] ?? 'assets/icons/material/folder_open.svg')),
         'hidden' => !empty($filesRaw['hidden']),
         'children' => [],
     ];

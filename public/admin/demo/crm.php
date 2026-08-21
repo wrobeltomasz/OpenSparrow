@@ -407,7 +407,7 @@ function demo_def_crm($conn): array
             "UPDATE spw_crm.activities SET created_at = NOW() - (id % 75) * INTERVAL '1 day'",
         ],
         'schema_tables' => [
-            'companies' => ['display_name' => 'Companies', 'schema' => 'spw_crm', 'icon' => 'assets/icons/apartment.png', 'columns' => [
+            'companies' => ['display_name' => 'Companies', 'schema' => 'spw_crm', 'icon' => 'assets/icons/material/apartment.svg', 'columns' => [
                 'id'         => ['type' => 'number', 'show_in_grid' => false, 'display_name' => 'ID', 'description' => 'Unique company identifier'],
                 'name'       => ['type' => 'text',   'show_in_grid' => true,  'display_name' => 'Company Name', 'not_null' => true, 'description' => 'Official company name'],
                 'industry'   => ['type' => 'text',   'show_in_grid' => true, 'display_name' => 'Industry', 'description' => 'Industry or sector the company operates in'],
@@ -419,7 +419,7 @@ function demo_def_crm($conn): array
                 ['table' => 'contacts', 'foreign_key' => 'company_id', 'label' => 'Contacts', 'columns_to_show' => ['first_name', 'last_name', 'email', 'position']],
                 ['table' => 'deals',    'foreign_key' => 'company_id', 'label' => 'Deals',    'columns_to_show' => ['title', 'stage', 'value', 'expected_close']],
             ]],
-            'contacts' => ['display_name' => 'Contacts', 'schema' => 'spw_crm', 'icon' => 'assets/icons/person.png', 'columns' => [
+            'contacts' => ['display_name' => 'Contacts', 'schema' => 'spw_crm', 'icon' => 'assets/icons/material/person.svg', 'columns' => [
                 'id'         => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique contact identifier'],
                 'company_id' => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Company', 'description' => 'Company this contact belongs to'],
                 'first_name' => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'First Name', 'not_null' => true, 'description' => 'Contact first name'],
@@ -433,7 +433,7 @@ function demo_def_crm($conn): array
             ], 'subtables' => [
                 ['table' => 'activities', 'foreign_key' => 'contact_id', 'label' => 'Activities', 'columns_to_show' => ['type', 'scheduled_at', 'done']],
             ]],
-            'deals' => ['display_name' => 'Deals', 'schema' => 'spw_crm', 'icon' => 'assets/icons/point_of_sale.png', 'columns' => [
+            'deals' => ['display_name' => 'Deals', 'schema' => 'spw_crm', 'icon' => 'assets/icons/material/point_of_sale.svg', 'columns' => [
                 'id'             => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique deal identifier'],
                 'company_id'     => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Company', 'description' => 'Company associated with this deal'],
                 'contact_id'     => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Primary Contact', 'description' => 'Primary contact for this deal'],
@@ -456,7 +456,7 @@ function demo_def_crm($conn): array
                 ['column' => 'value', 'op' => '>=', 'value' => '150000', 'color' => '#dcfce7'],
                 ['column' => 'value', 'op' => '<',  'value' => '40000',  'color' => '#fee2e2'],
             ], 'images' => ['enabled' => true, 'label' => 'Attachments', 'max_per_record' => 5, 'show_in_grid' => true]],
-            'activities' => ['display_name' => 'Activities', 'schema' => 'spw_crm', 'icon' => 'assets/icons/calendar.png', 'columns' => [
+            'activities' => ['display_name' => 'Activities', 'schema' => 'spw_crm', 'icon' => 'assets/icons/material/calendar_month.svg', 'columns' => [
                 'id'           => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique activity identifier'],
                 'deal_id'      => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Deal', 'description' => 'Deal this activity is associated with'],
                 'contact_id'   => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Contact', 'description' => 'Contact involved in this activity'],
@@ -469,7 +469,7 @@ function demo_def_crm($conn): array
                 'deal_id'    => ['reference_table' => 'deals',    'reference_column' => 'id', 'display_column' => 'title'],
                 'contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => ['first_name', 'last_name']],
             ]],
-            'leads' => ['display_name' => 'Leads', 'schema' => 'spw_crm', 'icon' => 'assets/icons/person_text.png', 'hidden' => true, 'columns' => [
+            'leads' => ['display_name' => 'Leads', 'schema' => 'spw_crm', 'icon' => 'assets/icons/material/person_text.svg', 'hidden' => true, 'columns' => [
                 'id'                   => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique lead identifier'],
                 'source'               => ['type' => 'enum',    'show_in_grid' => true, 'options' => ['Web', 'Referral', 'Cold Call', 'Event', 'Ads', 'Other'], 'enum_colors' => ['Web' => '#93c5fd', 'Referral' => '#6ee7b7', 'Cold Call' => '#d1d5db', 'Event' => '#fcd34d', 'Ads' => '#c4b5fd', 'Other' => '#d1d5db'], 'display_name' => 'Source', 'description' => 'How this lead was acquired'],
                 'first_name'           => ['type' => 'text',    'show_in_grid' => true, 'display_name' => 'First Name', 'not_null' => true, 'description' => 'Lead first name'],
@@ -494,18 +494,18 @@ function demo_def_crm($conn): array
             ], 'subtables' => []],
         ],
         'dashboard_widgets' => [
-            ['id' => 'demo_crm_001', 'type' => 'stat_card', 'title' => 'Companies',           'table' => 'companies',  'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => []], 'icon' => 'assets/icons/apartment.png',    'color' => '#553eb1', 'display_columns' => []],
-            ['id' => 'demo_crm_002', 'type' => 'stat_card', 'title' => 'Contacts',            'table' => 'contacts',   'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => []], 'icon' => 'assets/icons/person.png',       'color' => '#289f6f', 'display_columns' => []],
-            ['id' => 'demo_crm_004', 'type' => 'stat_card', 'title' => 'Pipeline Value',       'table' => 'deals',      'width' => 1, 'height' => 1, 'query' => ['type' => 'sum', 'column' => 'value', 'conditions' => [['col' => 'stage', 'op' => '!=', 'val' => 'Won'], ['col' => 'stage', 'op' => '!=', 'val' => 'Lost']]], 'icon' => 'assets/icons/payments.png',     'color' => '#e2b932', 'display_columns' => []],
-            ['id' => 'demo_crm_003', 'type' => 'bar_chart', 'title' => 'Deals by Stage',       'table' => 'deals',      'width' => 1, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'stage',  'conditions' => []], 'icon' => 'assets/icons/point_of_sale.png','color' => '#fcd34d', 'display_columns' => []],
-            ['id' => 'demo_crm_005', 'type' => 'pie_chart', 'title' => 'Activities Status',    'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'done',   'conditions' => []], 'icon' => 'assets/icons/calendar.png',     'color' => '#c4b5fd', 'display_columns' => []],
+            ['id' => 'demo_crm_001', 'type' => 'stat_card', 'title' => 'Companies',           'table' => 'companies',  'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => []], 'icon' => 'assets/icons/material/apartment.svg',    'color' => '#553eb1', 'display_columns' => []],
+            ['id' => 'demo_crm_002', 'type' => 'stat_card', 'title' => 'Contacts',            'table' => 'contacts',   'width' => 1, 'height' => 1, 'query' => ['type' => 'count', 'column' => 'id', 'conditions' => []], 'icon' => 'assets/icons/material/person.svg',       'color' => '#289f6f', 'display_columns' => []],
+            ['id' => 'demo_crm_004', 'type' => 'stat_card', 'title' => 'Pipeline Value',       'table' => 'deals',      'width' => 1, 'height' => 1, 'query' => ['type' => 'sum', 'column' => 'value', 'conditions' => [['col' => 'stage', 'op' => '!=', 'val' => 'Won'], ['col' => 'stage', 'op' => '!=', 'val' => 'Lost']]], 'icon' => 'assets/icons/material/payments.svg',     'color' => '#e2b932', 'display_columns' => []],
+            ['id' => 'demo_crm_003', 'type' => 'bar_chart', 'title' => 'Deals by Stage',       'table' => 'deals',      'width' => 1, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'stage',  'conditions' => []], 'icon' => 'assets/icons/material/point_of_sale.svg','color' => '#fcd34d', 'display_columns' => []],
+            ['id' => 'demo_crm_005', 'type' => 'pie_chart', 'title' => 'Activities Status',    'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'group_by', 'group_column' => 'done',   'conditions' => []], 'icon' => 'assets/icons/material/calendar_month.svg',     'color' => '#c4b5fd', 'display_columns' => []],
 
-            ['id' => 'demo_crm_011', 'type' => 'line_chart', 'title' => 'Deals Value Over Time', 'table' => 'deals',      'width' => 1, 'height' => 2, 'query' => ['type' => 'time_series', 'x_column' => 'created_at', 'granularity' => 'month', 'agg_column' => 'value', 'agg_type' => 'sum',   'area' => true, 'conditions' => []], 'icon' => 'assets/icons/point_of_sale.png', 'color' => '#289f6f', 'display_columns' => []],
-            ['id' => 'demo_crm_012', 'type' => 'line_chart', 'title' => 'Activities Over Time',  'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'time_series', 'x_column' => 'created_at', 'granularity' => 'week',  'agg_column' => 'id',    'agg_type' => 'count', 'area' => true, 'conditions' => []], 'icon' => 'assets/icons/calendar.png',      'color' => '#553eb1', 'display_columns' => []],
+            ['id' => 'demo_crm_011', 'type' => 'line_chart', 'title' => 'Deals Value Over Time', 'table' => 'deals',      'width' => 1, 'height' => 2, 'query' => ['type' => 'time_series', 'x_column' => 'created_at', 'granularity' => 'month', 'agg_column' => 'value', 'agg_type' => 'sum',   'area' => true, 'conditions' => []], 'icon' => 'assets/icons/material/point_of_sale.svg', 'color' => '#289f6f', 'display_columns' => []],
+            ['id' => 'demo_crm_012', 'type' => 'line_chart', 'title' => 'Activities Over Time',  'table' => 'activities', 'width' => 2, 'height' => 2, 'query' => ['type' => 'time_series', 'x_column' => 'created_at', 'granularity' => 'week',  'agg_column' => 'id',    'agg_type' => 'count', 'area' => true, 'conditions' => []], 'icon' => 'assets/icons/material/calendar_month.svg',      'color' => '#553eb1', 'display_columns' => []],
         ],
         'calendar_sources' => [
-            ['table' => 'activities', 'date_column' => 'scheduled_at', 'title_column' => 'type', 'subtitle_column' => 'notes', 'color' => '#93c5fd', 'notify_before_days' => 1, 'url_template' => 'edit.php?table=activities&id={id}', 'icon' => 'assets/icons/calendar.png', 'notified_users' => []],
-            ['table' => 'deals', 'date_column' => 'expected_close', 'title_column' => 'title', 'color' => '#fcd34d', 'notify_before_days' => 3, 'url_template' => 'edit.php?table=deals&id={id}', 'icon' => 'assets/icons/point_of_sale.png', 'notified_users' => []],
+            ['table' => 'activities', 'date_column' => 'scheduled_at', 'title_column' => 'type', 'subtitle_column' => 'notes', 'color' => '#93c5fd', 'notify_before_days' => 1, 'url_template' => 'edit.php?table=activities&id={id}', 'icon' => 'assets/icons/material/calendar_month.svg', 'notified_users' => []],
+            ['table' => 'deals', 'date_column' => 'expected_close', 'title_column' => 'title', 'color' => '#fcd34d', 'notify_before_days' => 3, 'url_template' => 'edit.php?table=deals&id={id}', 'icon' => 'assets/icons/material/point_of_sale.svg', 'notified_users' => []],
         ],
 
         'board' => [
@@ -513,7 +513,7 @@ function demo_def_crm($conn): array
                 [
                     'id'             => 'demo_crm_deals_board',
                     'menu_name'     => 'Deals Board',
-                    'menu_icon'     => 'assets/icons/account_tree.png',
+                    'menu_icon'     => 'assets/icons/material/account_tree.svg',
                     'hidden'        => false,
                     'table'         => 'deals',
                     'status_column' => 'stage',
@@ -524,20 +524,20 @@ function demo_def_crm($conn): array
             ],
         ],
         'workflows' => [
-            ['id' => 'wf_demo_crm_001', 'title' => 'New CRM Deal', 'icon' => 'assets/icons/apartment.png', 'description' => 'CRM: add company → contact → deal → activity.', 'steps' => [
+            ['id' => 'wf_demo_crm_001', 'title' => 'New CRM Deal', 'icon' => 'assets/icons/material/apartment.svg', 'description' => 'CRM: add company → contact → deal → activity.', 'steps' => [
                 ['title' => 'Add Company',  'table' => 'companies',  'foreign_key' => '',           'link_to_step' => 0, 'allow_multiple' => false],
                 ['title' => 'Add Contact',  'table' => 'contacts',   'foreign_key' => 'company_id', 'link_to_step' => 0, 'allow_multiple' => true],
                 ['title' => 'Create Deal',  'table' => 'deals',      'foreign_key' => 'company_id', 'link_to_step' => 0, 'allow_multiple' => false],
                 ['title' => 'Log Activity', 'table' => 'activities', 'foreign_key' => 'deal_id',    'link_to_step' => 2, 'allow_multiple' => true],
             ]],
-            ['id' => 'wf_demo_crm_002', 'title' => 'Convert Lead', 'icon' => 'assets/icons/person_text.png', 'description' => 'CRM: lead → company → contact → deal.', 'steps' => [
+            ['id' => 'wf_demo_crm_002', 'title' => 'Convert Lead', 'icon' => 'assets/icons/material/person_text.svg', 'description' => 'CRM: lead → company → contact → deal.', 'steps' => [
                 ['title' => 'Capture Lead',  'table' => 'leads',     'foreign_key' => '',           'link_to_step' => 0, 'allow_multiple' => false],
                 ['title' => 'Add Company',   'table' => 'companies', 'foreign_key' => '',           'link_to_step' => 0, 'allow_multiple' => false],
                 ['title' => 'Add Contact',   'table' => 'contacts',  'foreign_key' => 'company_id', 'link_to_step' => 1, 'allow_multiple' => false],
                 ['title' => 'Create Deal',   'table' => 'deals',     'foreign_key' => 'company_id', 'link_to_step' => 1, 'allow_multiple' => false],
             ]],
 
-            ['id' => 'wf_demo_crm_003', 'title' => 'Add Contact', 'icon' => 'assets/icons/person_text.png', 'description' => 'CRM: add a single contact, validated by a PostgreSQL procedure.', 'steps' => [
+            ['id' => 'wf_demo_crm_003', 'title' => 'Add Contact', 'icon' => 'assets/icons/material/person_text.svg', 'description' => 'CRM: add a single contact, validated by a PostgreSQL procedure.', 'steps' => [
                 ['title' => 'Add Contact', 'table' => 'contacts', 'foreign_key' => '', 'link_to_step' => 0, 'allow_multiple' => false, 'procedure' => [
                     'enabled' => true,
                     'schema'  => 'spw_crm',
@@ -551,7 +551,7 @@ function demo_def_crm($conn): array
         ],
         'views' => [
 
-            'v_demo_crm_company_pipeline' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'CRM Pipeline', 'menu_name' => 'Pipeline Summary', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => false, 'description' => 'Deal and activity measures per company and sales stage, with subtotals and drill-down by stage and industry.', 'group_rows' => 'stage', 'columns' => [
+            'v_demo_crm_company_pipeline' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'CRM Pipeline', 'menu_name' => 'Pipeline Summary', 'icon' => 'assets/icons/material/point_of_sale.svg', 'hidden' => false, 'description' => 'Deal and activity measures per company and sales stage, with subtotals and drill-down by stage and industry.', 'group_rows' => 'stage', 'columns' => [
                 'company_name'   => ['display_name' => 'Company',        'aggregate' => 'count'],
                 'industry'       => ['display_name' => 'Industry',       'aggregate' => ''],
                 'stage'          => ['display_name' => 'Stage',          'aggregate' => ''],
@@ -576,12 +576,12 @@ function demo_def_crm($conn): array
                 'activity_open'  => ['display_name' => 'Open',           'aggregate' => 'sum'],
                 'avg_activities_per_deal' => ['display_name' => 'Avg Activities / Deal', 'aggregate' => 'avg'],
             ], 'drill_down' => ['enabled' => true, 'levels' => []]],
-            'v_demo_crm_leads_funnel' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'CRM Leads Funnel', 'menu_name' => 'Leads Funnel', 'icon' => 'assets/icons/account_tree.png', 'hidden' => true, 'description' => 'Lead count by qualification status.', 'columns' => [
+            'v_demo_crm_leads_funnel' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'CRM Leads Funnel', 'menu_name' => 'Leads Funnel', 'icon' => 'assets/icons/material/account_tree.svg', 'hidden' => true, 'description' => 'Lead count by qualification status.', 'columns' => [
                 'status'     => ['display_name' => 'Status'],
                 'lead_count' => ['display_name' => 'Leads', 'summary' => 'sum'],
             ], 'drill_down' => ['enabled' => false]],
 
-            'v_demo_crm_pipeline_report' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Pipeline Report Source', 'menu_name' => 'Pipeline Report Source', 'icon' => 'assets/icons/point_of_sale.png', 'hidden' => true, 'description' => 'One row per deal with joined company and contact fields for the Sales Pipeline Report print template.', 'columns' => [
+            'v_demo_crm_pipeline_report' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Pipeline Report Source', 'menu_name' => 'Pipeline Report Source', 'icon' => 'assets/icons/material/point_of_sale.svg', 'hidden' => true, 'description' => 'One row per deal with joined company and contact fields for the Sales Pipeline Report print template.', 'columns' => [
                 'title'          => ['display_name' => 'Deal'],
                 'company_name'   => ['display_name' => 'Company'],
                 'contact_name'   => ['display_name' => 'Contact'],
@@ -589,7 +589,7 @@ function demo_def_crm($conn): array
                 'value'          => ['display_name' => 'Value'],
                 'expected_close' => ['display_name' => 'Expected Close'],
             ], 'drill_down' => ['enabled' => false]],
-            'v_demo_crm_activity_agenda' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Activity Agenda Source', 'menu_name' => 'Activity Agenda Source', 'icon' => 'assets/icons/account_tree.png', 'hidden' => true, 'description' => 'One row per activity with joined deal and contact fields for the Activity Agenda print template.', 'columns' => [
+            'v_demo_crm_activity_agenda' => ['schema' => 'spw_crm', 'source' => 'postgres', 'display_name' => 'Activity Agenda Source', 'menu_name' => 'Activity Agenda Source', 'icon' => 'assets/icons/material/account_tree.svg', 'hidden' => true, 'description' => 'One row per activity with joined deal and contact fields for the Activity Agenda print template.', 'columns' => [
                 'scheduled_on' => ['display_name' => 'Scheduled'],
                 'type'         => ['display_name' => 'Type'],
                 'deal_title'   => ['display_name' => 'Deal'],
@@ -603,7 +603,7 @@ function demo_def_crm($conn): array
                 'display_name' => 'Sales Pipeline Report',
                 'menu_name'    => 'Pipeline Report',
                 'description'  => 'Open and closed deals with company, contact, value and expected close date. Filter by stage or company.',
-                'icon'         => 'assets/icons/point_of_sale.png',
+                'icon'         => 'assets/icons/material/point_of_sale.svg',
                 'hidden'       => false,
                 'view'         => 'v_demo_crm_pipeline_report',
                 'blocks'       => [
@@ -627,7 +627,7 @@ function demo_def_crm($conn): array
                 'display_name' => 'Activity Agenda',
                 'menu_name'    => 'Activity Agenda',
                 'description'  => 'Scheduled calls, meetings and tasks with the related deal and contact. Filter by type or completion.',
-                'icon'         => 'assets/icons/account_tree.png',
+                'icon'         => 'assets/icons/material/account_tree.svg',
                 'hidden'       => false,
                 'view'         => 'v_demo_crm_activity_agenda',
                 'blocks'       => [
@@ -736,13 +736,13 @@ function demo_def_crm($conn): array
         ],
 
         'demo_images' => [
-            ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'source_file' => 'docs.png',           'display_name' => 'Signed Contract Scan'],
-            ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'source_file' => 'fact_check.png',     'display_name' => 'Approved Terms Sheet'],
-            ['related_table' => 'deals', 'related_id' => 2, 'author' => 1, 'source_file' => 'account_tree.png',   'display_name' => 'Solution Architecture'],
-            ['related_table' => 'deals', 'related_id' => 2, 'author' => 0, 'source_file' => 'calendar_check.png', 'display_name' => 'Rollout Plan'],
-            ['related_table' => 'deals', 'related_id' => 3, 'author' => 1, 'source_file' => 'database.png',       'display_name' => 'Source System Inventory'],
-            ['related_table' => 'deals', 'related_id' => 4, 'author' => 0, 'source_file' => 'order_approve.png',  'display_name' => 'Signed Order Form'],
-            ['related_table' => 'deals', 'related_id' => 7, 'author' => 2, 'source_file' => 'warehouse.png',      'display_name' => 'Data Centre Site Photo'],
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'source_file' => 'material/docs.svg',           'display_name' => 'Signed Contract Scan'],
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'source_file' => 'material/fact_check.svg',     'display_name' => 'Approved Terms Sheet'],
+            ['related_table' => 'deals', 'related_id' => 2, 'author' => 1, 'source_file' => 'material/account_tree.svg',   'display_name' => 'Solution Architecture'],
+            ['related_table' => 'deals', 'related_id' => 2, 'author' => 0, 'source_file' => 'material/calendar_check.svg', 'display_name' => 'Rollout Plan'],
+            ['related_table' => 'deals', 'related_id' => 3, 'author' => 1, 'source_file' => 'material/database.svg',       'display_name' => 'Source System Inventory'],
+            ['related_table' => 'deals', 'related_id' => 4, 'author' => 0, 'source_file' => 'material/order_approve.svg',  'display_name' => 'Signed Order Form'],
+            ['related_table' => 'deals', 'related_id' => 7, 'author' => 2, 'source_file' => 'material/warehouse.svg',      'display_name' => 'Data Centre Site Photo'],
         ],
 
         'demo_record_owners' => [

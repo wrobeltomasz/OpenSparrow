@@ -6,7 +6,7 @@
 import { apiFetch } from '../../assets/js/util/api.js';
 export const helpTexts = {
     display_name: "The name that will be shown to users in the interface.",
-    icon: "Path to the icon image (e.g., assets/icons/my_icon.png) or emoji.",
+    icon: "Path to the icon image (e.g., assets/icons/material/warehouse.svg) or emoji. Use Browse to search.",
     hidden: "If checked, this table will not be displayed in the main application's sidebar menu.",
     type: "Database data type (e.g., String(255), integer, boolean, date).",
     fk_ref: "Select a related table. If selected, specify the Reference Column (usually 'id') and Display Column (what users see).",
@@ -115,6 +115,198 @@ export function createDatalistInput(key, labelText, listId, value, onChange) {
     return wrapper;
 }
 
+const MATERIAL_ICON_INDEX_URL = '../assets/icons/material/index.json';
+const MATERIAL_ICON_TAGS_URL = '../assets/icons/material/tags.json';
+const MATERIAL_ICON_PREFIX = 'assets/icons/material/';
+const ICON_PICKER_PAGE_SIZE = 120;
+const ICON_PICKER_CATEGORY_LIMIT = 14;
+const ICON_PICKER_RECENT_KEY = 'opensparrow.admin.recent-icons';
+const ICON_PICKER_RECENT_LIMIT = 12;
+
+const ICON_PICKER_SYNONYMS = {
+    akcja: 'action', aparat: 'photo camera', apteka: 'pharmacy,medication', archiwum: 'archive,inventory',
+    autobus: 'directions bus', baza: 'database,storage', bezpieczenstwo: 'security,shield',
+    blad: 'error,warning', blokada: 'lock,block', budynek: 'apartment,business,domain',
+    chmura: 'cloud', ciezarowka: 'local shipping,delivery truck speed', czas: 'schedule,timer',
+    czysc: 'cleaning services,clear', data: 'calendar today,event', dokument: 'description,article',
+    dom: 'home,house,cottage', dostawa: 'local shipping,delivery truck speed', drukarka: 'print,printer',
+    drukuj: 'print', drzewo: 'account tree,forest', dzwonek: 'notifications,doorbell',
+    edytuj: 'edit,edit square', ekran: 'monitor,desktop windows', faktura: 'receipt long,receipt',
+    fabryka: 'factory,precision manufacturing', filtr: 'filter alt,tune', firma: 'business,corporate fare',
+    flaga: 'flag,outlined flag', folder: 'folder,folder open', formularz: 'assignment,ballot',
+    glosnik: 'volume up,speaker', grupa: 'group,groups', gwiazdka: 'star,grade',
+    haslo: 'password,key', informacja: 'info,help', jedzenie: 'restaurant,food bank',
+    kalendarz: 'calendar month,calendar today', kalkulator: 'calculate', kamera: 'videocam,photo camera',
+    katalog: 'folder open,list', kawa: 'local cafe,coffee', klawiatura: 'keyboard',
+    klucz: 'key,vpn key', komputer: 'computer,desktop windows', kontakt: 'contacts,person text',
+    kopia: 'content copy,backup', kosz: 'delete,delete forever', koszyk: 'shopping cart,shopping basket',
+    ksiazka: 'menu book,book 3', ksiegowosc: 'account balance,receipt long', laptop: 'laptop windows,computer',
+    lekarz: 'health and safety,medical services', link: 'link,add link', lista: 'list,checklist',
+    lokalizacja: 'location on,place', magazyn: 'warehouse,inventory', mail: 'mail,forward to inbox',
+    mapa: 'map,location city', menu: 'menu,more vert', mikrofon: 'mic',
+    minus: 'remove,do not disturb on', mysz: 'mouse', narzedzia: 'build,handyman',
+    nauka: 'school,science', nawigacja: 'navigation,directions', obraz: 'image,photo library',
+    odswiez: 'refresh,autorenew,sync', osoba: 'person,account circle', ostrzezenie: 'warning,report',
+    paleta: 'pallet', paliwo: 'local gas station', pieniadze: 'payments,attach money,savings',
+    platnosc: 'payments,credit card', plik: 'file present,description', plus: 'add,add circle',
+    pobierz: 'download,download 2', pociag: 'train,tram', poczta: 'mail,markunread mailbox',
+    podpis: 'signature,draw', pomoc: 'help,help center', powiadomienie: 'notifications',
+    praca: 'work,business center', pracownik: 'badge,person', projekt: 'account tree,assignment',
+    raport: 'assessment,summarize,bar chart', restauracja: 'restaurant,dining',
+    rower: 'pedal bike,directions bike', samochod: 'directions car,car gear',
+    samolot: 'flight,airplanemode active', serce: 'favorite', serwer: 'dns,storage',
+    siec: 'lan,wifi', sklep: 'store,local convenience store', smieci: 'delete,auto delete',
+    sortuj: 'sort,swap vert', sport: 'sports soccer,fitness center', stacja: 'local gas station,ev station',
+    statek: 'directions boat,sailing', strzalka: 'arrow forward,arrow right alt',
+    synchronizacja: 'sync,autorenew', szkola: 'school,menu book', szpital: 'local hospital,health cross',
+    szukaj: 'search,manage search', tabela: 'table chart,grid on', tarcza: 'shield,verified user',
+    telefon: 'call,smartphone', ulubione: 'favorite,star', umowa: 'handshake,description',
+    ustawienia: 'settings,tune', usun: 'delete,delete forever',
+    uzytkownik: 'person,account circle,manage accounts', wideo: 'videocam,movie',
+    wozek: 'shopping cart,forklift,trolley', wykres: 'bar chart,show chart,analytics',
+    wyslij: 'send,outgoing mail', zadanie: 'task,checklist', zamek: 'lock,lock open',
+    zamknij: 'close,cancel', zapisz: 'save,check circle', zdjecie: 'photo camera,image',
+    zegar: 'schedule,timer,alarm', zespol: 'groups,diversity 3', znacznik: 'label,bookmark',
+    zwierze: 'pets',
+};
+
+let materialIconIndexCache = null;
+let materialIconTagsRequest = null;
+
+function normalizeIconQuery(value) {
+    return String(value)
+        .toLowerCase()
+        .replace(/\u0142/g, 'l')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9 ]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function expandIconQuery(rawQuery) {
+    const normalized = normalizeIconQuery(rawQuery);
+    if (normalized === '') {
+        return [];
+    }
+    const terms = new Set([normalized]);
+    normalized.split(' ').forEach(word => {
+        const mapped = ICON_PICKER_SYNONYMS[word];
+        if (!mapped) {
+            return;
+        }
+        mapped.split(',').forEach(phrase => {
+            const term = phrase.trim();
+            if (term !== '') {
+                terms.add(term);
+            }
+        });
+    });
+    return [...terms];
+}
+
+function scoreIconEntry(entry, terms) {
+    let best = 0;
+    for (const term of terms) {
+        let score = 0;
+        if (entry.name === term) {
+            score = 5;
+        } else if (entry.name.startsWith(term)) {
+            score = 4;
+        } else if (entry.name.includes(term)) {
+            score = 3;
+        } else if (entry.searchText.includes(' ' + term)) {
+            score = 2;
+        }
+        if (score > best) {
+            best = score;
+        }
+    }
+    return best;
+}
+
+function buildIconEntry(iconPath, popularity, fromProject) {
+    const fileName = iconPath.split('/').pop();
+    const name = fileName.replace(/\.[^.]+$/, '').toLowerCase();
+    return {
+        name,
+        path: iconPath,
+        popularity,
+        fromProject,
+        categories: [],
+        searchText: ' ' + name.replace(/[-_]/g, ' '),
+    };
+}
+
+async function loadMaterialIconIndex() {
+    if (materialIconIndexCache) {
+        return materialIconIndexCache;
+    }
+    try {
+        const response = await fetch(MATERIAL_ICON_INDEX_URL);
+        const data = response.ok ? await response.json() : { icons: [] };
+        const icons = Array.isArray(data.icons) ? data.icons : [];
+        materialIconIndexCache = icons.map(entry => buildIconEntry(
+            MATERIAL_ICON_PREFIX + String(entry.name) + '.svg',
+            Number(entry.popularity) || 0,
+            false
+        ));
+    } catch (error) {
+        materialIconIndexCache = [];
+    }
+    return materialIconIndexCache;
+}
+
+function loadMaterialIconTags(entries) {
+    if (materialIconTagsRequest) {
+        return materialIconTagsRequest;
+    }
+    materialIconTagsRequest = fetch(MATERIAL_ICON_TAGS_URL)
+        .then(response => (response.ok ? response.json() : { icons: [] }))
+        .then(data => {
+            const byName = new Map();
+            (Array.isArray(data.icons) ? data.icons : []).forEach(entry => {
+                byName.set(String(entry.name), {
+                    tags: Array.isArray(entry.tags) ? entry.tags : [],
+                    categories: Array.isArray(entry.categories) ? entry.categories : [],
+                });
+            });
+            entries.forEach(entry => {
+                const details = byName.get(entry.name);
+                if (!details) {
+                    return;
+                }
+                entry.categories = details.categories;
+                entry.searchText += ' ' + details.tags.join(' ') + ' ' + details.categories.join(' ');
+            });
+            return true;
+        })
+        .catch(() => false);
+    return materialIconTagsRequest;
+}
+
+function readRecentIcons() {
+    try {
+        const stored = window.localStorage.getItem(ICON_PICKER_RECENT_KEY);
+        const parsed = stored ? JSON.parse(stored) : [];
+        return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string') : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function rememberRecentIcon(iconPath) {
+    try {
+        const recent = [iconPath, ...readRecentIcons().filter(item => item !== iconPath)];
+        window.localStorage.setItem(
+            ICON_PICKER_RECENT_KEY,
+            JSON.stringify(recent.slice(0, ICON_PICKER_RECENT_LIMIT))
+        );
+    } catch (error) {
+        console.warn('Could not store the recent icon list', error);
+    }
+}
+
 export function createIconPicker(key, labelText, value, onChange) {
     const wrapper = document.createElement('div');
     wrapper.className = 'form-group';
@@ -137,58 +329,189 @@ export function createIconPicker(key, labelText, value, onChange) {
     button.type = 'button';
     button.className = 'btn btn-secondary btn-sm';
     button.onclick = async () => {
-        const modal = document.createElement('div');
-        modal.style.cssText = `position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:10000;`;
+        const modal = buildModal({ title: 'Select Icon' });
+        modal.box.classList.add('adm-modal-icons');
+        modal.saveBtn.remove();
+        modal.msgEl.remove();
+        modal.cancelBtn.textContent = 'Close';
 
-        const content = document.createElement('div');
-        content.style.cssText = `background:#fff; padding:20px; border-radius:8px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; position:relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2);`;
+        const toolbar = el('div', 'icon-picker-toolbar');
+        const searchInput = el('input');
+        searchInput.type = 'search';
+        searchInput.className = 'adm-input flex-1';
+        searchInput.placeholder = 'Search by name or tag, Polish words work too';
+        const statusText = el('span', 'icon-picker-status');
+        toolbar.append(searchInput, statusText);
+        modal.body.appendChild(toolbar);
 
-        const closeButton = document.createElement('button');
-        closeButton.textContent = 'Close';
-        closeButton.className = 'btn btn-danger btn-xs';
-        closeButton.style.cssText = 'position:absolute; top:15px; right:15px;';
-        closeButton.onclick = () => modal.remove();
-        content.appendChild(closeButton);
+        const chipRow = el('div', 'icon-picker-chips');
+        modal.body.appendChild(chipRow);
 
-        content.innerHTML += '<h3 style="margin-top:0;">Select Icon</h3><p style="color:var(--muted); ">Icons are loaded from <code>assets/icons/</code>.</p>';
+        const scrollArea = el('div', 'icon-picker-scroll');
+        modal.body.appendChild(scrollArea);
 
-        const grid = document.createElement('div');
-        grid.style.cssText = `display:grid; grid-template-columns:repeat(auto-fill, minmax(70px, 1fr)); gap:15px; margin-top:20px;`;
+        let projectEntries = [];
+        let materialEntries = [];
+        let visibleCount = ICON_PICKER_PAGE_SIZE;
+        let activeCategory = '';
 
+        const chooseIcon = (entry) => {
+            input.value = entry.path;
+            onChange(entry.path);
+            rememberRecentIcon(entry.path);
+            modal.close();
+        };
+
+        const buildCell = (entry) => {
+            const cell = el('button', 'icon-picker-cell');
+            cell.type = 'button';
+            cell.title = entry.path;
+            const image = el('img');
+            image.src = '../' + entry.path;
+            image.alt = '';
+            image.loading = 'lazy';
+            cell.appendChild(image);
+            cell.appendChild(el('span', 'icon-picker-name', entry.name));
+            cell.addEventListener('click', () => chooseIcon(entry));
+            return cell;
+        };
+
+        const renderSection = (title, entries, total) => {
+            if (entries.length === 0) {
+                return;
+            }
+            const heading = total > entries.length
+                ? `${title} (${entries.length} of ${total})`
+                : `${title} (${entries.length})`;
+            scrollArea.appendChild(el('p', 'icon-picker-section-title', heading));
+            const grid = el('div', 'icon-picker-grid');
+            entries.forEach(entry => grid.appendChild(buildCell(entry)));
+            scrollArea.appendChild(grid);
+        };
+
+        const appendShowMore = (total) => {
+            if (total <= visibleCount) {
+                return;
+            }
+            const remaining = total - visibleCount;
+            const more = el('button', 'btn btn-secondary btn-sm icon-picker-more', `Show More (${remaining} Left)`);
+            more.type = 'button';
+            more.addEventListener('click', () => {
+                visibleCount += ICON_PICKER_PAGE_SIZE;
+                render();
+            });
+            scrollArea.appendChild(more);
+        };
+
+        const collectMatches = (terms) => {
+            const scored = [];
+            const consider = (entry) => {
+                if (activeCategory !== '' && !entry.categories.includes(activeCategory)) {
+                    return;
+                }
+                const score = terms.length === 0 ? 1 : scoreIconEntry(entry, terms);
+                if (score === 0) {
+                    return;
+                }
+                scored.push({ entry, score });
+            };
+            projectEntries.forEach(consider);
+            materialEntries.forEach(consider);
+            scored.sort((first, second) => second.score - first.score
+                || Number(second.entry.fromProject) - Number(first.entry.fromProject)
+                || second.entry.popularity - first.entry.popularity
+                || first.entry.name.localeCompare(second.entry.name));
+            return scored.map(item => item.entry);
+        };
+
+        const recentEntries = () => {
+            const known = new Map();
+            projectEntries.concat(materialEntries).forEach(entry => known.set(entry.path, entry));
+            return readRecentIcons().map(iconPath => known.get(iconPath)).filter(Boolean);
+        };
+
+        const render = () => {
+            scrollArea.textContent = '';
+            const terms = expandIconQuery(searchInput.value);
+            if (terms.length === 0 && activeCategory === '') {
+                const recent = recentEntries();
+                renderSection('Recently Used', recent, recent.length);
+                renderSection('Project Icons', projectEntries, projectEntries.length);
+                renderSection('Material Symbols', materialEntries.slice(0, visibleCount), materialEntries.length);
+                appendShowMore(materialEntries.length);
+                return;
+            }
+            const matches = collectMatches(terms);
+            if (matches.length === 0) {
+                scrollArea.appendChild(el('p', 'icon-picker-empty', 'No icons match this search.'));
+                return;
+            }
+            renderSection('Results', matches.slice(0, visibleCount), matches.length);
+            appendShowMore(matches.length);
+        };
+
+        const renderChips = () => {
+            chipRow.textContent = '';
+            const counts = new Map();
+            materialEntries.forEach(entry => entry.categories.forEach(category => {
+                counts.set(category, (counts.get(category) || 0) + 1);
+            }));
+            if (counts.size === 0) {
+                return;
+            }
+            [...counts.entries()]
+                .sort((first, second) => second[1] - first[1])
+                .slice(0, ICON_PICKER_CATEGORY_LIMIT)
+                .forEach(([category]) => {
+                    const chip = el('button', 'filter-chip icon-picker-chip', category);
+                    chip.type = 'button';
+                    if (category === activeCategory) {
+                        chip.classList.add('is-active');
+                    }
+                    chip.addEventListener('click', () => {
+                        activeCategory = activeCategory === category ? '' : category;
+                        visibleCount = ICON_PICKER_PAGE_SIZE;
+                        renderChips();
+                        render();
+                    });
+                    chipRow.appendChild(chip);
+                });
+        };
+
+        statusText.textContent = 'Loading icons...';
         try {
             const result = await apiFetch('api.php?action=list_icons');
             const data = await result.json();
-            if (data.status === 'success' && data.icons.length > 0) {
-                data.icons.forEach(iconPath => {
-                    const imageBox = document.createElement('div');
-                    imageBox.style.cssText = `cursor:pointer; text-align:center; padding:10px; border:1px solid var(--border); border-radius:6px; transition:0.2s; display:flex; align-items:center; justify-content:center; height: 70px;`;
-                    imageBox.onmouseover = () => { imageBox.style.borderColor = 'var(--muted)'; imageBox.style.background = 'var(--accent-mid)'; };
-                    imageBox.onmouseout = () => { imageBox.style.borderColor = 'var(--accent-mid)'; imageBox.style.background = 'transparent'; };
-
-                    const image = document.createElement('img');
-                    image.src = '../' + iconPath;
-                    image.style.maxWidth = '100%';
-                    image.style.maxHeight = '100%';
-                    image.style.objectFit = 'contain';
-
-                    imageBox.appendChild(image);
-                    imageBox.onclick = () => {
-                        input.value = iconPath;
-                        onChange(iconPath);
-                        modal.remove();
-                    };
-                    grid.appendChild(imageBox);
-                });
-            } else {
-                grid.innerHTML = '<p style="grid-column: 1 / -1; color:var(--muted);">No icons found. Create an <code>assets/icons/</code> folder in the root directory and upload files (PNG, SVG, JPG) there.</p>';
+            if (data.status === 'success' && Array.isArray(data.icons)) {
+                projectEntries = data.icons.map(iconPath => buildIconEntry(iconPath, 0, true));
             }
-        } catch(event) {
-            grid.innerHTML = '<p style="color:var(--error); grid-column: 1 / -1;">An error occurred while loading icons.</p>';
+        } catch (error) {
+            projectEntries = [];
         }
 
-        content.appendChild(grid);
-        modal.appendChild(content);
-        document.body.appendChild(modal);
+        const indexEntries = await loadMaterialIconIndex();
+        materialEntries = indexEntries.slice().sort((first, second) =>
+            second.popularity - first.popularity || first.name.localeCompare(second.name));
+
+        statusText.textContent = materialEntries.length > 0
+            ? `${projectEntries.length} project, ${materialEntries.length} Material Symbols`
+            : `${projectEntries.length} project icons`;
+
+        render();
+        loadMaterialIconTags(indexEntries).then(() => {
+            renderChips();
+            render();
+        });
+
+        let searchTimer = 0;
+        searchInput.addEventListener('input', () => {
+            window.clearTimeout(searchTimer);
+            searchTimer = window.setTimeout(() => {
+                visibleCount = ICON_PICKER_PAGE_SIZE;
+                render();
+            }, 150);
+        });
+        searchInput.focus();
     };
 
     inputGroup.appendChild(input);
@@ -376,7 +699,7 @@ export function createFullMenuPreview(config) {
     function buildIcon(icon) {
         if (!icon) {
             const image = document.createElement('img');
-            image.src = '../assets/icons/database.png';
+            image.src = '../assets/icons/material/database.svg';
             image.alt = '';
             return image;
         }

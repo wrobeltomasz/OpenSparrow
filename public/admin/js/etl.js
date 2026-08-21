@@ -615,11 +615,11 @@ export async function renderEtlPage(context) {
     workspaceElement.appendChild(wrap);
 
     const [sourcesPanel, jobsPanel, schedPanel, histPanel, flowsPanel] = buildInnerTabs(wrap, [
-        { label: 'Sources', icon: 'database.png' },
-        { label: 'Jobs', icon: 'checklist_rtl.png' },
-        { label: 'Schedule', icon: 'calendar_check.png' },
-        { label: 'History', icon: 'manage_history.png' },
-        { label: 'Flows', icon: 'arrow_split.png' },
+        { label: 'Sources', icon: 'material/database.svg' },
+        { label: 'Jobs', icon: 'material/checklist_rtl.svg' },
+        { label: 'Schedule', icon: 'material/calendar_check.svg' },
+        { label: 'History', icon: 'material/manage_history.svg' },
+        { label: 'Flows', icon: 'material/arrow_split.svg' },
     ]);
     renderSourcesTab(sourcesPanel);
     renderJobsTab(jobsPanel);

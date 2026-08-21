@@ -29,8 +29,8 @@ export function renderPrintEditor(context) {
     wrap.appendChild(hdrDescription);
 
     const [listPanel, globalPanel] = buildInnerTabs(wrap, [
-        { label: 'All Printouts', icon: 'picture_as_pdf.png' },
-        { label: 'Global Settings', icon: 'car_gear.png' },
+        { label: 'All Printouts', icon: 'material/picture_as_pdf.svg' },
+        { label: 'Global Settings', icon: 'material/settings.svg' },
     ]);
 
     const globalHeading = document.createElement('h3');

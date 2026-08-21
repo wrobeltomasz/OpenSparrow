@@ -17,10 +17,10 @@ export async function renderUsersEditor(context) {
     wrap.appendChild(createPageHeader('Users'));
 
     const [managePanel, accessPanel, statisticsPanel, settingsPanel] = buildInnerTabs(wrap, [
-        { label: 'Manage Users', icon: 'user_attributes.png' },
-        { label: 'Access', icon: 'table_chart_view.png' },
-        { label: 'Statistics', icon: 'bar_chart.png' },
-        { label: 'Global Settings', icon: 'manage_history.png' },
+        { label: 'Manage Users', icon: 'material/user_attributes.svg' },
+        { label: 'Access', icon: 'material/table_chart_view.svg' },
+        { label: 'Statistics', icon: 'material/bar_chart.svg' },
+        { label: 'Global Settings', icon: 'material/settings.svg' },
     ]);
 
     workspaceElement.appendChild(wrap);

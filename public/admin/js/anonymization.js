@@ -992,11 +992,11 @@ export async function renderAnonymizationPage(context) {
     ));
 
     const [p0, p1, p2, p3, p4] = buildInnerTabs(wrap, [
-        { label: 'Rules', icon: 'checklist_rtl.png' },
-        { label: 'Schedule', icon: 'calendar_check.png' },
-        { label: 'Suggestions', icon: 'fact_check.png' },
-        { label: 'Dictionary', icon: 'menu_book.png' },
-        { label: 'History', icon: 'manage_history.png' },
+        { label: 'Rules', icon: 'material/checklist_rtl.svg' },
+        { label: 'Schedule', icon: 'material/calendar_check.svg' },
+        { label: 'Suggestions', icon: 'material/fact_check.svg' },
+        { label: 'Dictionary', icon: 'material/menu_book.svg' },
+        { label: 'History', icon: 'material/manage_history.svg' },
     ]);
 
     p0.appendChild(buildRulesTab(context));

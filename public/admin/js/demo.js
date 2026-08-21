@@ -21,7 +21,7 @@ const DEMOS = {
         schema:      'spw_crm',
         tables:      ['companies', 'contacts', 'deals', 'activities', 'leads'],
         color:       'var(--muted)',
-        icon:        'assets/icons/account_box.png',
+        icon:        'assets/icons/material/account_box.svg',
         recommended: true,
 
         features:    [
@@ -282,7 +282,7 @@ function renderInstallForm(workspaceElement, { snapshotsLockedByEnv: snapshotsLo
 
 function renderInstalled(workspaceElement, meta) {
     workspaceElement.innerHTML = '';
-    const demoDefinition = DEMOS[meta.type] ?? { label: meta.type, color: 'var(--muted)', icon: 'assets/icons/box.png' };
+    const demoDefinition = DEMOS[meta.type] ?? { label: meta.type, color: 'var(--muted)', icon: 'assets/icons/material/box.svg' };
 
     workspaceElement.appendChild(createPageHeader('Demo Installed'));
 

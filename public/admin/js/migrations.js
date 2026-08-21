@@ -22,8 +22,8 @@ export async function renderMigrationsPage(context) {
     ));
 
     const [panel0, panel1] = buildInnerTabs(outer, [
-        { label: 'Database Migrations', icon: 'database.png' },
-        { label: 'Release Migrations', icon: 'box.png' },
+        { label: 'Database Migrations', icon: 'material/database.svg' },
+        { label: 'Release Migrations', icon: 'material/box.svg' },
     ]);
 
     const subtitle = document.createElement('p');

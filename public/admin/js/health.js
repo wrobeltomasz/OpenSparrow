@@ -190,8 +190,8 @@ export async function renderHealthDashboard(context) {
     wrap.appendChild(createPageHeader('System Health', 'Diagnostics of the hosting environment running OpenSparrow.'));
 
     const panels = buildInnerTabs(wrap, [
-        { label: 'Environment', icon: 'health_and_safety.png' },
-        { label: 'Production Readiness', icon: 'checklist_rtl.png' },
+        { label: 'Environment', icon: 'material/dns.svg' },
+        { label: 'Production Readiness', icon: 'material/checklist_rtl.svg' },
     ]);
 
     if (workspaceElement._renderId !== myId) return;

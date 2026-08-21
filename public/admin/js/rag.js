@@ -1657,10 +1657,10 @@ export async function renderRagPage(context) {
     workspaceElement.appendChild(wrap);
 
     const tabDefs = [
-        { id: 'documents',  label: 'Documents',   icon: 'docs.png' },
-        { id: 'test',       label: 'Test',         icon: 'playground.png' },
-        { id: 'statistics', label: 'Statistics',   icon: 'dashboard.png' },
-        { id: 'settings',   label: 'Global Settings', icon: 'build.png' },
+        { id: 'documents',  label: 'Documents',   icon: 'material/docs.svg' },
+        { id: 'test',       label: 'Test',         icon: 'material/playground.svg' },
+        { id: 'statistics', label: 'Statistics',   icon: 'material/bar_chart.svg' },
+        { id: 'settings',   label: 'Global Settings', icon: 'material/settings.svg' },
     ];
 
     const { panels } = ragBuildTabs(wrap, tabDefs);

@@ -40,7 +40,7 @@ export async function loadCommentCounts(pageRows) {
                 const addButton = makeIconButton({
                     cy: 'row-comment-add',
                     title: I18n.t('grid.add_comment'),
-                    icon: 'assets/icons/add_comment.png',
+                    icon: 'assets/icons/material/add_comment.svg',
                     className: 'btn-icon-comment-add',
                     onClick: event => {
                         event.stopPropagation();
