@@ -736,13 +736,13 @@ function demo_def_crm($conn): array
         ],
 
         'demo_images' => [
-            ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'source_file' => 'material/docs.svg',           'display_name' => 'Signed Contract Scan'],
-            ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'source_file' => 'material/fact_check.svg',     'display_name' => 'Approved Terms Sheet'],
-            ['related_table' => 'deals', 'related_id' => 2, 'author' => 1, 'source_file' => 'material/account_tree.svg',   'display_name' => 'Solution Architecture'],
-            ['related_table' => 'deals', 'related_id' => 2, 'author' => 0, 'source_file' => 'material/calendar_check.svg', 'display_name' => 'Rollout Plan'],
-            ['related_table' => 'deals', 'related_id' => 3, 'author' => 1, 'source_file' => 'material/database.svg',       'display_name' => 'Source System Inventory'],
-            ['related_table' => 'deals', 'related_id' => 4, 'author' => 0, 'source_file' => 'material/order_approve.svg',  'display_name' => 'Signed Order Form'],
-            ['related_table' => 'deals', 'related_id' => 7, 'author' => 2, 'source_file' => 'material/warehouse.svg',      'display_name' => 'Data Centre Site Photo'],
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'source_file' => 'docs.png',           'display_name' => 'Signed Contract Scan'],
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'source_file' => 'fact_check.png',     'display_name' => 'Approved Terms Sheet'],
+            ['related_table' => 'deals', 'related_id' => 2, 'author' => 1, 'source_file' => 'account_tree.png',   'display_name' => 'Solution Architecture'],
+            ['related_table' => 'deals', 'related_id' => 2, 'author' => 0, 'source_file' => 'calendar_check.png', 'display_name' => 'Rollout Plan'],
+            ['related_table' => 'deals', 'related_id' => 3, 'author' => 1, 'source_file' => 'database.png',       'display_name' => 'Source System Inventory'],
+            ['related_table' => 'deals', 'related_id' => 4, 'author' => 0, 'source_file' => 'order_approve.png',  'display_name' => 'Signed Order Form'],
+            ['related_table' => 'deals', 'related_id' => 7, 'author' => 2, 'source_file' => 'warehouse.png',      'display_name' => 'Data Centre Site Photo'],
         ],
 
         'demo_record_owners' => [

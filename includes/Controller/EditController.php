@@ -429,9 +429,17 @@ final class EditController
             $tabs[] = ['id' => $panel['id'], 'label' => $panel['label'], 'icon' => $panel['icon']];
         }
         if ($imagesPanel) {
-            $tabs[] = ['id' => 'tab-images', 'label' => $imagesPanel['label'], 'icon' => 'assets/icons/material/image.svg'];
+            $tabs[] = [
+                'id'    => 'tab-images',
+                'label' => $imagesPanel['label'],
+                'icon'  => 'assets/icons/material/image.svg',
+            ];
         }
-        $tabs[] = ['id' => 'tab-files', 'label' => t('form.tab_files'), 'icon' => 'assets/icons/material/folder_open.svg'];
+        $tabs[] = [
+            'id'    => 'tab-files',
+            'label' => t('form.tab_files'),
+            'icon'  => 'assets/icons/material/folder_open.svg',
+        ];
         $tabs[] = ['id' => 'tab-comments', 'label' => t('form.tab_comments'), 'icon' => ''];
         $tabs[] = ['id' => 'tab-history', 'label' => t('form.tab_history'), 'icon' => ''];
 
