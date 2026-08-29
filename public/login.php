@@ -278,12 +278,6 @@ if ($request->isPost()) {
             </form>
             <div class="login-info">
                 <span>v<?php echo htmlspecialchars($version); ?></span>
-                <span class="login-info-separator">·</span>
-                <a
-                    href="https://github.com/wrobeltomasz/OpenSparrow"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >GitHub</a>
             </div>
         </div>
     </div>
