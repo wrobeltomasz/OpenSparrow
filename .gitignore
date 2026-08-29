@@ -114,3 +114,4 @@ node_modules/
 #opencode
 /.opencode
 opencode.json
+AGENTS.md
