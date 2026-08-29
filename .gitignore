@@ -110,3 +110,7 @@ node_modules/
 
 # Local-only JSON->SQL schema generator tool — never published, never documented
 /creator/
+
+#opencode
+/.opencode
+opencode.json
