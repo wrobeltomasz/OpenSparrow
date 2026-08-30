@@ -440,8 +440,8 @@ final class EditController
             'label' => t('form.tab_files'),
             'icon'  => 'assets/icons/material/folder_open.svg',
         ];
-        $tabs[] = ['id' => 'tab-comments', 'label' => t('form.tab_comments'), 'icon' => ''];
-        $tabs[] = ['id' => 'tab-history', 'label' => t('form.tab_history'), 'icon' => ''];
+        $tabs[] = ['id' => 'tab-comments', 'label' => t('form.tab_comments'), 'icon' => 'assets/icons/material/comment.svg'];
+        $tabs[] = ['id' => 'tab-history', 'label' => t('form.tab_history'), 'icon' => 'assets/icons/material/history.svg'];
 
         return $tabs;
     }
