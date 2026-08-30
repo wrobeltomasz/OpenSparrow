@@ -98,15 +98,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      # COPYING (GPL v3) and COPYING.LESSER (LGPL v3) must stay verbatim.
-      # The pinned hashes are the sha256 of the canonical FSF plain-text
-      # files, byte for byte:
+      # COPYING (GPL v3), COPYING.LESSER (LGPL v3) and
+      # licenses/Apache-2.0.txt must stay verbatim. The pinned hashes are
+      # the sha256 of the canonical plain-text files, byte for byte:
       #   https://www.gnu.org/licenses/gpl-3.0.txt
       #   https://www.gnu.org/licenses/lgpl-3.0.txt
-      # Any edit to either file fails this job — the licence texts are not
-      # ours to reformat, so the fix is to restore the file from gnu.org,
-      # not to update the hashes.
-      - name: Verify COPYING and COPYING.LESSER checksums
+      #   https://www.apache.org/licenses/LICENSE-2.0.txt
+      # Any edit to these files fails this job — the licence texts are not
+      # ours to reformat, so the fix is to restore the file from its
+      # upstream source, not to update the hashes.
+      - name: Verify licence file checksums
         run: |
           set -euo pipefail
           check() {
@@ -121,4 +122,5 @@ jobs:
           }
           check 3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986 COPYING
           check e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118 COPYING.LESSER
+          check cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30 licenses/Apache-2.0.txt
           echo "Licence files match their pinned checksums."
