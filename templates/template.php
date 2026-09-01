@@ -100,7 +100,7 @@ ob_start();
         </div>
     </section>
 
-    <pre id="debug"></pre>
+    <pre id="debug" style="display: none;"></pre>
 </main>
 
 <?php
