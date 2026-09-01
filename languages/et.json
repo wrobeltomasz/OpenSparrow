@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Logi sisse",
+        "language": "Keel",
         "logout": "Logi välja",
         "username": "Kasutajanimi",
         "password": "Parool",

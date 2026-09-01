@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Prijava",
+        "language": "Jezik",
         "logout": "Odjava",
         "username": "Korisničko ime",
         "password": "Lozinka",

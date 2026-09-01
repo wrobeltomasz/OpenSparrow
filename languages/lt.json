@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Prisijungti",
+        "language": "Kalba",
         "logout": "Atsijungti",
         "username": "Vartotojo vardas",
         "password": "Slaptažodis",

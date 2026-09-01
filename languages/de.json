@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Anmelden",
+        "language": "Sprache",
         "logout": "Abmelden",
         "username": "Benutzername",
         "password": "Passwort",

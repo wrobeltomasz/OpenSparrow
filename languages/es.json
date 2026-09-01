@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Iniciar sesión",
+        "language": "Idioma",
         "logout": "Cerrar sesión",
         "username": "Nombre de usuario",
         "password": "Contraseña",

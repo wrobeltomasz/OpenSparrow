@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Вход",
+        "language": "Език",
         "logout": "Изход",
         "username": "Потребителско име",
         "password": "Парола",

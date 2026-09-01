@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Logga in",
+        "language": "Språk",
         "logout": "Logga ut",
         "username": "Användarnamn",
         "password": "Lösenord",

@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Pieteikties",
+        "language": "Valoda",
         "logout": "Atteikties",
         "username": "Lietotājvārds",
         "password": "Parole",

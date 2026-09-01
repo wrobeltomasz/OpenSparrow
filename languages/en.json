@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Log in",
+        "language": "Language",
         "logout": "Logout",
         "username": "Username",
         "password": "Password",

@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Autentificare",
+        "language": "Limbă",
         "logout": "Deconectare",
         "username": "Nume utilizator",
         "password": "Parolă",

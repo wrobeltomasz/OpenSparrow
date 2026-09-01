@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Accedi",
+        "language": "Lingua",
         "logout": "Esci",
         "username": "Nome utente",
         "password": "Password",

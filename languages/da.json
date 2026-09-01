@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Log ind",
+        "language": "Sprog",
         "logout": "Log ud",
         "username": "Brugernavn",
         "password": "Adgangskode",

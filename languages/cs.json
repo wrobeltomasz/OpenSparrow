@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Přihlásit se",
+        "language": "Jazyk",
         "logout": "Odhlásit se",
         "username": "Uživatelské jméno",
         "password": "Heslo",

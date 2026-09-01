@@ -209,7 +209,7 @@ if ($request->isPost()) {
 }
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::locale(), ENT_QUOTES, 'UTF-8'); ?>">
 <head>
     <meta charset="utf-8" />
     <title><?php echo htmlspecialchars($appName, ENT_QUOTES, 'UTF-8'); ?> | Login</title>
@@ -272,6 +272,19 @@ if ($request->isPost()) {
                         </svg>
                     </span>
                 </div>
+                <label class="login-language" for="languageSelect">
+                    <?php echo htmlspecialchars(t('auth.language'), ENT_QUOTES, 'UTF-8'); ?>
+                </label>
+                <select id="languageSelect" name="language" data-cy="languageSelect">
+                    <?php foreach (I18n::availableLanguageMeta() as $localeCode => $meta) : ?>
+                        <option
+                            value="<?php echo htmlspecialchars($localeCode, ENT_QUOTES, 'UTF-8'); ?>"
+                            <?php echo $localeCode === I18n::locale() ? 'selected' : ''; ?>
+                        >
+                            <?php echo htmlspecialchars($meta['name'], ENT_QUOTES, 'UTF-8'); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
                 <button type="submit" data-cy="loginBtn">
                     <?php echo htmlspecialchars(t('auth.login'), ENT_QUOTES, 'UTF-8'); ?>
                 </button>

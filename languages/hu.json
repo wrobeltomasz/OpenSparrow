@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Bejelentkezés",
+        "language": "Nyelv",
         "logout": "Kijelentkezés",
         "username": "Felhasználónév",
         "password": "Jelszó",

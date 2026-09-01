@@ -18,3 +18,11 @@ togglePassword.addEventListener("click", () => {
         togglePassword.innerHTML = iconEyeOpen;
     }
 });
+
+const languageSelect = document.getElementById("languageSelect");
+
+languageSelect.addEventListener("change", () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", languageSelect.value);
+    window.location.href = url.toString();
+});

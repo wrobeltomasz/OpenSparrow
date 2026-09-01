@@ -101,6 +101,7 @@
     },
     "auth": {
         "login": "Se connecter",
+        "language": "Langue",
         "logout": "Se déconnecter",
         "username": "Nom d'utilisateur",
         "password": "Mot de passe",

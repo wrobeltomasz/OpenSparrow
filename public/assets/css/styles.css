@@ -2912,6 +2912,28 @@ thead th.drag-over {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.20);
 }
+.login-language {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.login-box select {
+  width: 100%;
+  padding: 0.85rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+  background: var(--panel);
+  color: var(--text);
+  transition: border-color 150ms ease;
+}
+.login-box select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.20);
+}
 .login-box button {
   width: 100%;
   justify-content: center;
