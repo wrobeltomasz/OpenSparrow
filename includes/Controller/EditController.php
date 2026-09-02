@@ -466,6 +466,7 @@ final class EditController
             'assets/js/comments.js',
             'assets/js/owners.js',
             'assets/js/edit/form-behaviours.js',
+            'assets/js/edit/fk-search.js',
             'assets/js/edit/subtable-tooltip.js',
             'assets/js/edit/m2m-picker.js',
         ];

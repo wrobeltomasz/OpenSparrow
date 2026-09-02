@@ -31,6 +31,22 @@ function expectCreateForm({ timeout = CypressHelpers.TIMEOUTS.long } = {}) {
   });
 }
 
+function selectFk(field) {
+  return cy.get(`input.fk-search[data-fk-name="${field}"]`).then($input => {
+    const listId = $input.attr('list');
+    return cy.get(`#${listId} option`).first().then($option => {
+      const label = $option.attr('value');
+      const id = $option.attr('data-id');
+      cy.wrap($input).clear().type(label, { parseSpecialCharSequences: false }).blur();
+      return cy.wrap(id, { log: false });
+    });
+  });
+}
+
+function assertFk(field, id) {
+  cy.get(`input[type="hidden"][name="${field}"]`).should('have.value', String(id));
+}
+
 describe('OpenSparrow – DB row counts: companies', () => {
   before(() => {
     cy.seedDatabase();
@@ -175,9 +191,8 @@ describe('OpenSparrow – DB row counts: deals', () => {
     expectCreateForm();
 
     ['company_id', 'contact_id'].forEach(field => {
-      cy.get(`select[name="${field}"] option`).eq(1).then($opt => {
-        deal[field] = $opt.val();
-        cy.get(`select[name="${field}"]`).select(String($opt.val()));
+      selectFk(field).then(id => {
+        deal[field] = id;
       });
     });
 
@@ -237,8 +252,8 @@ describe('OpenSparrow – DB row counts: deals', () => {
         expectCreateForm();
 
         cy.get('input[name="title"]').should('have.value', deal.title);
-        cy.get('select[name="company_id"]').should('have.value', deal.company_id);
-        cy.get('select[name="contact_id"]').should('have.value', deal.contact_id);
+        assertFk('company_id', deal.company_id);
+        assertFk('contact_id', deal.contact_id);
         cy.get('select[name="stage"]').should('have.value', deal.stage);
         cy.get('input[name="expected_close"]').should('have.value', deal.expected_close);
 
@@ -304,11 +319,9 @@ describe('OpenSparrow – DB row counts: contacts', () => {
 
     expectCreateForm();
 
-    cy.get('select[name="company_id"] option').eq(1).then($opt => {
-      contact.company_id = $opt.val();
-      cy.get('select[name="company_id"]').select(String($opt.val()));
+    selectFk('company_id').then(id => {
+      contact.company_id = id;
     });
-
     ['first_name', 'last_name', 'email', 'phone', 'position'].forEach(field => {
       cy.get(`input[name="${field}"]`).clear().type(contact[field]);
     });
@@ -348,7 +361,7 @@ describe('OpenSparrow – DB row counts: contacts', () => {
         cy.visit(`${BASE}/edit.php?table=${CONTACTS}&id=${id}`);
         expectCreateForm();
 
-        cy.get('select[name="company_id"]').should('have.value', contact.company_id);
+        assertFk('company_id', contact.company_id);
         ['first_name', 'last_name', 'email', 'phone', 'position'].forEach(field => {
           cy.get(`input[name="${field}"]`).should('have.value', contact[field]);
         });

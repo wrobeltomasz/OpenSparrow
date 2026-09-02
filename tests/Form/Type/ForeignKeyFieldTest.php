@@ -56,13 +56,15 @@ final class ForeignKeyFieldTest extends TestCase
         $this->assertNull($boundValue->value);
     }
 
-    public function testRenderOutputsSelectWithFkOptions(): void
+    public function testRenderOutputsSearchInputWithFkOptions(): void
     {
         $context  = new RenderContext(false, ['user_id' => [1 => 'Alice', 2 => 'Bob']]);
         $html = $this->field->render($this->col(), 1, $context);
-        $this->assertStringContainsString('<select', $html);
+        $this->assertStringContainsString('type="search"', $html);
+        $this->assertStringContainsString('<datalist', $html);
         $this->assertStringContainsString('Alice', $html);
         $this->assertStringContainsString('Bob', $html);
+        $this->assertStringContainsString('data-id="1"', $html);
     }
 
     public function testRenderLockedAddsDisabledAndHiddenInput(): void

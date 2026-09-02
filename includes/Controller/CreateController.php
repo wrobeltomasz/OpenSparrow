@@ -123,6 +123,7 @@ final class CreateController
         $pageContent = ob_get_clean();
 
         $extraScripts = os_module_script('assets/js/edit/form-behaviours.js', $cspNonce)
+            . os_module_script('assets/js/edit/fk-search.js', $cspNonce)
             . os_module_script('assets/js/edit/m2m-picker.js', $cspNonce);
         include __DIR__ . '/../../templates/layout.php';
     }

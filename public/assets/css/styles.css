@@ -2710,6 +2710,7 @@ thead th.drag-over {
 }
 
 .editor-form input[type="text"],
+.editor-form input[type="search"],
 .editor-form input[type="date"],
 .editor-form input[type="datetime-local"],
 .editor-form input[type="email"],
@@ -2728,6 +2729,7 @@ thead th.drag-over {
 }
 
 .editor-form input[type="text"]:focus,
+.editor-form input[type="search"]:focus,
 .editor-form input[type="date"]:focus,
 .editor-form input[type="datetime-local"]:focus,
 .editor-form input[type="email"]:focus,
@@ -2744,7 +2746,8 @@ thead th.drag-over {
   cursor: default;
 }
 
-.editor-form select:disabled {
+.editor-form select:disabled,
+.editor-form input[type="search"]:disabled {
   background: var(--bg);
   color: var(--muted);
   cursor: default;

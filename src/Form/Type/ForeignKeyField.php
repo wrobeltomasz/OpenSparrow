@@ -42,19 +42,24 @@ final class ForeignKeyField implements FieldTypeInterface
         $name    = htmlspecialchars($column->name, ENT_QUOTES, 'UTF-8');
         $requiredAttribute = ($column->notNull && !$locked) ? 'required' : '';
 
-        $html  = '<select name="' . $name . '" ' . ($locked ? 'disabled' : '') . ' ' . $requiredAttribute . '>';
-        $html .= '<option value="">-- Select --</option>';
-        foreach ($context->fkOptionsFor($column->name) as $optionValue => $optionLabel) {
-            $selected = (string)$value === (string)$optionValue ? 'selected' : '';
-            $html    .= '<option value="' . htmlspecialchars((string)$optionValue, ENT_QUOTES, 'UTF-8') . '" ' . $selected . '>'
-                      . htmlspecialchars((string)$optionLabel, ENT_QUOTES, 'UTF-8')
-                      . '</option>';
+        $options      = $context->fkOptionsFor($column->name);
+        $currentLabel = (string)($options[$value] ?? '');
+        $listId       = 'fk_list_' . $name;
+
+        $html  = '<input type="search" class="fk-search" list="' . $listId . '"'
+            . ' data-fk-name="' . $name . '"'
+            . ' value="' . htmlspecialchars($currentLabel, ENT_QUOTES, 'UTF-8') . '"'
+            . ($locked ? ' disabled' : '')
+            . ' ' . $requiredAttribute . '>';
+        $html .= '<datalist id="' . $listId . '">';
+        foreach ($options as $optionValue => $optionLabel) {
+            $html .= '<option value="' . htmlspecialchars((string)$optionLabel, ENT_QUOTES, 'UTF-8') . '"'
+                . ' data-id="' . htmlspecialchars((string)$optionValue, ENT_QUOTES, 'UTF-8') . '"></option>';
         }
-        $html .= '</select>';
-        if ($locked) {
-            $html .= '<input type="hidden" name="' . $name . '" value="'
-                   . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" />';
-        }
+        $html .= '</datalist>';
+        $html .= '<input type="hidden" name="' . $name . '" value="'
+            . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . '" />';
+
         return $html;
     }
 }
