@@ -2649,6 +2649,17 @@ thead th.drag-over {
   padding: 0;
 }
 
+.notif-item-title {
+  font-weight: inherit;
+}
+
+.notif-item-time {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  font-weight: normal;
+}
+
 .header-admin-link {
   text-decoration: none;
   font-size: 20px;

@@ -44,7 +44,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const li = document.createElement('li');
                     li.style.cssText = 'padding:10px 15px;border-bottom:1px solid var(--border-light);font-weight:' +
                         (notification.is_read === 't' ? 'normal' : 'bold') + ';';
-                    li.textContent = notification.title;
+
+                    const title = document.createElement('div');
+                    title.className = 'notif-item-title';
+                    title.textContent = notification.title;
+                    li.appendChild(title);
+
+                    const time = document.createElement('div');
+                    time.className = 'notif-item-time';
+                    time.textContent = new Date(String(notification.created_at).replace(' ', 'T'))
+                        .toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+                    li.appendChild(time);
+
                     if (notification.link) {
                         li.style.cursor = 'pointer';
                         li.title = notification.link;
