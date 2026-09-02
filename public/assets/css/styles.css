@@ -2618,29 +2618,9 @@ thead th.drag-over {
   pointer-events: none;
 }
 
-.notif-dropdown {
-  display: none;
-  position: absolute;
-  top: 40px;
-  right: -50px;
-  width: 320px;
-  background: #fff;
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgba(31, 42, 55, 0.15);
-  z-index: 1000;
-  max-height: 400px;
-  overflow-y: auto;
-  color: var(--text);
-  text-align: left;
-  border-radius: 4px;
-}
-
-.notif-dropdown-header {
-  padding: 12px;
-  background: var(--bg);
-  font-weight: 700;
-  border-bottom: 1px solid var(--border);
-  border-radius: 4px 4px 0 0;
+.notif-body {
+  padding: 0;
+  gap: 0;
 }
 
 .notif-list {

@@ -19,6 +19,7 @@ $cacheBust = asset_version(__DIR__ . '/../public/assets/js/user-menu.js');
 $toggleSidebarLabel  = htmlspecialchars(t('header.toggle_sidebar'), ENT_QUOTES, 'UTF-8');
 $toggleSearchLabel   = htmlspecialchars(t('header.toggle_search'), ENT_QUOTES, 'UTF-8');
 $notificationsTable  = htmlspecialchars(t('header.notifications'), ENT_QUOTES, 'UTF-8');
+$closeLabel          = htmlspecialchars(t('header.close'), ENT_QUOTES, 'UTF-8');
 $adminPanelLabel     = htmlspecialchars(t('header.admin_panel'), ENT_QUOTES, 'UTF-8');
 $adminTitleLabel     = htmlspecialchars(t('admin.title'), ENT_QUOTES, 'UTF-8');
 $changeAvatarLabel   = htmlspecialchars(t('header.change_avatar'), ENT_QUOTES, 'UTF-8');
@@ -66,9 +67,15 @@ if ($logoEnabled) {
                      src="assets/icons/notifications.png" alt="<?= $notificationsTable ?>">
             </span>
             <span id="notif-badge" class="notif-badge">0</span>
-            <div id="notif-dropdown" class="notif-dropdown">
-                <div class="notif-dropdown-header"><?= $notificationsTable ?></div>
-                <ul id="notif-list" class="notif-list"></ul>
+            <div id="notif-dropdown" class="bp-panel">
+                <div class="bp-header">
+                    <h3 class="bp-title"><?= $notificationsTable ?></h3>
+                    <button class="bp-close" id="notif-close" type="button"
+                            title="<?= $closeLabel ?>" aria-label="<?= $closeLabel ?>">&#x2715;</button>
+                </div>
+                <div class="bp-body notif-body">
+                    <ul id="notif-list" class="notif-list"></ul>
+                </div>
             </div>
         </div>
 

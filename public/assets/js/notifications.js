@@ -11,6 +11,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!wrapper) return;
 
+    const overlay = document.createElement('div');
+    overlay.className = 'bp-overlay';
+    document.body.appendChild(overlay);
+    document.body.appendChild(dropdown);
+
+    function openDropdown() {
+        dropdown.classList.add('active');
+        overlay.classList.add('active');
+        loadNotifications();
+    }
+
+    function closeDropdown() {
+        dropdown.classList.remove('active');
+        overlay.classList.remove('active');
+    }
+
     async function checkNotifications() {
         try {
             const result  = await fetch('api/notifications.php?action=get_count', {
@@ -92,17 +108,21 @@ document.addEventListener('DOMContentLoaded', () => {
     wrapper.addEventListener('click', error => {
         error.stopPropagation();
         if (!dropdown) return;
-        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-            dropdown.style.display = 'block';
-            loadNotifications();
+        if (dropdown.classList.contains('active')) {
+            closeDropdown();
         } else {
-            dropdown.style.display = 'none';
+            openDropdown();
         }
     });
 
+    overlay.addEventListener('click', closeDropdown);
+
+    const closeButton = document.getElementById('notif-close');
+    if (closeButton) closeButton.addEventListener('click', closeDropdown);
+
     document.addEventListener('click', event => {
-        if (dropdown && !event.target.closest('.notifications-wrapper')) {
-            dropdown.style.display = 'none';
+        if (dropdown && !event.target.closest('.notifications-wrapper') && !event.target.closest('#notif-dropdown')) {
+            closeDropdown();
         }
     });
 

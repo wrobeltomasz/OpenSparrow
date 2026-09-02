@@ -43,18 +43,18 @@ describe('OpenSparrow – Notifications: Interaction', () => {
 
   it('clicking bell opens the dropdown when it is closed', () => {
     cy.get('#notif-dropdown').then($dropdown => {
-      if ($dropdown.is(':visible')) {
+      if ($dropdown.hasClass('active')) {
         cy.get('body').click(0, 0);
       }
     });
 
     cy.get('.notifications-wrapper').click();
-    cy.get('#notif-dropdown').should('be.visible');
+    cy.get('#notif-dropdown').should('have.class', 'active');
   });
 
   it('dropdown has a header section', () => {
     cy.get('.notifications-wrapper').click();
-    cy.get('.notif-dropdown-header', { timeout: CypressHelpers.TIMEOUTS.short }).should('exist');
+    cy.get('#notif-dropdown .bp-header', { timeout: CypressHelpers.TIMEOUTS.short }).should('exist');
   });
 
   it('notification list is ul element', () => {
