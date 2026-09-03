@@ -12,5 +12,8 @@
 			Licensed under LGPL-3.0
 			</span>
         </div>
+        <a class="footer-github" href="https://github.com/wrobeltomasz/OpenSparrow" target="_blank" rel="noopener noreferrer" aria-label="OpenSparrow on GitHub">
+            <img src="/assets/img/GitHub_Lockup_Black.svg" alt="GitHub" height="18">
+        </a>
     </div>
 </footer>

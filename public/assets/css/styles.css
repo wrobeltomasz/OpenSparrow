@@ -1201,7 +1201,7 @@ footer {
   align-items: center;
   gap: 0.25rem;
   text-align: center;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .footer-text a {
@@ -1217,6 +1217,17 @@ footer {
 
 .footer-text span {
   opacity: 0.8;
+}
+
+.footer-github {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.8;
+  transition: opacity var(--transition);
+}
+
+.footer-github:hover {
+  opacity: 1;
 }
 
 .dash-widget {
