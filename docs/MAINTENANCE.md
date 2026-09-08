@@ -2185,6 +2185,116 @@ the values were split on spaces, `ciężarówka → 'local shipping truck'` prod
 the bare term `local` and ranked `local_cafe` and `local_mall` above
 `local_shipping`, and `usuń` surfaced `close` ahead of `delete`.
 
+## External API (2026-09-05)
+
+Admin → System → API defines read-only API keys that expose table data to
+external services. The rules below are binding.
+
+### One config key, one endpoint, no client-supplied SQL surface
+
+- All definitions live in the `external_api` key of `spw_config`, shaped as
+  `{"apis": [{"id", "name", "enabled", "key_enc", "key_hash", "table",
+  "columns", "filters", "limit"}]}`. No new table, no migration; an unknown
+  key is ignored, so the document upgrades itself.
+- `public/api/external.php` is the only endpoint. It is **sessionless by
+  design** — it must not call `os_api_bootstrap()` (that requires a session) —
+  and boots with `os_register_exception_handler('json')` +
+  `send_security_headers()` + `Cache-Control: no-store` instead. It accepts
+  **nothing** from the client except the key: table, columns, filters and
+  limit all come from the config, so there is no request-supplied
+  table/column name to gate or inventory.
+- Auth is `Authorization: Bearer <key>` only — the `?key=<key>` query form is
+  deliberately not supported, so a key can never leak into access logs or a
+  `Referer` header. Keys are matched by `secret_hash()` (HMAC-SHA256 over the
+  key) + `hash_equals()` over every stored entry — constant-time and
+  deliberately not indexed, so a key lookup cannot be used as a timing oracle.
+  `key_hash` is the only lookup path; an entry whose `key_hash` is empty never
+  matches, and `api_save` backfills the hash from `key_enc` on the next save.
+  401 = missing/bad key,
+  403 = disabled, 404 = configured table gone, 429 = per-key rate limit
+  (`os_rate_limit_ok`, bucket `extapi_<hash>`) plus a per-IP limit
+  (`extapi_ip_<hash>`) enforced before the key is even resolved.
+- **The web server must forward the Authorization header to PHP.** Neither
+  nginx's `fastcgi_params` nor Apache's CGI environment passes it by default,
+  so `$_SERVER['HTTP_AUTHORIZATION']` would be empty and every call would 401.
+  The shipped configs carry the fix — `fastcgi_param HTTP_AUTHORIZATION
+  $http_authorization;` in `nginx.conf`, `nginx.standalone.conf` and both
+  `deploy/install*.sh` heredocs, and `SetEnvIf Authorization "(.*)"
+  HTTP_AUTHORIZATION=$1` in `public/.htaccess` — and any new deployment
+  template must keep it, or the endpoint silently breaks.
+- SQL is built from config only: identifiers through `pg_ident()`, filter
+  values through `pg_query_params()`. Filter operators are the fixed set
+  `eq/neq/gt/gte/lt/lte/contains` (`ApiConfigValidator::FILTER_OPERATORS` in
+  `includes/Service/ApiConfigValidator.php`); `contains` escapes `\ % _`
+  before ILIKE.
+- A key can only be bound to a table that is **not hidden and not a system
+  table** (`spw_` prefix). `ApiConfigValidator::validate()` rejects both on
+  save, and the endpoint re-checks them (defense in depth for hand-edited
+  config), answering 404 rather than exposing a hidden or system table.
+- Filter values are type-checked against the column's schema type on save
+  (`ApiConfigValidator`): `number` values must be whole numbers, `boolean`
+  values are normalised to `TRUE`/`FALSE`, `date` values must be a valid
+  `YYYY-MM-DD`, and `datetime` values must parse as a date with an optional
+  time. This keeps a stored filter from 500ing at query time under strict
+  mode (e.g. `"id" = 'abc'` on an `int4` column). The `contains` operator is
+  exempt because it casts the column to text before ILIKE.
+
+### Keys are secrets — the RAG convention applies
+
+Keys are stored encrypted (`key_enc` via `secret_encrypt`) and **never
+returned to the browser** after generation: `api_load` redacts them to a
+`key_configured` boolean, exactly like `ollama_api_key_enc` in
+`includes/admin/rag.php`. A new or regenerated key is generated server-side
+(`bin2hex(random_bytes(32))`) and returned **once** in the `api_save`
+response (`generated_keys`), shown in a modal. A submitted non-empty key is
+encrypted and stored; an empty field keeps the stored key. `api_save` also
+returns the redacted `apis` list so the client can adopt server-assigned ids.
+Alongside `key_enc`, `api_save` stores `key_hash` (`secret_hash()`, an
+HMAC-SHA256 of the key) so the endpoint can match keys without decrypting
+every entry; `key_hash` is redacted from `api_load` just like `key_enc`.
+
+### Admin wiring is the standard module pattern
+
+`includes/admin/api.php` guards `api_load`/`api_save`; both are registered in
+`$adminModules` and `api_save` in `$postActions` of `public/admin/api.php`
+(pinned by `AdminApiGuardsTest`/`AdminDispatchRegistryTest`). The tab is a
+full-page module (`public/admin/js/api.js`) like clickstats/etl: it is in
+`NON_CONFIG_TABS`, the full-page lists in `app.js`, and hides the global Save
+button. The module is a thin `$action` block that delegates to three service
+classes under `includes/Service/` (autoloaded as `App\Service\*`):
+`ApiConfigValidator` (name/table/columns/filters/limit validation plus filter
+type coercion), `ApiKeyManager` (encrypt/hash/generate/backfill keys) and
+`ApiConfigRepository` (load/redact/save orchestration and the `MAX_APIS`
+cap). Validation happens server-side: name required, table must exist in the
+schema config, columns and filter columns must exist in that table, limit
+clamped to 1–1000. The client-side pickers are convenience only — never
+trust them.
+
+### Deliberate gaps — do not "fix" without a design change
+
+- The endpoint is read-only and returns at most `limit` rows ordered by
+  `id DESC`; there is no pagination, no search and no per-user access scoping.
+  A key is a full read of the configured columns of its table — grant keys
+  only to services that should see that data. If per-user scoping is ever
+  wanted, it belongs in the endpoint (resolve the key to a user), not in the
+  admin module.
+- `ApiConfigValidator::validate()` reads `$api['table']` from the admin request
+  body; the `RequestScopeInventoryTest` scanner does not see it (same shape as
+  `$rule['table']` in `anonymization.php`), and it needs no inventory entry:
+  the module runs behind the admin-role gate and admins are never restricted.
+- **The number of APIs is capped at `ApiConfigRepository::MAX_APIS` (100).**
+  `api_save` rejects a payload with more than that many entries before
+  validating any of them, so `resolveApi()`'s linear scan over every stored
+  key stays bounded and a single admin cannot degrade every external call's
+  auth lookup.
+- **Empty filter values are dropped, never queried.** A filter row with an
+  empty `value` is skipped both on save (`ApiConfigValidator::validate()`) and
+  in the endpoint (defense in depth for hand-edited config). Querying it would
+  build `WHERE "id" = ''` and fail on integer/date columns with a 500 — the
+  first live test of the endpoint hit exactly that, because the UI adds an
+  empty filter row by default. Do not "fix" this by making empty values match
+  anything: an empty filter means "no filter".
+
 ## Where binding rules live
 
 This document is the authoritative, version-controlled home for binding UI and

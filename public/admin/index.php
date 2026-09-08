@@ -121,6 +121,7 @@ $navSections = [
         'icon'  => $navIcon('material/database.svg'),
         'items' => [
             ['file' => 'anonymization', 'label' => 'Anonymization', 'icon' => $navIcon('material/fact_check.svg')],
+            ['file' => 'api', 'label' => 'API', 'icon' => $navIcon('material/key.svg')],
             ['file' => 'backup', 'label' => 'Backup Tables', 'icon' => $navIcon('material/inventory.svg')],
             ['file' => 'clickstats', 'label' => 'Click Statistics', 'icon' => $navIcon('material/bar_chart.svg')],
             ['file' => 'cron', 'label' => 'Cron Notifications', 'icon' => $navIcon('material/notifications_active.svg')],
@@ -155,6 +156,7 @@ $breadcrumbLabels  = [
     'etl'           => 'ETL',
     'anonymization' => 'Data Anonymization',
     'print'         => 'Printouts',
+    'api'           => 'API',
 ];
 
 require __DIR__ . '/templates/header.php';

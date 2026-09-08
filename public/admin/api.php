@@ -73,6 +73,8 @@ $postActions = [
     'etl_save', 'run_etl', 'etl_purge_log', 'etl_test_connection', 'etl_preview',
     'etl_flow_save', 'run_etl_flow', 'etl_flow_purge_log',
     'clickstats_save', 'clickstats_purge_log',
+    'api_save',
+    'api_purge_log',
     'demo_install', 'demo_uninstall',
 ];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -112,6 +114,11 @@ $adminModules = [
     'clickstats_save' => 'clickstats',
     'clickstats_log' => 'clickstats',
     'clickstats_purge_log' => 'clickstats',
+    'api_load' => 'api',
+    'api_save' => 'api',
+    'api_stats' => 'api',
+    'api_log' => 'api',
+    'api_purge_log' => 'api',
     'init_db' => 'migrations',
     'migrations_list' => 'migrations',
     'users_list' => 'users',

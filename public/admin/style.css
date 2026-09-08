@@ -668,6 +668,15 @@ textarea.adm-input {
     cursor: default;
 }
 
+.adm-endpoint {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+}
+
 .w-60  { width: 60px;  }
 .w-64  { width: 64px;  }
 .w-70  { width: 70px;  }

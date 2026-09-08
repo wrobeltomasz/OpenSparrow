@@ -155,6 +155,7 @@ server {
         fastcgi_index index.php;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTP_AUTHORIZATION $http_authorization;
         fastcgi_intercept_errors on;
         fastcgi_hide_header X-Powered-By;
         fastcgi_read_timeout 600;

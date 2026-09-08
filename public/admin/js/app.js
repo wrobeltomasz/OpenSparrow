@@ -31,6 +31,7 @@ const PAGE_MODULES = {
     views:         () => import('./views_editor.js').then(imported => imported.renderViewsEditor),
     user_records:  () => import('./user_records_editor.js').then(imported => imported.renderUserRecordsEditor),
     clickstats:    () => import('./clickstats.js').then(imported => imported.renderClickstatsPage),
+    api:           () => import('./api.js').then(imported => imported.renderApiPage),
 };
 
 let currentConfig = null;
@@ -47,7 +48,7 @@ const workspaceElement = document.getElementById('editorForm');
 const buttonSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
-const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization', 'clickstats']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization', 'clickstats', 'api']);
 
 const NON_CONFIG_SCHEMA_KEYS = new Set(['MENU_PREVIEW', 'ADD_TABLE', 'M2M_BUILDER', 'SCHEMA_MAP']);
 
@@ -199,7 +200,7 @@ function getColumnMeta(tableName, columnName) {
 
 async function loadConfigFile(fileName) {
     activeSaveHandler = null;
-    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print' || fileName === 'clickstats') {
+    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print' || fileName === 'clickstats' || fileName === 'api') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
@@ -385,7 +386,7 @@ function renderSidebar() {
         'overview', 'security', 'health', 'docs', 'users', 'backup',
         'migrations', 'performance', 'cron',
         'demo', 'settings', 'csv_import', 'rag', 'views', 'etl', 'anonymization', 'print',
-        'user_records', 'clickstats',
+        'user_records', 'clickstats', 'api',
     ]);
 
     if (fullPageTabs.has(currentFile)) {
@@ -861,7 +862,7 @@ function renderEditor(key, itemData, isArray) {
     workspaceElement.innerHTML = '';
     const context = { workspaceEl: workspaceElement, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
 
-    if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization', 'clickstats'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER' || key === 'SCHEMA_MAP'))) {
+    if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization', 'clickstats', 'api'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER' || key === 'SCHEMA_MAP'))) {
         buttonSave.style.display = 'none';
     } else {
         buttonSave.style.display = 'inline-block';

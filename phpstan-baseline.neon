@@ -4,6 +4,12 @@ parameters:
 			message: '#^Variable \$action might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
+			path: includes/admin/api.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
 			path: includes/admin/anonymization.php
 
 		-

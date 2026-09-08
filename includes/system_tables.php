@@ -484,3 +484,32 @@ function system_tables_clickstats_ddl(callable $ident): array
         "COMMENT ON COLUMN $clickstatsTable.record_id IS 'Record in context when the click happened, or NULL.'",
     ];
 }
+
+function system_tables_external_api_log_ddl(callable $ident): array
+{
+    $externalApiLogTable = $ident('external_api_log');
+
+    return [
+        "CREATE TABLE IF NOT EXISTS $externalApiLogTable (
+            id bigserial NOT NULL,
+            api_id varchar(64) NOT NULL DEFAULT '',
+            api_name varchar(255) NOT NULL DEFAULT '',
+            table_name varchar(100) NULL,
+            status varchar(20) NOT NULL DEFAULT 'ok',
+            rows_returned int4 NULL,
+            duration_ms int4 NULL,
+            created_at timestamp DEFAULT now() NOT NULL,
+            CONSTRAINT spw_external_api_log_pkey PRIMARY KEY (id)
+        )",
+        "CREATE INDEX IF NOT EXISTS idx_spw_external_api_log_created ON $externalApiLogTable (created_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_spw_external_api_log_api ON $externalApiLogTable (api_id, created_at DESC)",
+        "COMMENT ON TABLE $externalApiLogTable IS 'Usage log of the External API endpoint (public/api/external.php). One row per successful authenticated request.'",
+        "COMMENT ON COLUMN $externalApiLogTable.api_id IS 'Identifier of the API definition that served the request.'",
+        "COMMENT ON COLUMN $externalApiLogTable.api_name IS 'API name captured at request time; survives later renames.'",
+        "COMMENT ON COLUMN $externalApiLogTable.table_name IS 'Table the API is bound to, captured at request time.'",
+        "COMMENT ON COLUMN $externalApiLogTable.status IS 'ok for a successful request; error rows are not recorded.'",
+        "COMMENT ON COLUMN $externalApiLogTable.rows_returned IS 'Number of rows returned to the caller.'",
+        "COMMENT ON COLUMN $externalApiLogTable.duration_ms IS 'End-to-end request duration in milliseconds.'",
+        "COMMENT ON COLUMN $externalApiLogTable.created_at IS 'Request time.'",
+    ];
+}

@@ -21,3 +21,10 @@ Options -Indexes
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-XSS-Protection "1; mode=block"
 </IfModule>
+
+# Pass the Authorization header through to PHP (External API keys).
+# Apache strips it from the CGI environment by default, so without this
+# public/api/external.php would always answer 401.
+<IfModule mod_setenvif.c>
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+</IfModule>

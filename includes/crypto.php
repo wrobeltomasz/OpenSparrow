@@ -35,3 +35,8 @@ function secret_decrypt(string $encoded): ?string
     $plaintext  = @openssl_decrypt($ciphertext, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $initializationVector, $tag);
     return $plaintext === false ? null : $plaintext;
 }
+
+function secret_hash(string $plaintext): string
+{
+    return hash_hmac('sha256', $plaintext, APP_ENCRYPTION_KEY);
+}

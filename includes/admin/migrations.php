@@ -63,6 +63,10 @@ if ($action === 'init_db') {
                 static fn(string $tableName): string => sys_table($tableName)
             ),
 
+            '3.6_external_api_log' => system_tables_external_api_log_ddl(
+                static fn(string $tableName): string => sys_table($tableName)
+            ),
+
         ];
 
         $applied_count = 0;
@@ -149,6 +153,7 @@ if ($action === 'migrations_list') {
             '3.1_notes_reminder_time',
             '3.3_user_contact',
             '3.3_clickstats',
+            '3.6_external_api_log',
         ];
 
         $appliedResult = @pg_query($conn, "SELECT name, applied_at FROM $migrationsTable ORDER BY applied_at ASC");

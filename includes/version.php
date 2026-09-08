@@ -8,5 +8,5 @@
 declare(strict_types=1);
 
 if (!defined('OPENSPARROW_VERSION')) {
-    define('OPENSPARROW_VERSION', '3.5');
+    define('OPENSPARROW_VERSION', '3.6');
 }

@@ -119,5 +119,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds a language selector to the login page so users can pick their locale before signing in. The notes UI strings are now translated into all 19 locales. The notifications dropdown shows a timestamp on each item and its panel is unified with the bp-panel style. Edit and create forms gain searchable foreign-key pickers (fk-search.js) instead of a plain select. A GitHub link is added to the footer, and the #debug bar no longer flashes before JS hides it on page load. No database migration and no configuration keys are removed by this release."
+    },
+    "3.6": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Adds an External API module (Admin -> System -> API): admins define read-only API keys, each bound to one schema table with a chosen column set, fixed server-side filters and a row limit. The configuration lives in the spw_config external_api key; keys are stored encrypted (key_enc) plus an HMAC key_hash for constant-time lookup, and are never returned to the browser after generation. External services call public/api/external.php with the key as an Authorization: Bearer header and receive JSON rows; the endpoint accepts no table, column or filter names from the client, refuses hidden and system tables, is rate-limited per key and per IP, and answers 401/403/404/429. No database migration and no configuration keys are removed by this release."
     }
 }

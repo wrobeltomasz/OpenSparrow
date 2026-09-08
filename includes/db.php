@@ -98,10 +98,20 @@ function sys_schema(): string
     return $schema;
 }
 
+function sys_table_prefix(): string
+{
+    return 'spw_';
+}
+
+function is_system_table(string $table): bool
+{
+    return str_starts_with($table, sys_table_prefix());
+}
+
 function sys_table(string $name): string
 {
     $schema = sys_schema();
-    $table = 'spw_' . $name;
+    $table = sys_table_prefix() . $name;
     $quote = static fn(string $identifier): string => '"' . str_replace('"', '""', $identifier) . '"';
     return $quote($schema) . '.' . $quote($table);
 }

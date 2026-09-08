@@ -409,6 +409,17 @@ ${_ul([
     `<strong>${strings.s9q_labels_label}:</strong> ${strings.s9q_labels}`
 ])}
 
+${_h3('doc-9r', strings.s9r_head)}
+${paragraphHtml(strings.s9r_desc)}
+${_ul([
+    `<strong>${strings.s9r_what_label}:</strong> ${strings.s9r_what}`,
+    `<strong>${strings.s9r_key_label}:</strong> ${strings.s9r_key}`,
+    `<strong>${strings.s9r_filters_label}:</strong> ${strings.s9r_filters}`,
+    `<strong>${strings.s9r_response_label}:</strong> ${strings.s9r_response}`,
+    `<strong>${strings.s9r_errors_label}:</strong> ${strings.s9r_errors}`,
+    `<strong>${strings.s9r_scope_label}:</strong> ${strings.s9r_scope}`
+])}
+
 ${_h3('doc-10', strings.s10_head)}
 ${paragraphHtml(strings.s10_desc)}
 ${_ul([

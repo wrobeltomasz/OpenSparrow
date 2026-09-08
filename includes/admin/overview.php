@@ -144,6 +144,7 @@ if ($action === 'overview') {
             '3.1_notes_reminder_time',
             '3.3_user_contact',
             '3.3_clickstats',
+            '3.6_external_api_log',
         ];
         $pendingMigrations = count(array_filter(
             $knownMigrations,
