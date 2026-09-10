@@ -298,11 +298,12 @@ function ragBuildDocumentsTab(panel) {
     panel.appendChild(listCard);
 
     const tableWrap = document.createElement('div');
-    tableWrap.style.cssText = 'overflow-x:auto;';
+    tableWrap.style.cssText = 'overflow-x:auto;max-width:100%;';
     listBody.appendChild(tableWrap);
 
     const table = document.createElement('table');
     table.className = 'adm-tbl';
+    table.style.minWidth = 'max-content';
     const thead = table.createTHead();
     const headerElement   = thead.insertRow();
     ['Filename', 'Tags', 'Size', 'Chunks', 'Uploaded', 'Actions'].forEach(column => {
@@ -430,7 +431,7 @@ function ragBuildDocumentsTab(panel) {
             const td6 = row.insertCell();
             td6.style.cssText = tdStyle + 'white-space:nowrap;';
             const buttonGroup = document.createElement('div');
-            buttonGroup.style.cssText = 'display:flex;gap:6px;';
+            buttonGroup.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
 
             const previewButton = document.createElement('button');
             previewButton.type = 'button';
