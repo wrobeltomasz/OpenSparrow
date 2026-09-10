@@ -1185,13 +1185,16 @@ function ragBuildAggregateViewsCard(panel) {
             td2.textContent   = viewName;
 
             const td3 = row.insertCell();
-            td3.style.cssText = tdStyle;
+            td3.style.cssText = tdStyle + 'white-space:nowrap;';
+            const buttonGroup = document.createElement('div');
+            buttonGroup.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
             const removeButton = document.createElement('button');
             removeButton.type = 'button';
             removeButton.textContent = 'Remove';
             removeButton.className = 'btn btn-danger btn-xs';
             removeButton.addEventListener('click', () => saveMapping(tableName, '', removeButton));
-            td3.appendChild(removeButton);
+            buttonGroup.appendChild(removeButton);
+            td3.appendChild(buttonGroup);
         });
     }
 

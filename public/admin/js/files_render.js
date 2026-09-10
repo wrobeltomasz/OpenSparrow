@@ -387,8 +387,10 @@ function renderTable(files) {
             </td>
             <td class="adm-td">${escHtml(fileEntry.uploaded_by_username || '-')}</td>
             <td class="adm-td" style="white-space:nowrap">${formatDate(fileEntry.created_at)}</td>
-            <td class="adm-td">
-                <button class="btn btn-danger btn-xs" data-del="${escHtml(fileEntry.uuid)}" data-name="${escHtml(fileEntry.display_name || fileEntry.name)}">Del</button>
+            <td class="adm-td" style="white-space:nowrap;">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <button class="btn btn-danger btn-xs" data-del="${escHtml(fileEntry.uuid)}" data-name="${escHtml(fileEntry.display_name || fileEntry.name)}">Del</button>
+                </div>
             </td>
         </tr>
     `).join('');
