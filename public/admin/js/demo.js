@@ -158,7 +158,7 @@ function renderInstallForm(workspaceElement, { snapshotsLockedByEnv: snapshotsLo
     const ragOption = buildInstallOption({
         id:    'demo-rag-docs-chk',
         label: 'RAG knowledge base',
-        help:  'Loads nine sample documents describing this demo into RAG Documents, so the Ask AI '
+        help:  'Loads nine sample documents describing this demo into Centrum AI, so the Ask AI '
             + 'panel can answer questions about the CRM data. Installing them is pure SQL and needs '
             + 'no network; only answering a question later requires Ollama. Leave it off if you do '
             + 'not plan to use Ask AI — the Ask AI panel will then return nothing.',

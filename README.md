@@ -101,7 +101,7 @@ The personal modules — My Notes, My Records and My Comments — are managed fr
 - **Workflows builder** — multi-step wizards linking parent/child records across tables. Each step can also upload an image or call a PostgreSQL stored procedure, so server-side logic runs as part of the wizard.
 - **File management** — per-record attachments with tagging and search, configurable via the admin panel.
 - **WCAG 2.1 focus** — accessibility-oriented UI.
-- **AI Knowledge Base (RAG)** — upload `.txt` documents to a local knowledge base, then query them through a built-in chat interface powered by a local [Ollama](https://ollama.com) model. Retrieval uses PostgreSQL full-text search. Available to all authenticated users; managed by admins from the **Knowledge Base** tab. No cloud API required.
+- **AI Knowledge Base (RAG)** — upload `.txt` documents to a local knowledge base, then query them through a built-in chat interface powered by a local [Ollama](https://ollama.com) model. Retrieval uses PostgreSQL full-text search. Available to all authenticated users; managed by admins from the **Centrum AI** tab. No cloud API required.
 - **Automations** — rule-based triggers on record create/update/delete with nested AND/OR conditions, change detection, and template variables. Actions can update the record, notify users, create a related record, queue an email, or call an outbound webhook. Configured from the admin panel — split into **Record Automations** (in-app actions) and **n8n Automations** (outbound webhooks) — with a per-rule run history.
 - **Record comments** — threaded comments per record (`spw_comments`) with audit trail, shown as a grid badge and an Edit-form tab.
 - **Private notes** — a personal notepad in the user menu (`spw_notes`), visible only to its author, optionally linked to a record and carrying a reminder date **and time**, delivered by the notification cron once that moment has passed.
@@ -327,7 +327,7 @@ All variables are read by `includes/config.php` on every request — the single 
 
 | Variable | Default | Description |
 |---|---|---|
-| `OLLAMA_URL` | `http://localhost:11434` | Base URL of the Ollama endpoint — either a local instance (the default) or **Ollama Cloud** (`https://api.ollama.com`) for the hosted tier. Used by `api/rag.php` and admin RAG actions. The Ollama Cloud API key is not an env var: set it in **Knowledge Base → RAG Documents → Global Settings**, where it is stored encrypted (`ollama_api_key_enc`) and never returned to the browser. |
+| `OLLAMA_URL` | `http://localhost:11434` | Base URL of the Ollama endpoint — either a local instance (the default) or **Ollama Cloud** (`https://api.ollama.com`) for the hosted tier. Used by `api/rag.php` and admin RAG actions. The Ollama Cloud API key is not an env var: set it in **AI → Centrum AI → Global Settings**, where it is stored encrypted (`ollama_api_key_enc`) and never returned to the browser. |
 | `OLLAMA_MODEL` | `llama3` | Default Ollama model for RAG queries. Overridden by the `rag` configuration if present. |
 
 ---

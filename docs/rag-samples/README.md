@@ -1,7 +1,7 @@
 # RAG Sample Documents
 
 Sample `.txt` knowledge-base files for the OpenSparrow RAG module, describing the
-**CRM demo app** (Admin → Demo Data). Upload via **Admin → RAG Documents**.
+**CRM demo app** (Admin → Demo Data). Upload via **Admin → Centrum AI**.
 
 | File | Tag | Contents |
 |------|-----|----------|
@@ -30,10 +30,10 @@ own.
 
 ## Usage
 
-1. Go to **Admin → RAG Documents → Documents tab**
+1. Go to **Admin → Centrum AI → Documents tab**
 2. Upload each `.txt` file
 3. Enter the tag from the table above (one tag per file)
 4. Click **Upload**
 
 Requires Ollama running locally. Configure URL and model in
-**Admin → RAG Documents → Settings tab**.
+**Admin → Centrum AI → Settings tab**.

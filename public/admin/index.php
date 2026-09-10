@@ -110,10 +110,10 @@ $navSections = [
         ],
     ],
     [
-        'label' => 'Knowledge Base',
+        'label' => 'AI',
         'icon'  => $navIcon('material/menu_book.svg'),
         'items' => [
-            ['file' => 'rag', 'label' => 'RAG Documents', 'icon' => $navIcon('material/docs.svg')],
+            ['file' => 'rag', 'label' => 'Centrum AI', 'icon' => $navIcon('material/docs.svg')],
         ],
     ],
     [
@@ -151,7 +151,7 @@ $breadcrumbLabels  = [
     'cron'          => 'Cron Notifications',
     'views'         => 'Views',
     'csv_import'    => 'CSV Import',
-    'rag'           => 'RAG Documents',
+    'rag'           => 'Centrum AI',
     'automations'   => 'Automations',
     'etl'           => 'ETL',
     'anonymization' => 'Data Anonymization',

@@ -531,7 +531,7 @@ function ragFormatModelSize(bytes) {
 function ragBuildSettingsTab(panel) {
     const { card: chatCard, body: chatBody } = ragCard(
         'Frontend Chat',
-        'Controls whether the AI chat interface is visible to users on the Knowledge Base page.'
+        'Controls whether the AI chat interface is visible to users on the Centrum AI page.'
     );
     panel.appendChild(chatCard);
 
@@ -736,8 +736,11 @@ function ragBuildSettingsTab(panel) {
     const otherGrid = document.createElement('div');
     otherGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:16px;';
     const { group: ctxGroup,     inp: ctxInput }     = ragField('Max context files', 'rag-max-ctx', '3');
+    ctxInput.title = 'Maximum number of documents retrieved and included in the prompt (1-20). Higher values add more context but increase token usage and latency.';
     const { group: sizeGroup,    inp: sizeInput }    = ragField('Max file size (MB)', 'rag-max-size', '10');
+    sizeInput.title = 'Maximum size of an uploaded .txt document (1-100 MB). Larger files are rejected at upload.';
     const { group: timeoutGroup, inp: timeoutInput } = ragField('Ollama timeout (s)', 'rag-timeout', '120');
+    timeoutInput.title = 'Maximum time to wait for an Ollama response (10-600 s). Increase for large models or slow hardware.';
     const { group: memGroup,     inp: memInput }     = ragField('Conversation memory (turns)', 'rag-conv-turns', '0');
     memInput.title = '0 = disabled; max 10. Each turn = one user question + one assistant reply.';
     const { group: aggGroup, inp: aggInput } = ragField('Aggregate view rows', 'rag-agg-limit', '100');

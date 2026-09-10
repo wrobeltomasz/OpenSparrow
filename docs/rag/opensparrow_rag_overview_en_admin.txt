@@ -24,7 +24,7 @@ all prefixed spw_.
 
 
 Navigation sections (collapsible left sidebar): Overview, Data Management, Workflows,
-Knowledge Base, System. A Docs button in the header opens built-in searchable documentation
+AI, System. A Docs button in the header opens built-in searchable documentation
 (Getting Started / Schema / Grid Features / Admin Panel / Troubleshooting).
 
 
@@ -186,9 +186,9 @@ Automations:
     status (ok / error / skipped), error message; stored in spw_automation_runs
 
 
-KNOWLEDGE BASE
---------------
-RAG Documents:
+AI
+--
+Centrum AI:
   - Upload .txt documents (drag & drop) with comma-separated tags; convert PDF/Word
     to plain text before uploading
   - File list: name, size, tags, date; delete, retag, search by name or tag
