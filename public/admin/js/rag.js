@@ -6,6 +6,7 @@
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 import { showStatusPill } from './app.js';
+import { buildModal } from './ui.js';
 
 function ragCard(title, description) {
     const card = document.createElement('div');
@@ -304,7 +305,7 @@ function ragBuildDocumentsTab(panel) {
     table.className = 'adm-tbl';
     const thead = table.createTHead();
     const headerElement   = thead.insertRow();
-    ['Filename', 'Tags', 'Size', 'Chunks', 'Uploaded', ''].forEach(column => {
+    ['Filename', 'Tags', 'Size', 'Chunks', 'Uploaded', 'Actions'].forEach(column => {
         const th = document.createElement('th');
         th.textContent = column;
         th.className = 'adm-th';
@@ -427,9 +428,52 @@ function ragBuildDocumentsTab(panel) {
             td5.textContent   = ragFormatDate(file.created_at);
 
             const td6 = row.insertCell();
-            td6.style.cssText = tdStyle;
+            td6.style.cssText = tdStyle + 'white-space:nowrap;';
             const buttonGroup = document.createElement('div');
             buttonGroup.style.cssText = 'display:flex;gap:6px;';
+
+            const previewButton = document.createElement('button');
+            previewButton.type = 'button';
+            previewButton.textContent = 'Preview';
+            previewButton.className = 'btn btn-secondary btn-xs';
+            previewButton.addEventListener('click', async () => {
+                previewButton.disabled = true;
+                try {
+                    const response = await apiFetch('api.php?action=rag_view&id=' + encodeURIComponent(file.id));
+                    const payload = await response.json();
+                    if (payload.status !== 'success' || !payload.document) {
+                        showStatusPill(previewButton, 'Preview failed: ' + (payload.error ?? 'Unknown error'), 'error');
+                        return;
+                    }
+                    const documentData = payload.document;
+                    const modal = buildModal({ title: documentData.filename });
+                    modal.box.style.width = 'min(880px, 92vw)';
+                    modal.saveBtn.remove();
+                    modal.cancelBtn.textContent = 'Close';
+                    const content = String(documentData.content ?? '');
+                    const maxChars = 200000;
+                    const truncated = content.length > maxChars;
+                    const shown = truncated ? content.slice(0, maxChars) : content;
+                    const previewBox = document.createElement('pre');
+                    previewBox.style.cssText = 'margin:0;padding:12px;background:var(--bg);border:1px solid var(--border);'
+                        + 'border-radius:4px;line-height:1.6;white-space:pre-wrap;word-break:break-word;'
+                        + 'max-height:60vh;overflow-y:auto;font-size:13px;';
+                    previewBox.textContent = shown;
+                    modal.body.appendChild(previewBox);
+                    if (truncated) {
+                        const note = document.createElement('p');
+                        note.style.cssText = 'margin:10px 0 0;font-style:italic;';
+                        note.textContent = 'Showing first ' + maxChars.toLocaleString() + ' of '
+                            + content.length.toLocaleString() + ' characters.';
+                        modal.body.appendChild(note);
+                    }
+                } catch (error) {
+                    showStatusPill(previewButton, 'Request failed: ' + error.message, 'error');
+                } finally {
+                    previewButton.disabled = false;
+                }
+            });
+            buttonGroup.appendChild(previewButton);
 
             const rechunkButton = document.createElement('button');
             rechunkButton.type = 'button';

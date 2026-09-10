@@ -42,6 +42,36 @@ if ($action === 'rag_list') {
     throw ResponseException::sent();
 }
 
+if ($action === 'rag_view' && os_request()->method() === 'GET') {
+    try {
+        require_once __DIR__ . '/../../includes/db.php';
+        $conn = db_connect();
+        $ragFilesTable = sys_table('rag_files');
+        $id = (int) os_request()->query('id', '0');
+        if ($id <= 0) {
+            throw new AdminApiMessage('Invalid document ID.');
+        }
+        $queryResult = @pg_query_params(
+            $conn,
+            "SELECT id, filename, content, tags, file_size, created_at FROM {$ragFilesTable} WHERE id = \$1",
+            [$id]
+        );
+        if (!$queryResult) {
+            admin_db_fail($conn, 'rag_view');
+        }
+        $row = pg_fetch_assoc($queryResult);
+        if (!$row) {
+            throw new AdminApiMessage('Document not found.');
+        }
+        echo json_encode(['status' => 'success', 'document' => $row]);
+    } catch (ControlFlowException $signal) {
+        throw $signal;
+    } catch (Throwable $exception) {
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
+    }
+    throw ResponseException::sent();
+}
+
 if ($action === 'rag_upload') {
     require_not_demo();
     try {

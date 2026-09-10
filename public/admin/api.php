@@ -190,6 +190,7 @@ $adminModules = [
     'etl_flow_log' => 'etl_flow',
     'etl_flow_purge_log' => 'etl_flow',
     'rag_list' => 'rag',
+    'rag_view' => 'rag',
     'rag_upload' => 'rag',
     'rag_delete' => 'rag',
     'rag_rechunk' => 'rag',
