@@ -489,7 +489,8 @@ function ragBuildDocumentsTab(panel) {
                     });
                     const payload = await response.json();
                     if (payload.status === 'success') {
-                        await loadFiles();
+                        ragStatusPill(rechunkButton, 'Document re-chunked.', 'success');
+                        setTimeout(loadFiles, 1500);
                     } else {
                         showStatusPill(rechunkButton, 'Re-chunk failed: ' + (payload.error ?? 'Unknown error'), 'error');
                         rechunkButton.disabled = false;
