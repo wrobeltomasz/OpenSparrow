@@ -365,7 +365,7 @@ export async function renderCsvImportPage(context) {
 
     function addLimitRow(label, value, note) {
         const labelElement = document.createElement('span');
-        labelElement.style.cssText = 'color:var(--muted);font-weight:600;white-space:nowrap;';
+        labelElement.style.cssText = 'color:var(--muted);font-weight:var(--font-weight-bold);white-space:nowrap;';
         labelElement.textContent = label;
         const valueElement = document.createElement('span');
         valueElement.style.cssText = 'font-family:var(--font-mono);color:var(--text);';
@@ -928,7 +928,7 @@ export async function renderCsvImportPage(context) {
         resultElement.style.cssText = `padding:18px 20px;border-radius:8px;background:${backgroundColor};border:1px solid ${borderStyle};margin-bottom:8px;`;
 
         const title = document.createElement('div');
-        title.style.cssText = `font-weight:700;margin-bottom:8px;color:${hasNoSkippedRows ? 'var(--ok)' : 'var(--muted)'};`;
+        title.style.cssText = `font-weight:var(--font-weight-bold);margin-bottom:8px;color:${hasNoSkippedRows ? 'var(--ok)' : 'var(--muted)'};`;
         title.textContent = hasNoSkippedRows
             ? `✓ Import complete`
             : `⚠ Import finished with issues`;
@@ -1303,7 +1303,7 @@ function buildRow() {
 
 function buildLabel(text) {
     const labelElement = document.createElement('label');
-    labelElement.style.cssText = 'font-weight:600;color:var(--muted);';
+    labelElement.style.cssText = 'font-weight:var(--font-weight-bold);color:var(--muted);';
     labelElement.textContent = text;
     return labelElement;
 }

@@ -30,7 +30,7 @@ function createColumnMultiSelect(labelText, options, selectedValues, onChange) {
     } else {
         options.forEach(option => {
             const labelElement = document.createElement('label');
-            labelElement.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
+            labelElement.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:var(--font-weight-normal);';
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -101,7 +101,7 @@ export function renderBoardEditor(key, itemData, isArray, context) {
                 const previewWrap = document.createElement('div');
                 previewWrap.style.cssText = 'margin:-4px 0 18px;';
                 const labelElement = document.createElement('label');
-                labelElement.style.cssText = 'display:block; font-weight:600; margin-bottom:6px; color:var(--text);';
+                labelElement.style.cssText = 'display:block; font-weight:var(--font-weight-bold); margin-bottom:6px; color:var(--text);';
                 labelElement.textContent = 'Lane preview';
                 previewWrap.appendChild(labelElement);
 

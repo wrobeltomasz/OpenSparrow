@@ -33,7 +33,7 @@ export function renderSchemaGlobalSettings(config, context) {
     const labelWrap = document.createElement('div');
     labelWrap.style.flex = '1';
     const labelElement = document.createElement('label');
-    labelElement.style.cssText = 'display:block; font-weight:600;  margin-bottom:4px;';
+    labelElement.style.cssText = 'display:block; font-weight:var(--font-weight-bold);  margin-bottom:4px;';
     labelElement.textContent = 'Default Page Size';
     const hint = document.createElement('span');
     hint.style.cssText = ' ';
@@ -159,7 +159,7 @@ function buildDefaultSortUI(tableData) {
     wrapper.style.cssText = 'margin-bottom:15px;';
 
     const label = document.createElement('label');
-    label.style.cssText = 'display:block;   margin-bottom:6px; font-weight:600;';
+    label.style.cssText = 'display:block;   margin-bottom:6px; font-weight:var(--font-weight-bold);';
     label.textContent = 'Default Sort Order';
     wrapper.appendChild(label);
 
@@ -566,7 +566,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
             columnsContainer.style.cssText = 'margin-top:4px;';
 
             const columnsLabel = document.createElement('label');
-            columnsLabel.style.cssText = 'font-weight:600;display:block;margin-bottom:6px;';
+            columnsLabel.style.cssText = 'font-weight:var(--font-weight-bold);display:block;margin-bottom:6px;';
             columnsLabel.textContent = 'Source Columns (in order)';
             columnsContainer.appendChild(columnsLabel);
 

@@ -90,7 +90,7 @@ function buildApiCard(api, index, redraw, status) {
     keyInput.oninput = () => { api.key = keyInput.value; };
 
     const keyStatus = el('p', 'c-muted');
-    keyStatus.style.cssText = 'margin:4px 0 12px; font-size:12px;';
+    keyStatus.style.cssText = 'margin:4px 0 12px; font-size:var(--font-size-sm);';
     function renderKeyStatus() {
         const shownKey = shownKeys[api.id];
         if (shownKey) {
@@ -233,7 +233,7 @@ function buildApiCard(api, index, redraw, status) {
     };
 
     const keyNote = el('p', 'c-muted', 'Send the key as "Authorization: Bearer <key>". The key is stored encrypted and is never shown again after it is generated.');
-    keyNote.style.cssText = 'margin:4px 0 12px; font-size:12px;';
+    keyNote.style.cssText = 'margin:4px 0 12px; font-size:var(--font-size-sm);';
 
     body.append(
         fg('Name', name),
@@ -418,8 +418,8 @@ function statCard(label, value) {
     const card = el('div', 'adm-sec-card');
     card.style.cssText = 'flex:1; min-width:160px;';
     const body = el('div', 'adm-sec-body');
-    body.appendChild(el('div', 'c-muted', label)).style.cssText = 'font-size:12px;';
-    body.appendChild(el('div', '', value)).style.cssText = 'font-size:22px; font-weight:600;';
+    body.appendChild(el('div', 'c-muted', label)).style.cssText = 'font-size:var(--font-size-sm);';
+    body.appendChild(el('div', '', value)).style.cssText = 'font-size:var(--font-size-lg); font-weight:var(--font-weight-bold);';
     card.appendChild(body);
     return card;
 }

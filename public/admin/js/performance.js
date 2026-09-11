@@ -83,7 +83,7 @@ function setBodyError(body, messageElement) {
 function setBodyEmpty(body, messageElement) {
     body.replaceChildren();
     const paragraph = document.createElement('p');
-    paragraph.style.cssText = 'color:var(--ok); font-weight:600;  margin:0;';
+    paragraph.style.cssText = 'color:var(--ok); font-weight:var(--font-weight-bold);  margin:0;';
     paragraph.textContent = '✓ ' + messageElement;
     body.appendChild(paragraph);
 }
@@ -119,7 +119,7 @@ function renderIndexAdvisor(body, data) {
         group.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px; overflow:hidden;';
 
         const groupHeader = document.createElement('div');
-        groupHeader.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono);  font-weight:600;';
+        groupHeader.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono);  font-weight:var(--font-weight-bold);';
         const ghText = document.createElement('span');
         ghText.textContent = tableKey;
         groupHeader.appendChild(ghText);
@@ -132,7 +132,7 @@ function renderIndexAdvisor(body, data) {
         rows.forEach(suggestion => {
             const tr = tbody.insertRow();
             tr.appendChild(tdEl(severityBadge(suggestion.priority)));
-            tr.appendChild(td(suggestion.column, 'font-family:var(--font-mono); font-weight:600;'));
+            tr.appendChild(td(suggestion.column, 'font-family:var(--font-mono); font-weight:var(--font-weight-bold);'));
             tr.appendChild(td(suggestion.reasons.join(' · ')));
             const codeTd = document.createElement('td');
             codeTd.style.cssText = 'padding:8px 12px; border-bottom:1px solid var(--border); max-width:340px;';
@@ -215,7 +215,7 @@ function renderSlowQueries(body, data) {
         const tr = tbody.insertRow();
         const avgMs = parseFloat(suggestionRow.mean_ms);
         const color = avgMs > 500 ? 'var(--error)' : avgMs > 100 ? 'var(--muted)' : 'inherit';
-        tr.appendChild(td(suggestionRow.mean_ms + ' ms', `font-weight:600; color:${color};`));
+        tr.appendChild(td(suggestionRow.mean_ms + ' ms', `font-weight:var(--font-weight-bold); color:${color};`));
         tr.appendChild(td(suggestionRow.total_ms + ' ms'));
         tr.appendChild(td(suggestionRow.calls));
         tr.appendChild(td(suggestionRow.calls > 0 ? Math.round(suggestionRow.rows / suggestionRow.calls) : '—'));
@@ -255,7 +255,7 @@ function renderTableStatistics(body, data) {
         tr.appendChild(td(suggestionRow.tablename));
         tr.appendChild(td(Number(suggestionRow.estimated_rows).toLocaleString()));
         tr.appendChild(td(Number(suggestionRow.n_dead_tup).toLocaleString()));
-        tr.appendChild(td(suggestionRow.dead_pct + '%', `font-weight:600; color:${bloatColor};`));
+        tr.appendChild(td(suggestionRow.dead_pct + '%', `font-weight:var(--font-weight-bold); color:${bloatColor};`));
         tr.appendChild(td(seqScan.toLocaleString(), `color:${scanColor};`));
         tr.appendChild(td(indexScan.toLocaleString()));
         tr.appendChild(td(suggestionRow.total_size));
@@ -285,7 +285,7 @@ function renderDbHealth(body, data) {
         const card = document.createElement('div');
         card.style.cssText = 'border:1px solid var(--border); border-radius:6px; padding:14px 16px;';
         const valueDiv = document.createElement('div');
-        valueDiv.style.cssText = ` font-weight:700; color:${color};`;
+        valueDiv.style.cssText = ` font-weight:var(--font-weight-bold); color:${color};`;
         valueDiv.textContent = value;
         const labelDiv = document.createElement('div');
         labelDiv.style.cssText = '  margin-top:2px;';
@@ -354,7 +354,7 @@ function renderSchemaWarnings(body, data) {
         const tr = tbody.insertRow();
         tr.appendChild(tdEl(severityBadge(warning.severity)));
         tr.appendChild(td(warning.category, 'white-space:nowrap;'));
-        tr.appendChild(td(warning.display || warning.table, 'font-weight:600; white-space:nowrap;'));
+        tr.appendChild(td(warning.display || warning.table, 'font-weight:var(--font-weight-bold); white-space:nowrap;'));
         tr.appendChild(td(warning.message));
     });
     tableElement.appendChild(tbody);

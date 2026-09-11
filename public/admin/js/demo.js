@@ -140,7 +140,7 @@ function renderInstallForm(workspaceElement, { snapshotsLockedByEnv: snapshotsLo
 
     const confirmLabel = document.createElement('label');
     confirmLabel.textContent = 'Type CONFIRM to proceed:';
-    confirmLabel.style.cssText = 'display:block;font-weight:600;margin-top:16px;';
+    confirmLabel.style.cssText = 'display:block;font-weight:var(--font-weight-bold);margin-top:16px;';
 
     const confirmInput = document.createElement('input');
     confirmInput.type        = 'text';
@@ -315,7 +315,7 @@ function renderInstalled(workspaceElement, meta) {
 
     const labelElement = document.createElement('label');
     labelElement.textContent = 'Type CONFIRM to uninstall:';
-    labelElement.style.cssText = 'display:block;font-weight:600;margin-top:16px;';
+    labelElement.style.cssText = 'display:block;font-weight:var(--font-weight-bold);margin-top:16px;';
 
     const confirmInput = document.createElement('input');
     confirmInput.type        = 'text';

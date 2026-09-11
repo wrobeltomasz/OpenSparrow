@@ -285,7 +285,7 @@ export function renderPrintEditor(context) {
 
         const variablesLabel = document.createElement('label');
         variablesLabel.textContent = 'Available variables (columns of the view)';
-        variablesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
+        variablesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:var(--font-weight-bold);  color:var(--text);';
         body.appendChild(variablesLabel);
 
         let variablesRow = buildVariablesRow([]);
@@ -414,7 +414,7 @@ export function renderPrintEditor(context) {
             } else if (block.type === 'table') {
                 const columnsLabel = document.createElement('label');
                 columnsLabel.textContent = 'Columns (all rows of the view are printed)';
-                columnsLabel.style.cssText = 'display:block; margin-bottom:6px; font-weight:600;  color:var(--text);';
+                columnsLabel.style.cssText = 'display:block; margin-bottom:6px; font-weight:var(--font-weight-bold);  color:var(--text);';
                 row.appendChild(columnsLabel);
 
                 const columnsHint = document.createElement('p');
@@ -441,7 +441,7 @@ export function renderPrintEditor(context) {
                     rowWrap.style.cssText = 'display:flex; align-items:center; gap:10px;';
 
                     const labelElement = document.createElement('label');
-                    labelElement.style.cssText = 'display:flex; align-items:center; gap:5px;  color:var(--text); cursor:pointer; font-weight:normal; min-width:160px;';
+                    labelElement.style.cssText = 'display:flex; align-items:center; gap:5px;  color:var(--text); cursor:pointer; font-weight:var(--font-weight-normal); min-width:160px;';
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.checked = !!entry;
@@ -595,7 +595,7 @@ export function renderPrintEditor(context) {
 
             const requestLabel = document.createElement('label');
             requestLabel.style.cssText = 'display:flex; align-items:center; gap:6px;  '
-                + 'color:var(--text); cursor:pointer; font-weight:normal; margin-bottom:12px;';
+                + 'color:var(--text); cursor:pointer; font-weight:var(--font-weight-normal); margin-bottom:12px;';
             const requestCheckbox = document.createElement('input');
             requestCheckbox.type = 'checkbox';
             requestCheckbox.checked = !!parameter.required;

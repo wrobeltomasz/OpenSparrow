@@ -84,7 +84,7 @@ function buildSkeleton() {
             </div>
 
             <div class="form-group" style="margin-top:20px; padding-top:15px; border-top:1px solid var(--border-light);">
-                <label style="font-weight:bold;">Allowed Record Relations (Auto-Link)</label>
+                <label style="font-weight:var(--font-weight-bold);">Allowed Record Relations (Auto-Link)</label>
                 <div id="f-relations-list" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;"></div>
                 <button id="f-add-relation-btn" type="button" class="btn btn-primary btn-xs" style="margin-top:10px;">+ Add Relation</button>
             </div>
@@ -234,9 +234,9 @@ function fillConfigForm(config) {
     extensionsElement.value = (config.allowed_extensions || []).join(', ');
 
     typesElement.innerHTML = ALL_TYPES.map(typeName => `
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:normal">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:var(--font-weight-normal)">
             <input type="checkbox" value="${typeName}" ${(config.allowed_types || []).includes(typeName) ? 'checked' : ''}>
-            <span style="font-weight:bold;color:var(--muted)">${TYPE_ICONS[typeName]}</span> ${cap(typeName)}
+            <span style="font-weight:var(--font-weight-bold);color:var(--muted)">${TYPE_ICONS[typeName]}</span> ${cap(typeName)}
         </label>
     `).join('');
 
@@ -371,7 +371,7 @@ function renderTable(files) {
 
     const rows = files.map(fileEntry => `
         <tr data-uuid="${escHtml(fileEntry.uuid)}">
-            <td class="adm-td" style="font-weight:bold;text-align:center;color:var(--muted)">${TYPE_ICONS[fileEntry.type] ?? TYPE_ICONS.other}</td>
+            <td class="adm-td" style="font-weight:var(--font-weight-bold);text-align:center;color:var(--muted)">${TYPE_ICONS[fileEntry.type] ?? TYPE_ICONS.other}</td>
             <td class="adm-td">
                 ${fileEntry.type === 'image'
                     ? `<img src="../file_download.php?uuid=${escHtml(fileEntry.uuid)}&thumb=1" alt="" style="height:32px;width:32px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:6px">`

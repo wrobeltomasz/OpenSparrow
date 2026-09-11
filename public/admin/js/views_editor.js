@@ -438,7 +438,7 @@ export function renderViewsEditor(context) {
             if (dtype) {
                 const badge = document.createElement('span');
                 badge.textContent = dtype;
-                badge.style.cssText = ' font-weight:400;  background:var(--border-light); padding:1px 6px; border-radius:10px;';
+                badge.style.cssText = ' font-weight:var(--font-weight-normal);  background:var(--border-light); padding:1px 6px; border-radius:10px;';
                 columnHdr.appendChild(badge);
             }
             columnBlock.appendChild(columnHdr);
@@ -554,7 +554,7 @@ export function renderViewsEditor(context) {
 
             const rulesLabel = document.createElement('label');
             rulesLabel.textContent = 'Color rules';
-            rulesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
+            rulesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:var(--font-weight-bold);  color:var(--text);';
             columnBlock.appendChild(rulesLabel);
 
             const rulesList = document.createElement('div');
@@ -640,7 +640,7 @@ export function renderViewsEditor(context) {
 
         const levelsLabel = document.createElement('label');
         levelsLabel.textContent = 'Levels (ordered)';
-        levelsLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:600;  color:var(--text);';
+        levelsLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:var(--font-weight-bold);  color:var(--text);';
         wrap.appendChild(levelsLabel);
 
         const levelsList = document.createElement('div');

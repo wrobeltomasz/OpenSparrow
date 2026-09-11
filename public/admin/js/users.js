@@ -722,11 +722,11 @@ async function renderUserSettings(panel, context) {
             <p class="admin-page-desc">Policy applied to new users and password changes across the whole system.</p>
             <div style="max-width:400px;">
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Minimum password length</label>
+                    <label style="display: block; font-weight:var(--font-weight-bold); margin-bottom: 5px;">Minimum password length</label>
                     <input type="number" id="policyMinPasswordLength" class="adm-input" style="width:100%;" min="${escHtml(data.password_min_length)}" step="1" value="${escHtml(data.min_password_length)}">
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Default role for new users</label>
+                    <label style="display: block; font-weight:var(--font-weight-bold); margin-bottom: 5px;">Default role for new users</label>
                     <select id="policyDefaultRole" class="adm-input" style="width:100%;">
                         <option value="editor" ${data.default_role === 'editor' ? 'selected' : ''}>Editor</option>
                         <option value="viewer" ${data.default_role === 'viewer' ? 'selected' : ''}>Viewer</option>

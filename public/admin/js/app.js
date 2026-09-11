@@ -75,7 +75,7 @@ export function showStatusPill(anchor, message, variant = 'success') {
         error:   { bg: 'var(--error-light)', fg: 'var(--error)', border: 'var(--error)' },
         info:    { bg: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--border)' },
     }[variant] || { background: 'var(--accent-mid)', fg: 'var(--text)', border: 'var(--border)' };
-    pill.style.cssText = `display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:4px 10px; background:${colors.bg}; color:${colors.fg}; border:1px solid ${colors.border}; border-radius:999px;  font-weight:600; transition:opacity .3s;`;
+    pill.style.cssText = `display:inline-flex; align-items:center; gap:6px; margin-left:10px; padding:4px 10px; background:${colors.bg}; color:${colors.fg}; border:1px solid ${colors.border}; border-radius:999px;  font-weight:var(--font-weight-bold); transition:opacity .3s;`;
     anchor.insertAdjacentElement('afterend', pill);
 
     const toastDuration = variant === 'error' ? 6000 : 3000;

@@ -162,7 +162,7 @@ function buildStatisticsSection() {
                 kpiElement.style.cssText = `padding:14px 16px; border-left:4px solid ${color}; background:#fff; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.07);`;
                 const number = document.createElement('div');
                 number.textContent = value;
-                number.style.cssText = ` font-weight:700; color:${color};`;
+                number.style.cssText = ` font-weight:var(--font-weight-bold); color:${color};`;
                 const labelElement = document.createElement('div');
                 labelElement.textContent = label;
                 labelElement.style.cssText = '  margin-top:2px;';

@@ -99,12 +99,12 @@ function buildGroupPanel(panel, tables) {
                     li.style.cssText = 'padding:8px 12px;border-radius:4px;margin-bottom:4px;display:flex;gap:8px;align-items:baseline;';
                     if (resultRow.status === 'success') {
                         li.style.background = 'var(--ok-light)';
-                        li.innerHTML = `<span style="color:var(--ok);font-weight:700;">✓</span>`
+                        li.innerHTML = `<span style="color:var(--ok);font-weight:var(--font-weight-bold);">✓</span>`
                             + ` <strong>${escHtml(resultRow.table)}</strong> → <code style="background:var(--ok-light);padding:1px 5px;border-radius:3px;">${escHtml(resultRow.backup)}</code>`
                             + ` <span style="color:var(--ok);">(${escHtml(resultRow.rows)} row${resultRow.rows !== 1 ? 's' : ''})</span>`;
                     } else {
                         li.style.background = 'var(--error-light)';
-                        li.innerHTML = `<span style="color:var(--error);font-weight:700;">✗</span>`
+                        li.innerHTML = `<span style="color:var(--error);font-weight:var(--font-weight-bold);">✗</span>`
                             + ` <strong>${escHtml(resultRow.table)}</strong>: <span style="color:var(--error);">${escHtml(resultRow.message)}</span>`;
                     }
                     ul.appendChild(li);

@@ -129,7 +129,7 @@ function createColumnMultiSelect(options, selectedValues, onChange) {
 
     options.forEach((option) => {
         const labelElement = document.createElement('label');
-        labelElement.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:normal;';
+        labelElement.style.cssText = 'display:flex; align-items:center; margin-bottom:5px; cursor:pointer; font-weight:var(--font-weight-normal);';
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';

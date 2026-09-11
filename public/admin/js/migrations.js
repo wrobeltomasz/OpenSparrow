@@ -190,7 +190,7 @@ function renderVersionCard(version, container) {
     headerRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-bottom:8px;';
 
     const verSpan = document.createElement('span');
-    verSpan.style.cssText = 'font-family:var(--font-mono);  font-weight:700; color:var(--text);';
+    verSpan.style.cssText = 'font-family:var(--font-mono);  font-weight:var(--font-weight-bold); color:var(--text);';
     verSpan.textContent = 'v' + version.version;
 
     const badge = document.createElement('span');
@@ -211,7 +211,7 @@ function renderVersionCard(version, container) {
 
     if (isPending && version.actions.length > 0) {
         const actionsLabel = document.createElement('p');
-        actionsLabel.style.cssText = ' font-weight:600;  margin:0 0 8px;  ';
+        actionsLabel.style.cssText = ' font-weight:var(--font-weight-bold);  margin:0 0 8px;  ';
         actionsLabel.textContent = 'Actions';
         card.appendChild(actionsLabel);
 

@@ -159,7 +159,7 @@ export async function renderM2mPage(context) {
     const buttonCreate = document.createElement('button');
     buttonCreate.type = 'button';
     buttonCreate.className = 'btn btn-primary';
-    buttonCreate.innerHTML = '<span style="font-weight:300;line-height:1;">+</span> Create Relationship';
+    buttonCreate.innerHTML = '<span style="font-weight:var(--font-weight-normal);line-height:1;">+</span> Create Relationship';
     card.appendChild(buttonCreate);
 
     buttonCreate.addEventListener('click', async () => {
@@ -192,7 +192,7 @@ export async function renderM2mPage(context) {
             } else {
                 showStatusPill(buttonCreate, result.error || 'Failed.', 'error');
                 buttonCreate.disabled = false;
-                buttonCreate.innerHTML = '<span style="font-weight:300;line-height:1;">+</span> Create Relationship';
+                buttonCreate.innerHTML = '<span style="font-weight:var(--font-weight-normal);line-height:1;">+</span> Create Relationship';
             }
         } catch {
             showStatusPill(buttonCreate, 'Network error.', 'error');

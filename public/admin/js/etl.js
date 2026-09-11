@@ -311,7 +311,7 @@ function buildJobCard(job, index, redraw, status) {
     const queryGroup = fg('Source query (read-only SELECT)', query);
     const queryNote = document.createElement('p');
     queryNote.className = 'c-muted';
-    queryNote.style.cssText = 'margin:4px 0 12px; font-size:12px; display:none;';
+    queryNote.style.cssText = 'margin:4px 0 12px; font-size:var(--font-size-sm); display:none;';
     queryNote.textContent = 'This source reads a CSV file — the whole file is imported on every run, no query needed.';
 
     function isRemoteFileSource() {
@@ -417,7 +417,7 @@ function buildJobCard(job, index, redraw, status) {
 
     const incHint = document.createElement('p');
     incHint.className = 'c-muted';
-    incHint.style.cssText = 'margin:4px 0 0; font-size:12px;';
+    incHint.style.cssText = 'margin:4px 0 0; font-size:var(--font-size-sm);';
     incHint.textContent = 'Use the {{watermark}} placeholder in the source query, e.g. "WHERE updated_at > {{watermark}}". The watermark auto-advances to the max value seen after each successful run.';
 
     const columnMap = input((job.column_map || []).map(columnPair => `${columnPair.source}:${columnPair.target}`).join(', '));
@@ -430,7 +430,7 @@ function buildJobCard(job, index, redraw, status) {
     };
     const columnMapHint = document.createElement('p');
     columnMapHint.className = 'c-muted';
-    columnMapHint.style.cssText = 'margin:4px 0 0; font-size:12px;';
+    columnMapHint.style.cssText = 'margin:4px 0 0; font-size:var(--font-size-sm);';
     columnMapHint.textContent = 'Optional. Leave empty to match columns by identical name (default behavior).';
 
     body.append(

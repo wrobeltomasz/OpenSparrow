@@ -40,7 +40,14 @@
   --header-h:     56px;
   --nav-w:        260px;
   --transition:   150ms ease;
-  --admin-font-size: 14px;
+  --admin-font-size: var(--font-size-base);
+
+  --font-size-sm:   12px;
+  --font-size-base: 14px;
+  --font-size-lg:   18px;
+
+  --font-weight-normal: 400;
+  --font-weight-bold:   700;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
@@ -53,30 +60,30 @@ body {
     background-color: var(--bg);
     color: var(--text);
     font-family: var(--font-sans);
-    font-size: var(--admin-font-size);
+    font-size: var(--font-size-base);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 }
 
 .admin-nav,
 .admin-nav * {
-    font-size: 13px;
+    font-size: var(--font-size-base);
 }
-.admin-nav .nav-section-label { font-size: 11px; }
-.admin-nav .nav-chevron { font-size: 10px; }
+.admin-nav .nav-section-label { font-size: var(--font-size-sm); }
+.admin-nav .nav-chevron { font-size: var(--font-size-sm); }
 
 .first-run-banner {
     background: var(--warn-light);
     border-bottom: 2px solid var(--warn);
     padding: 10px 20px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     color: var(--text);
     text-align: center;
 }
 
 .first-run-banner a {
     color: var(--text);
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
 }
 
 .mig-pending-banner {
@@ -122,8 +129,8 @@ body {
 }
 
 .brand-name {
-    font-size: 13px;
-    font-weight: 400;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-normal);
     color: #fff;
     white-space: nowrap;
 }
@@ -133,7 +140,7 @@ body {
     align-items: center;
     gap: 6px;
     color: rgba(255, 255, 255, 0.85);
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     cursor: pointer;
     white-space: nowrap;
 }
@@ -152,8 +159,8 @@ body {
     padding: 7px 14px;
     border-radius: var(--radius);
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
     transition: background var(--transition);
     white-space: nowrap;
 }
@@ -167,7 +174,7 @@ body {
     padding: 6px 10px;
     border-radius: var(--radius);
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -192,8 +199,8 @@ body {
     padding: 7px 14px;
     border-radius: var(--radius);
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-normal);
     transition: background var(--transition);
     white-space: nowrap;
 }
@@ -256,8 +263,8 @@ body {
 }
 
 .nav-section-label {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     text-transform: uppercase;
     letter-spacing: 0.6px;
     color: var(--muted);
@@ -265,7 +272,7 @@ body {
 }
 
 .nav-chevron {
-    font-size: 10px;
+    font-size: var(--font-size-sm);
     color: var(--muted);
     transition: transform 200ms ease;
     margin-left: auto;
@@ -294,8 +301,8 @@ body {
     border: none;
     border-radius: var(--radius);
     color: var(--muted);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-normal);
     cursor: pointer;
     text-align: left;
     transition: background var(--transition), color var(--transition);
@@ -310,7 +317,7 @@ body {
 .admin-nav .admin-tab.active {
     background: var(--accent-mid);
     color: var(--accent);
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     border-left: 3px solid var(--accent);
     padding-left: 17px;
 }
@@ -348,7 +355,7 @@ body {
 
 .breadcrumb-root {
     color: var(--text);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
 }
 
 .breadcrumb-sep {
@@ -357,7 +364,7 @@ body {
 
 .breadcrumb-current {
     color: var(--text);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
 }
 
 .admin-content {
@@ -378,8 +385,8 @@ body {
     justify-content: center;
     background: var(--panel);
     color: var(--muted);
-    font-size: 14px;
-    font-weight: 700;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-bold);
     transition: background var(--transition), color var(--transition);
     position: relative;
     z-index: 5;
@@ -429,7 +436,7 @@ body {
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
     transition: color .15s, border-color .15s;
     white-space: nowrap;
@@ -442,7 +449,7 @@ body {
 
 .item-btn.active {
     color: var(--text);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     border-color: var(--accent);
 }
 
@@ -482,7 +489,7 @@ body {
     border-bottom: none;
     flex: 1;
     min-width: 0;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -501,13 +508,13 @@ body {
     gap: 6px;
     color: var(--text);
     cursor: pointer;
-    font-weight: normal;
+    font-weight: var(--font-weight-normal);
     flex-shrink: 0;
 }
 
 .block-chevron {
     display: inline-block;
-    font-size: 11px;
+    font-size: var(--font-size-sm);
     flex-shrink: 0;
     color: var(--muted);
     transition: transform var(--transition);
@@ -540,7 +547,7 @@ body {
 }
 .admin-page-title {
     margin: 0 0 4px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
 }
 .admin-page-desc {
@@ -556,7 +563,7 @@ body {
 .form-group label {
     display: block;
     margin-bottom: 6px;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
 }
 
@@ -639,7 +646,7 @@ body {
     color: var(--text);
     border-bottom: 1px solid var(--border-light);
     padding-bottom: 12px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
 }
 
 .adm-input,
@@ -674,7 +681,7 @@ textarea.adm-input {
     background: var(--bg);
     color: var(--muted);
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: var(--font-size-sm);
 }
 
 .w-60  { width: 60px;  }
@@ -707,7 +714,7 @@ textarea.adm-input {
     background: none;
     border: none;
     box-shadow: none;
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     line-height: 1;
     cursor: pointer;
     color: var(--muted);
@@ -722,7 +729,7 @@ textarea.adm-input {
     box-shadow: none;
     cursor: pointer;
     padding: 2px 5px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     line-height: 1;
     color: var(--muted);
     flex-shrink: 0;
@@ -745,7 +752,7 @@ textarea.adm-input {
     white-space: nowrap;
     border-radius: var(--radius-lg);
     padding: 8px 14px;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
 }
 .flow-tile-start,
 .flow-tile-end {
@@ -781,7 +788,7 @@ textarea.adm-input {
 
 .adm-field-label {
     display: block;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
     margin-bottom: 6px;
 }
@@ -808,7 +815,7 @@ textarea.adm-input {
 .checkbox-row label {
     margin-bottom: 0;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
 }
 .multiselect-box {
     max-height: 150px;
@@ -824,7 +831,7 @@ textarea.adm-input {
     gap: 8px;
     margin-bottom: 5px;
     cursor: pointer;
-    font-weight: normal;
+    font-weight: var(--font-weight-normal);
 }
 
 .btn-add { margin-bottom: 15px; }
@@ -843,7 +850,7 @@ textarea.adm-input {
     background: var(--bg);
     padding: 12px;
     text-align: left;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
     border-bottom: 1px solid var(--border-light);
 }
@@ -873,8 +880,8 @@ textarea.adm-input {
 }
 
 .menu-preview-badge {
-    font-size: 10px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     letter-spacing: 0.5px;
     background: var(--error);
     color: #fff;
@@ -967,7 +974,7 @@ textarea.adm-input {
 }
 
 .demo-card-title {
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     margin-bottom: 8px;
 }
 
@@ -989,7 +996,7 @@ textarea.adm-input {
     color: var(--accent);
     padding: 2px 8px;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     font-family: var(--font-mono);
 }
 
@@ -1005,7 +1012,7 @@ textarea.adm-input {
 }
 
 .demo-feature-tag {
-    font-size: 11px;
+    font-size: var(--font-size-sm);
     padding: 2px 7px;
     border-radius: 20px;
     background: var(--accent-light);
@@ -1023,8 +1030,8 @@ textarea.adm-input {
     right: 12px;
     background: var(--accent);
     color: #fff;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     padding: 2px 8px;
     border-radius: 20px;
     letter-spacing: 0.03em;
@@ -1127,8 +1134,8 @@ textarea.adm-input {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 999px;
-    font-size: 11px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     white-space: nowrap;
 }
 
@@ -1147,7 +1154,7 @@ textarea.adm-input {
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     color: var(--text);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     white-space: nowrap;
 }
 .adm-th-sm { padding: 6px 10px; }
@@ -1188,7 +1195,7 @@ textarea.adm-input {
 }
 .icon-picker-status {
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--font-size-sm);
     white-space: nowrap;
 }
 .icon-picker-chips {
@@ -1212,7 +1219,7 @@ textarea.adm-input {
 .icon-picker-section-title {
     margin: 14px 0 8px;
     color: var(--muted);
-    font-size: 13px;
+    font-size: var(--font-size-base);
 }
 .icon-picker-section-title:first-child {
     margin-top: 0;
@@ -1244,7 +1251,7 @@ textarea.adm-input {
     object-fit: contain;
 }
 .icon-picker-name {
-    font-size: 11px;
+    font-size: var(--font-size-sm);
     line-height: 1.25;
     text-align: center;
     color: var(--muted);
@@ -1297,8 +1304,8 @@ textarea.adm-input {
     padding: 16px 18px;
     text-align: center;
 }
-.stat-tile-label { font-size: 13px; margin: 0 0 6px; }
-.stat-tile-value { font-size: 28px; font-weight: bold; }
+.stat-tile-label { font-size: var(--font-size-base); margin: 0 0 6px; }
+.stat-tile-value { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); }
 
 .c-muted  { color: var(--muted); }
 .c-danger { color: var(--error); }
@@ -1313,7 +1320,7 @@ textarea.adm-input {
 .dash-editor-preview { flex: 0 0 280px; position: sticky; top: 28px; }
 
 .dash-preview-hdr {
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     border-bottom: 1px solid var(--border-light);
     padding-bottom: 6px;
     margin-bottom: 12px;
@@ -1338,7 +1345,7 @@ textarea.adm-input {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 4px;
-    font-size: 13px;
+    font-size: var(--font-size-base);
     max-height: 220px;
     overflow: auto;
     white-space: pre-wrap;
@@ -1361,7 +1368,7 @@ textarea.adm-input {
 }
 .ov-welcome-title {
     margin: 0;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
 }
 .ov-version-badge {
@@ -1370,8 +1377,8 @@ textarea.adm-input {
     background: var(--accent-mid);
     color: var(--accent);
     border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
 }
 .ov-stats-row {
     display: grid;
@@ -1408,12 +1415,12 @@ textarea.adm-input {
 }
 .ov-stat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ov-stat-value {
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
     line-height: 1.1;
 }
 .ov-stat-label {
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
 }
 .ov-stat-sub {
@@ -1437,7 +1444,7 @@ textarea.adm-input {
 }
 .ov-tables-panel { margin-bottom: 0; }
 .ov-section-title {
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
     margin-bottom: 12px;
     padding-bottom: 8px;
@@ -1459,7 +1466,7 @@ textarea.adm-input {
     min-width: 110px;
 }
 .ov-feed-user {
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
     flex-shrink: 0;
     min-width: 60px;
@@ -1489,8 +1496,8 @@ textarea.adm-input {
     display: inline-block;
     padding: 1px 7px;
     border-radius: 999px;
-    font-size: 10px;
-    font-weight: 700;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
     flex-shrink: 0;
 }
 .ov-badge-ok   { background: var(--ok-light); color: var(--ok); }
@@ -1510,7 +1517,7 @@ textarea.adm-input {
 }
 .ov-table-name {
     color: var(--text);
-    font-weight: 500;
+    font-weight: var(--font-weight-normal);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1570,7 +1577,7 @@ textarea.adm-input {
     align-items: center;
     gap: 8px;
     margin-bottom: 0;
-    font-weight: 400;
+    font-weight: var(--font-weight-normal);
     cursor: pointer;
 }
 .form-group label.auto-check input[type="checkbox"] {
@@ -1585,12 +1592,12 @@ textarea.adm-input {
     background: var(--panel);
 }
 .auto-section-title {
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
     margin-bottom: 12px;
 }
 .auto-section-sub {
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
     margin: 12px 0 6px;
 }
@@ -1639,12 +1646,12 @@ textarea.adm-input {
 .auto-row > select.auto-row-wide   { flex: 2 1 220px; }
 .auto-row-label {
     flex: 0 0 90px;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
 }
 .auto-row-eq {
     flex: 0 0 auto;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
 }
 .auto-row-actions {
@@ -1690,7 +1697,7 @@ textarea.adm-input {
 .auto-action-header > select { flex: 1; }
 .auto-action-name {
     flex: 1;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     color: var(--text);
 }
 
@@ -1747,7 +1754,7 @@ textarea.adm-input {
     margin-left: 10px;
     padding: 4px 10px;
     border-radius: 999px;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     border: 1px solid transparent;
     transition: opacity .3s;
 }
@@ -1770,7 +1777,7 @@ textarea.adm-input {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 999px;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
 }
 .auto-run-ok      { background: var(--ok-light);  color: var(--ok); }
 .auto-run-error   { background: var(--error-light);    color: var(--error); }
