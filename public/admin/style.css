@@ -1272,6 +1272,10 @@ textarea.adm-input {
     align-items: center;
     gap: 12px;
 }
+.adm-sec-hdr--block { display: block; }
+.adm-sec-hdr h3 { margin: 0; }
+.adm-sec-hdr p  { margin: 0; }
+.adm-sec-hdr h3 + p { margin-top: 4px; }
 .adm-sec-body { padding: 16px 18px; }
 
 .health-card {

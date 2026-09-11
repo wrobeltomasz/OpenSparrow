@@ -13,18 +13,15 @@ function ragCard(title, description) {
     card.className = 'adm-sec-card';
 
     const headerElement = document.createElement('div');
-    headerElement.className = 'adm-sec-hdr';
-    headerElement.style.display = 'block';
+    headerElement.className = 'adm-sec-hdr adm-sec-hdr--block';
 
     const h3 = document.createElement('h3');
     h3.textContent = title;
-    h3.style.cssText = 'margin:0 0 4px;';
     headerElement.appendChild(h3);
 
     if (description) {
         const paragraph = document.createElement('p');
         paragraph.textContent = description;
-        paragraph.style.cssText = 'margin:0;';
         headerElement.appendChild(paragraph);
     }
     card.appendChild(headerElement);

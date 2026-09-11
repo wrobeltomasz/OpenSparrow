@@ -965,7 +965,6 @@ function buildAutomationsTab(panel, mode, shared) {
         cardHdr.className = 'adm-sec-hdr';
         const cardTitle = document.createElement('h3');
         cardTitle.textContent = 'Run History: ' + rule.name;
-        cardTitle.style.margin = '0';
         const buttonBack = document.createElement('button');
         buttonBack.type        = 'button';
         buttonBack.className   = 'btn btn-sm';

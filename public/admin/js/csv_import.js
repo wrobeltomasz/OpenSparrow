@@ -1282,10 +1282,8 @@ function buildCard(title) {
     element.className = 'adm-sec-card';
 
     const headerName = document.createElement('div');
-    headerName.className = 'adm-sec-hdr';
-    headerName.style.display = 'block';
+    headerName.className = 'adm-sec-hdr adm-sec-hdr--block';
     const headingElement = document.createElement('h3');
-    headingElement.style.margin = '0';
     headingElement.textContent = title;
     headerName.appendChild(headingElement);
     element.appendChild(headerName);

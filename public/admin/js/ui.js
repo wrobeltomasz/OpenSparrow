@@ -1114,11 +1114,10 @@ export function buildSectionCard(title, description = '', id = '') {
     const card = el('div', 'adm-sec-card');
     if (id) card.id = id;
 
-    const header = el('div', 'adm-sec-hdr');
-    header.style.display = 'block';
-    header.appendChild(el('h3', '', title)).style.cssText = 'margin:0 0 4px;';
+    const header = el('div', 'adm-sec-hdr adm-sec-hdr--block');
+    header.appendChild(el('h3', '', title));
     if (description) {
-        header.appendChild(el('p', 'c-muted', description)).style.cssText = 'margin:0;';
+        header.appendChild(el('p', 'c-muted', description));
     }
     card.appendChild(header);
 

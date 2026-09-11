@@ -39,10 +39,8 @@ function makeSection(title, description) {
     const hdrLeft = document.createElement('div');
     const h3 = document.createElement('h3');
     h3.textContent = title;
-    h3.style.cssText = 'margin:0 0 4px; ';
     const desc = document.createElement('p');
     desc.textContent = description;
-    desc.style.cssText = 'margin:0;  ';
     hdrLeft.appendChild(h3);
     hdrLeft.appendChild(desc);
 

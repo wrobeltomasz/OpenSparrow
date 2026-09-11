@@ -171,8 +171,8 @@ export async function renderAuditEditor(context) {
     const schemaSection = document.createElement('div');
     schemaSection.className = 'adm-sec-card';
     schemaSection.innerHTML = `
-        <div class="adm-sec-hdr" style="display:block;">
-            <h3 style="margin:0;">Table: spw_record_snapshots</h3>
+        <div class="adm-sec-hdr adm-sec-hdr--block">
+            <h3>Table: spw_record_snapshots</h3>
         </div>
         <div class="adm-sec-body">
             <table class="adm-tbl">

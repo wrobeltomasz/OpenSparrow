@@ -62,7 +62,7 @@ function buildSkeleton() {
     wrap.className = 'admin-page';
     wrap.innerHTML = `
         <div class="adm-sec-card" id="files-cfg-block">
-            <div class="adm-sec-hdr" style="display:block;"><h3 style="margin:0;">Configuration</h3></div>
+            <div class="adm-sec-hdr adm-sec-hdr--block"><h3>Configuration</h3></div>
             <div class="adm-sec-body">
             <div class="form-group">
                 <label>Max file size (MB)</label>
@@ -95,7 +95,7 @@ function buildSkeleton() {
         </div>
 
         <div class="adm-sec-card" id="files-upload-block" style="margin-top: 20px">
-            <div class="adm-sec-hdr" style="display:block;"><h3 style="margin:0;">Upload File</h3></div>
+            <div class="adm-sec-hdr adm-sec-hdr--block"><h3>Upload File</h3></div>
             <div class="adm-sec-body">
             <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
                 <div class="form-group" style="margin-bottom:0">
@@ -113,7 +113,7 @@ function buildSkeleton() {
         </div>
 
         <div class="adm-sec-card" id="files-lib-block" style="margin-top: 20px">
-            <div class="adm-sec-hdr" style="display:block;"><h3 style="margin:0;">File Library</h3></div>
+            <div class="adm-sec-hdr adm-sec-hdr--block"><h3>File Library</h3></div>
             <div class="adm-sec-body">
             <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
                 <input id="f-search" type="search" placeholder="Search by name" class="adm-input flex-1" style="min-width:160px;max-width:300px">
