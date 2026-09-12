@@ -111,9 +111,9 @@ $navSections = [
     ],
     [
         'label' => 'AI',
-        'icon'  => $navIcon('material/menu_book.svg'),
+        'icon'  => $navIcon('material/smart_toy.svg'),
         'items' => [
-            ['file' => 'rag', 'label' => 'Centrum AI', 'icon' => $navIcon('material/docs.svg')],
+            ['file' => 'rag', 'label' => 'Centrum AI', 'icon' => $navIcon('material/rule_settings.svg')],
         ],
     ],
     [
