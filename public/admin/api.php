@@ -69,6 +69,7 @@ $postActions = [
     'rag_upload', 'rag_delete', 'rag_rechunk', 'rag_rechunk_all',
     'rag_settings_save', 'rag_test_query', 'rag_ollama_check', 'rag_aggregate_view_save',
     'automations_save', 'automations_delete',
+    'automation_emails_delete', 'automation_emails_requeue', 'automation_emails_purge',
     'anonymization_save', 'run_anonymization', 'preview_anonymization', 'anonymization_purge_log',
     'etl_save', 'run_etl', 'etl_purge_log', 'etl_test_connection', 'etl_preview',
     'etl_flow_save', 'run_etl_flow', 'etl_flow_purge_log',
@@ -206,6 +207,10 @@ $adminModules = [
     'automations_list' => 'automations',
     'automations_save' => 'automations',
     'automations_delete' => 'automations',
+    'automation_emails_list' => 'automation_emails',
+    'automation_emails_delete' => 'automation_emails',
+    'automation_emails_requeue' => 'automation_emails',
+    'automation_emails_purge' => 'automation_emails',
     'dashboard_calculate' => 'dashboard',
     'overview' => 'overview',
 ];

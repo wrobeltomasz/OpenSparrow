@@ -591,6 +591,265 @@ function buildEmailSection() {
     return card;
 }
 
+function emailStatusBadge(status) {
+    const cssClass = { sent: 'ok', error: 'danger', pending: 'warn' }[status] ?? 'muted';
+    const badgeSpan = document.createElement('span');
+    badgeSpan.className = `adm-badge adm-badge-${cssClass}`;
+    badgeSpan.textContent = status.toUpperCase();
+    return badgeSpan;
+}
+
+function buildEmailQueueSection() {
+    const { card, body } = cronMakeSection('cron-section-6', 'Email Queue', 'Outgoing automation emails in spw_automation_emails. Requeue failed messages or delete them.');
+
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = 'display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;';
+
+    const statusSelect = document.createElement('select');
+    statusSelect.className = 'adm-input w-160';
+    [['', 'All statuses'], ['pending', 'Pending'], ['sent', 'Sent'], ['error', 'Error']].forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        statusSelect.appendChild(option);
+    });
+
+    const refreshButton = document.createElement('button');
+    refreshButton.className = 'btn btn-primary';
+    refreshButton.textContent = 'Refresh';
+
+    const countsElement = document.createElement('span');
+    countsElement.className = 'c-muted';
+
+    toolbar.append(statusSelect, refreshButton, countsElement);
+    body.appendChild(toolbar);
+
+    const bulkRow = document.createElement('div');
+    bulkRow.style.cssText = 'display:flex; gap:10px; align-items:center; margin-bottom:14px;';
+    const requeueSelectedButton = document.createElement('button');
+    requeueSelectedButton.className = 'btn btn-secondary';
+    requeueSelectedButton.textContent = 'Requeue selected';
+    const deleteSelectedButton = document.createElement('button');
+    deleteSelectedButton.className = 'btn btn-danger';
+    deleteSelectedButton.textContent = 'Delete selected';
+    bulkRow.append(requeueSelectedButton, deleteSelectedButton);
+    body.appendChild(bulkRow);
+
+    const container = document.createElement('div');
+    body.appendChild(container);
+
+    const purgeCard = cronMakeSection('cron-section-6b', 'Purge Queue', 'Delete queued emails by status, optionally only those older than a number of days.');
+    const purgeCardBody = purgeCard.body;
+    const purgeRow = document.createElement('div');
+    purgeRow.style.cssText = 'display:flex; align-items:center; gap:10px; flex-wrap:wrap;';
+
+    const purgeStatusSelect = document.createElement('select');
+    purgeStatusSelect.className = 'adm-input w-160';
+    [['sent', 'Sent'], ['error', 'Error'], ['pending', 'Pending']].forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        purgeStatusSelect.appendChild(option);
+    });
+
+    const purgeDaysInput = document.createElement('input');
+    purgeDaysInput.type = 'number';
+    purgeDaysInput.min = '1';
+    purgeDaysInput.max = '3650';
+    purgeDaysInput.placeholder = 'all ages';
+    purgeDaysInput.className = 'adm-input w-120';
+
+    const purgeButton = document.createElement('button');
+    purgeButton.className = 'btn btn-danger';
+    purgeButton.textContent = 'Purge';
+
+    const purgeResult = document.createElement('p');
+    purgeResult.style.cssText = 'margin-top:12px; display:none;';
+
+    purgeRow.append(purgeStatusSelect, purgeDaysInput, purgeButton);
+    purgeCardBody.append(purgeRow, purgeResult);
+    body.appendChild(purgeCard.card);
+
+    let selectedIds = new Set();
+
+    function selectedIdList() {
+        return Array.from(selectedIds).map(Number);
+    }
+
+    function renderCounts(counts) {
+        const pending = counts.pending ?? 0;
+        const sent = counts.sent ?? 0;
+        const error = counts.error ?? 0;
+        countsElement.textContent = `Pending: ${pending} · Sent: ${sent} · Error: ${error}`;
+    }
+
+    async function loadQueue() {
+        container.textContent = 'Loading…';
+        const status = statusSelect.value;
+        const query = status ? `&status=${encodeURIComponent(status)}` : '';
+        try {
+            const response = await apiFetch(`api.php?action=automation_emails_list${query}`);
+            const data = await response.json();
+            if (data.status !== 'success') {
+                container.textContent = 'Error: ' + (data.error || 'unknown');
+                return;
+            }
+            renderCounts(data.counts ?? {});
+            selectedIds = new Set();
+            renderTable(data.rows ?? []);
+        } catch (error) {
+            container.textContent = 'Request failed: ' + error.message;
+        }
+    }
+
+    function renderTable(rows) {
+        container.innerHTML = '';
+        if (rows.length === 0) {
+            container.textContent = 'No emails in the queue.';
+            return;
+        }
+
+        const tableElement = mkTable();
+        mkThead(tableElement, ['', '#', 'Recipient', 'Subject', 'Status', 'Attempts', 'Error', 'Created', 'Sent', 'Actions']);
+
+        const tbody = tableElement.createTBody();
+        rows.forEach(emailRow => {
+            const tr = tbody.insertRow();
+
+            const checkboxCell = document.createElement('td');
+            checkboxCell.className = 'adm-td';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = selectedIds.has(Number(emailRow.id));
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) selectedIds.add(Number(emailRow.id));
+                else selectedIds.delete(Number(emailRow.id));
+            });
+            checkboxCell.appendChild(checkbox);
+            tr.appendChild(checkboxCell);
+
+            tr.appendChild(td(emailRow.id));
+            tr.appendChild(td(emailRow.recipient));
+            tr.appendChild(td(emailRow.subject, 'max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
+            tr.appendChild(tdEl(emailStatusBadge(emailRow.status)));
+            tr.appendChild(td(emailRow.attempts));
+            tr.appendChild(td(emailRow.error_msg, 'color:var(--error); max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'));
+            tr.appendChild(td(emailRow.created_at));
+            tr.appendChild(td(emailRow.sent_at));
+
+            const actionsCell = document.createElement('td');
+            actionsCell.className = 'adm-td';
+            actionsCell.style.cssText = 'white-space:nowrap;';
+
+            const requeueButton = document.createElement('button');
+            requeueButton.type = 'button';
+            requeueButton.className = 'btn btn-sm';
+            requeueButton.textContent = 'Requeue';
+            requeueButton.addEventListener('click', () => requeueIds([Number(emailRow.id)], requeueButton));
+
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'btn btn-sm btn-danger';
+            deleteButton.textContent = 'Delete';
+            deleteButton.addEventListener('click', () => deleteIds([Number(emailRow.id)], deleteButton));
+
+            actionsCell.append(requeueButton, deleteButton);
+            tr.appendChild(actionsCell);
+        });
+
+        container.appendChild(tableElement);
+    }
+
+    async function requeueIds(ids, anchorElement) {
+        if (ids.length === 0) return;
+        if (!confirm(`Requeue ${ids.length} email(s)?`)) return;
+        try {
+            const response = await apiFetch('api.php?action=automation_emails_requeue', {
+                method: 'POST',
+                body: JSON.stringify({ ids }),
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                await loadQueue();
+            } else {
+                alert('Error: ' + (data.error || 'unknown'));
+            }
+        } catch (error) {
+            alert('Request failed: ' + error.message);
+        }
+    }
+
+    async function deleteIds(ids, anchorElement) {
+        if (ids.length === 0) return;
+        if (!confirm(`Delete ${ids.length} email(s)? This cannot be undone.`)) return;
+        try {
+            const response = await apiFetch('api.php?action=automation_emails_delete', {
+                method: 'POST',
+                body: JSON.stringify({ ids }),
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                await loadQueue();
+            } else {
+                alert('Error: ' + (data.error || 'unknown'));
+            }
+        } catch (error) {
+            alert('Request failed: ' + error.message);
+        }
+    }
+
+    statusSelect.addEventListener('change', loadQueue);
+    refreshButton.addEventListener('click', loadQueue);
+    requeueSelectedButton.addEventListener('click', () => requeueIds(selectedIdList(), requeueSelectedButton));
+    deleteSelectedButton.addEventListener('click', () => deleteIds(selectedIdList(), deleteSelectedButton));
+
+    purgeButton.addEventListener('click', async () => {
+        const daysValue = purgeDaysInput.value.trim();
+        const days = daysValue === '' ? null : parseInt(daysValue, 10);
+        if (days !== null && (!days || days < 1)) {
+            purgeResult.textContent = 'Enter a valid number of days, or leave empty for all ages.';
+            purgeResult.style.color = 'var(--error)';
+            purgeResult.style.display = '';
+            return;
+        }
+        const status = purgeStatusSelect.value;
+        const label = days !== null ? `older than ${days} day(s)` : 'of all ages';
+        if (!confirm(`Delete all "${status}" emails ${label}? This cannot be undone.`)) return;
+
+        purgeButton.disabled = true;
+        purgeButton.textContent = 'Purging…';
+        purgeResult.style.display = 'none';
+
+        try {
+            const payload = { status };
+            if (days !== null) payload.days = days;
+            const response = await apiFetch('api.php?action=automation_emails_purge', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                purgeResult.textContent = `Deleted ${data.deleted} email(s).`;
+                purgeResult.style.color = 'var(--ok)';
+                await loadQueue();
+            } else {
+                purgeResult.textContent = 'Error: ' + (data.error || 'unknown');
+                purgeResult.style.color = 'var(--error)';
+            }
+        } catch (error) {
+            purgeResult.textContent = 'Request failed: ' + error.message;
+            purgeResult.style.color = 'var(--error)';
+        }
+
+        purgeResult.style.display = '';
+        purgeButton.disabled = false;
+        purgeButton.textContent = 'Purge';
+    });
+
+    loadQueue();
+    return card;
+}
+
 export function renderCronPage(context) {
     const { workspaceEl: workspaceElement } = context;
 
@@ -605,13 +864,14 @@ export function renderCronPage(context) {
         'Run scheduled notification jobs, review run history and statistics, and manage cleanup of old log entries.'
     ));
 
-    const [p0, p1, p2, p3, p4, p5] = buildInnerTabs(wrap, [
+    const [p0, p1, p2, p3, p4, p5, p6] = buildInnerTabs(wrap, [
         { label: 'Run', icon: 'material/autorenew.svg' },
         { label: 'History', icon: 'material/manage_history.svg' },
         { label: 'Statistics', icon: 'material/bar_chart.svg' },
         { label: 'Setup', icon: 'material/terminal.svg' },
         { label: 'Cleanup', icon: 'material/delete_sweep.svg' },
         { label: 'Email', icon: 'material/mail.svg' },
+        { label: 'Email Queue', icon: 'material/inbox.svg' },
     ]);
 
     p0.appendChild(buildManualRunSection());
@@ -620,4 +880,5 @@ export function renderCronPage(context) {
     p3.appendChild(buildSetupSection());
     p4.appendChild(buildCleanupSection());
     p5.appendChild(buildEmailSection());
+    p6.appendChild(buildEmailQueueSection());
 }

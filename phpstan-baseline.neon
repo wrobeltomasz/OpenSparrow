@@ -16,6 +16,12 @@ parameters:
 			message: '#^Variable \$action might not be defined\.$#'
 			identifier: variable.undefined
 			count: 4
+			path: includes/admin/automation_emails.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
 			path: includes/admin/automations.php
 
 		-

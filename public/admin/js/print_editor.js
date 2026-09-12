@@ -95,7 +95,6 @@ export function renderPrintEditor(context) {
     listPanel.appendChild(statusElement);
 
     const listElement = document.createElement('div');
-    listElement.style.cssText = 'display:flex; flex-direction:column; gap:16px;';
     listPanel.appendChild(listElement);
 
     workspaceElement.appendChild(wrap);
