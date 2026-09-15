@@ -228,9 +228,9 @@ function renderLog(panel, state) {
     panel.appendChild(summary);
 
     const topHost = el('div');
-    const rowsHost = el('div');
+    const { card: logCard, body: rowsHost } = buildSectionCard('Click log');
     panel.appendChild(topHost);
-    panel.appendChild(rowsHost);
+    panel.appendChild(logCard);
 
     const pager = el('div');
     pager.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:12px;';

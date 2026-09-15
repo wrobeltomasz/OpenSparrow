@@ -381,16 +381,37 @@ function renderUsage(panel) {
 
         panel.innerHTML = '';
 
-        const summary = el('div');
-        summary.style.cssText = 'display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;';
-        summary.append(
-            statCard('Total requests', String(data.total ?? 0)),
-            statCard('Average duration', (data.avg_ms ?? 0) + ' ms'),
-            statCard('Slowest request', (data.max_ms ?? 0) + ' ms'),
+        const { card: summaryCard, body: summaryBody } = buildSectionCard(
+            'Usage Statistics',
+            'Aggregated metrics from all requests handled by the external API.'
         );
-        panel.appendChild(summary);
+        panel.appendChild(summaryCard);
 
-        const { card, body } = buildSectionCard('Requests per API');
+        const cardsGrid = el('div');
+        cardsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:4px;';
+        summaryBody.appendChild(cardsGrid);
+
+        [
+            ['Total Requests', String(data.total ?? 0)],
+            ['Avg Duration (ms)', String(data.avg_ms ?? 0)],
+            ['Slowest Request (ms)', String(data.max_ms ?? 0)],
+        ].forEach(([label, value]) => {
+            const box = el('div');
+            box.style.cssText = 'text-align:center;padding:16px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);';
+            const valueEntry = el('div', '', value);
+            valueEntry.style.cssText = 'font-weight:var(--font-weight-bold);margin-bottom:4px;';
+            const labelDiv = el('div', '', label);
+            labelDiv.style.cssText = 'font-weight:var(--font-weight-bold);';
+            box.append(valueEntry, labelDiv);
+            cardsGrid.appendChild(box);
+        });
+
+        const { card, body } = buildSectionCard(
+            'Requests per API',
+            'Request counts, timings and returned rows per configured API.'
+        );
+        const tableWrap = el('div');
+        tableWrap.style.cssText = 'overflow-x:auto;';
         const table = mkTable();
         mkThead(table, ['API', 'Table', 'Requests', 'Avg ms', 'Max ms', 'Rows returned']);
         const tbody = table.createTBody();
@@ -403,25 +424,19 @@ function renderUsage(panel) {
             tr.appendChild(td(row.max_ms));
             tr.appendChild(td(row.rows_total));
         });
-        body.appendChild(table);
+        tableWrap.appendChild(table);
+        body.appendChild(tableWrap);
         panel.appendChild(card);
 
-        const logHost = el('div');
-        panel.appendChild(logHost);
+        const { card: logCard, body: logHost } = buildSectionCard(
+            'Request Log',
+            'Recent requests, newest first. Filter by API name, trim by age or clear the log.'
+        );
+        panel.appendChild(logCard);
         renderLog(logHost, state);
     }
 
     loadStats();
-}
-
-function statCard(label, value) {
-    const card = el('div', 'adm-sec-card');
-    card.style.cssText = 'flex:1; min-width:160px;';
-    const body = el('div', 'adm-sec-body');
-    body.appendChild(el('div', 'c-muted', label)).style.cssText = 'font-size:var(--font-size-sm);';
-    body.appendChild(el('div', '', value)).style.cssText = 'font-size:var(--font-size-lg); font-weight:var(--font-weight-bold);';
-    card.appendChild(body);
-    return card;
 }
 
 function renderLog(host, state) {

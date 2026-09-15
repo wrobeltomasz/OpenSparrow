@@ -5,6 +5,7 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { getGlobalSchema } from './app.js';
+import { buildSectionCard } from './ui.js';
 
 const LS_COPY_MODE  = 'csv_import_default_copy';
 const LS_DELIMITER  = 'csv_import_delimiter';
@@ -389,12 +390,8 @@ export async function renderCsvImportPage(context) {
         limitsCard.body.appendChild(errorElement);
     }
 
-    const histTitle = document.createElement('h3');
-    histTitle.style.cssText = 'margin:0 0 12px;';
-    histTitle.textContent = 'Import History';
-
-    const histContainer = document.createElement('div');
-    historyPanel.append(histTitle, histContainer);
+    const { card: histCard, body: histContainer } = buildSectionCard('Import History');
+    historyPanel.appendChild(histCard);
 
     tableSelect.addEventListener('change', () => {
         selectedTable = tableSelect.value;
