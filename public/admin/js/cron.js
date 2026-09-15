@@ -638,38 +638,6 @@ function buildEmailQueueSection() {
     const container = document.createElement('div');
     body.appendChild(container);
 
-    const purgeCard = cronMakeSection('cron-section-6b', 'Purge Queue', 'Delete queued emails by status, optionally only those older than a number of days.');
-    const purgeCardBody = purgeCard.body;
-    const purgeRow = document.createElement('div');
-    purgeRow.style.cssText = 'display:flex; align-items:center; gap:10px; flex-wrap:wrap;';
-
-    const purgeStatusSelect = document.createElement('select');
-    purgeStatusSelect.className = 'adm-input w-160';
-    [['sent', 'Sent'], ['error', 'Error'], ['pending', 'Pending']].forEach(([value, label]) => {
-        const option = document.createElement('option');
-        option.value = value;
-        option.textContent = label;
-        purgeStatusSelect.appendChild(option);
-    });
-
-    const purgeDaysInput = document.createElement('input');
-    purgeDaysInput.type = 'number';
-    purgeDaysInput.min = '1';
-    purgeDaysInput.max = '3650';
-    purgeDaysInput.placeholder = 'all ages';
-    purgeDaysInput.className = 'adm-input w-120';
-
-    const purgeButton = document.createElement('button');
-    purgeButton.className = 'btn btn-danger';
-    purgeButton.textContent = 'Purge';
-
-    const purgeResult = document.createElement('p');
-    purgeResult.style.cssText = 'margin-top:12px; display:none;';
-
-    purgeRow.append(purgeStatusSelect, purgeDaysInput, purgeButton);
-    purgeCardBody.append(purgeRow, purgeResult);
-    body.appendChild(purgeCard.card);
-
     let selectedIds = new Set();
 
     function selectedIdList() {
@@ -803,6 +771,42 @@ function buildEmailQueueSection() {
     requeueSelectedButton.addEventListener('click', () => requeueIds(selectedIdList(), requeueSelectedButton));
     deleteSelectedButton.addEventListener('click', () => deleteIds(selectedIdList(), deleteSelectedButton));
 
+    loadQueue();
+    return { card, loadQueue };
+}
+
+function buildPurgeQueueSection(onPurged) {
+    const { card, body } = cronMakeSection('cron-section-6b', 'Purge Queue', 'Delete queued emails by status, optionally only those older than a number of days.');
+
+    const purgeRow = document.createElement('div');
+    purgeRow.style.cssText = 'display:flex; align-items:center; gap:10px; flex-wrap:wrap;';
+
+    const purgeStatusSelect = document.createElement('select');
+    purgeStatusSelect.className = 'adm-input w-160';
+    [['sent', 'Sent'], ['error', 'Error'], ['pending', 'Pending']].forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        purgeStatusSelect.appendChild(option);
+    });
+
+    const purgeDaysInput = document.createElement('input');
+    purgeDaysInput.type = 'number';
+    purgeDaysInput.min = '1';
+    purgeDaysInput.max = '3650';
+    purgeDaysInput.placeholder = 'all ages';
+    purgeDaysInput.className = 'adm-input w-120';
+
+    const purgeButton = document.createElement('button');
+    purgeButton.className = 'btn btn-danger';
+    purgeButton.textContent = 'Purge';
+
+    const purgeResult = document.createElement('p');
+    purgeResult.style.cssText = 'margin-top:12px; display:none;';
+
+    purgeRow.append(purgeStatusSelect, purgeDaysInput, purgeButton);
+    body.append(purgeRow, purgeResult);
+
     purgeButton.addEventListener('click', async () => {
         const daysValue = purgeDaysInput.value.trim();
         const days = daysValue === '' ? null : parseInt(daysValue, 10);
@@ -831,7 +835,7 @@ function buildEmailQueueSection() {
             if (data.status === 'success') {
                 purgeResult.textContent = `Deleted ${data.deleted} email(s).`;
                 purgeResult.style.color = 'var(--ok)';
-                await loadQueue();
+                onPurged();
             } else {
                 purgeResult.textContent = 'Error: ' + (data.error || 'unknown');
                 purgeResult.style.color = 'var(--error)';
@@ -846,7 +850,6 @@ function buildEmailQueueSection() {
         purgeButton.textContent = 'Purge';
     });
 
-    loadQueue();
     return card;
 }
 
@@ -880,5 +883,6 @@ export function renderCronPage(context) {
     p3.appendChild(buildSetupSection());
     p4.appendChild(buildCleanupSection());
     p5.appendChild(buildEmailSection());
-    p6.appendChild(buildEmailQueueSection());
+    const emailQueue = buildEmailQueueSection();
+    p6.append(emailQueue.card, buildPurgeQueueSection(() => { emailQueue.loadQueue(); }));
 }

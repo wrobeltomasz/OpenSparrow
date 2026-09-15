@@ -62,6 +62,11 @@ function buildRulesTab(context) {
         'Each rule anonymizes a PII column for records older than the configured number of days.'
     );
 
+    const addCard = mkSection(
+        'Add Rule',
+        'Define a new rule: pick the aging date column, the retention window and the PII column to scrub.'
+    );
+
     const tableOptions = context.getTableOptions ? context.getTableOptions() : [];
 
     function renderRulesTable() {
@@ -139,12 +144,14 @@ function buildRulesTab(context) {
             empty.style.cssText = ' margin-bottom:16px;';
             body.appendChild(empty);
         }
-
-        buildAddForm(body, tableOptions, renderRulesTable);
     }
 
     renderRulesTable();
-    return card;
+    buildAddForm(addCard.body, tableOptions, renderRulesTable);
+
+    const fragment = document.createDocumentFragment();
+    fragment.append(card, addCard.card);
+    return fragment;
 }
 
 function buildPreviewBlock(container) {
@@ -194,11 +201,6 @@ function buildPreviewBlock(container) {
 function buildAddForm(container, tableOptions, onAdded) {
     const formCard = document.createElement('div');
     formCard.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:16px; max-width:900px;';
-
-    const title = document.createElement('strong');
-    title.textContent = 'Add Rule';
-    title.style.cssText = 'display:block; margin-bottom:12px; ';
-    formCard.appendChild(title);
 
     const row = document.createElement('div');
     row.style.cssText = 'display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;';
@@ -442,7 +444,6 @@ function buildScheduleTab() {
     });
 
     runBody.append(runButton, output);
-    body.appendChild(runCard);
 
     const { card: setupCard, body: setupBody } = mkSection(
         'Cron Setup Guide',
@@ -486,9 +487,9 @@ function buildScheduleTab() {
         'sleep 86400 = 24 hours. Adjust as needed; the script skips early runs per the configured frequency.'
     ));
 
-    body.appendChild(setupCard);
-
-    return card;
+    const fragment = document.createDocumentFragment();
+    fragment.append(card, runCard, setupCard);
+    return fragment;
 }
 
 function buildSuggestionsTab() {
@@ -813,9 +814,10 @@ function buildDictionaryTab() {
 
     logRow.append(logLabel, logInput, logUnit, purgeButton);
     logBody.append(logRow, purgeSt);
-    body.appendChild(logCard);
 
-    return card;
+    const fragment = document.createDocumentFragment();
+    fragment.append(card, logCard);
+    return fragment;
 }
 
 function buildReportCell(replacementValue, tbody, colspan) {
