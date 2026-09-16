@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { apiFetch } from '../../assets/js/util/api.js';
-import { buildInnerTabs, createPageHeader } from './ui.js';
+import { buildInnerTabs, buildSectionCard, createPageHeader } from './ui.js';
 import { escHtml } from '../../assets/js/util/esc.js';
 
 export async function renderMigrationsPage(context) {
@@ -26,9 +26,11 @@ export async function renderMigrationsPage(context) {
         { label: 'Release Migrations', icon: 'material/box.svg' },
     ]);
 
-    const subtitle = document.createElement('p');
-    subtitle.style.cssText = 'margin:0 0 20px;  ';
-    subtitle.textContent = 'Each migration runs once and is recorded in spw_migrations. Running "Apply Migrations" is safe to repeat.';
+    const { card: databaseCard, body: databaseCardBody } = buildSectionCard(
+        'Database Migrations',
+        'Each migration runs once and is recorded in spw_migrations. Running "Apply Migrations" is safe to repeat.'
+    );
+    panel0.appendChild(databaseCard);
 
     const runButton = document.createElement('button');
     runButton.id = 'mig-run-btn';
@@ -44,7 +46,7 @@ export async function renderMigrationsPage(context) {
     tableWrap.id = 'mig-table';
     tableWrap.innerHTML = '<p style=" ">Loading…</p>';
 
-    panel0.append(subtitle, runButton, statusElement, tableWrap);
+    databaseCardBody.append(runButton, statusElement, tableWrap);
 
     const relSub = document.createElement('p');
     relSub.style.cssText = 'margin:0 0 20px;  ';

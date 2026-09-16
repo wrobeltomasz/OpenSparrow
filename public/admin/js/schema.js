@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { apiFetch } from '../../assets/js/util/api.js';
-import { createTextInput, createNumberInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview } from './ui.js';
+import { createTextInput, createNumberInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview, buildSectionCard } from './ui.js';
 import { showStatusPill, markDirty } from './app.js';
 
 import { escHtml } from '../../assets/js/util/esc.js';
@@ -16,16 +16,14 @@ export function renderSchemaGlobalSettings(config, context) {
     const PAGE_SIZES = [10, 25, 50, 100];
     const current = Number(config.default_page_size) || 25;
 
-    const card = document.createElement('div');
-    card.style.cssText = 'max-width:560px;';
-
-    const h3 = document.createElement('h3');
-    h3.style.cssText = 'margin:0 0 6px;';
-    h3.textContent = 'Global Grid Settings';
-    const subtitle = document.createElement('p');
-    subtitle.style.cssText = '  margin:0 0 24px;';
-    subtitle.textContent = 'Settings that apply to all data grids in the frontend application.';
-    card.append(h3, subtitle);
+    const { card, body } = buildSectionCard(
+        'Global Grid Settings',
+        'Settings that apply to all data grids in the frontend application.'
+    );
+    const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
+    wrap.appendChild(card);
+    workspaceElement.appendChild(wrap);
 
     const row = document.createElement('div');
     row.style.cssText = 'display:flex; align-items:center; gap:16px; padding:16px; background:white; border:1px solid var(--border); border-radius:6px;';
@@ -56,14 +54,12 @@ export function renderSchemaGlobalSettings(config, context) {
     });
 
     row.append(labelWrap, selectElement);
-    card.appendChild(row);
+    body.appendChild(row);
 
     const note = document.createElement('p');
     note.style.cssText = '  margin-top:12px;';
     note.textContent = 'Stored in the schema configuration as "default_page_size".';
-    card.appendChild(note);
-
-    workspaceElement.appendChild(card);
+    body.appendChild(note);
 }
 
 export function createAddTableButton(currentConfig, defaultSchema, onSuccess, onError) {

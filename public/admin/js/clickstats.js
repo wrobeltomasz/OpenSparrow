@@ -76,9 +76,10 @@ function renderSettings(panel, state) {
         panel.appendChild(warn);
     }
 
-    const card = el('div', 'adm-sec-card');
-    const body = el('div', 'adm-sec-body');
-    card.appendChild(body);
+    const { card, body } = buildSectionCard(
+        'Click Statistics Settings',
+        'Collection toggle, retention and what is stored with every recorded click.'
+    );
     panel.appendChild(card);
 
     const enabled = checkboxRow(

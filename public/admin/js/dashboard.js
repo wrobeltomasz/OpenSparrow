@@ -267,13 +267,13 @@ export function renderDashboardLayout(context) {
         title: 'Dashboard Global Settings',
         defaultMenuName: 'Dashboard',
         includeHidden: true,
-        onAfter: ({ workspaceEl: workspaceElement, currentConfig }) => {
+        onAfter: ({ settingsBody }) => {
             const layoutTitle = document.createElement('h4');
             layoutTitle.textContent = 'Grid Layout';
             layoutTitle.style.marginTop = '20px';
-            workspaceElement.appendChild(layoutTitle);
+            settingsBody.appendChild(layoutTitle);
 
-            workspaceElement.appendChild(createTextInput('layout_gap', 'Grid Gap (CSS)', currentConfig.layout.gap || '20px', value => currentConfig.layout.gap = value));
+            settingsBody.appendChild(createTextInput('layout_gap', 'Grid Gap (CSS)', currentConfig.layout.gap || '20px', value => currentConfig.layout.gap = value));
         },
     });
 }

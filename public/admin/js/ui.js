@@ -643,30 +643,32 @@ export function renderGlobalSettings(context, options = {}) {
     } = options;
 
     workspaceElement.innerHTML = '';
-    const heading = document.createElement('h3');
-    heading.textContent = title;
-    workspaceElement.appendChild(heading);
+    const { card, body } = buildSectionCard(title, 'Module-wide settings stored in spw_config.');
+    const wrap = document.createElement('div');
+    wrap.className = 'admin-page';
+    wrap.appendChild(card);
+    workspaceElement.appendChild(wrap);
 
-    workspaceElement.appendChild(createTextInput('menu_name', 'Menu Display Name',
+    body.appendChild(createTextInput('menu_name', 'Menu Display Name',
         currentConfig.menu_name || defaultMenuName, value => {
             currentConfig.menu_name = value;
         }));
 
-    workspaceElement.appendChild(createIconPicker('menu_icon', 'Menu Icon',
+    body.appendChild(createIconPicker('menu_icon', 'Menu Icon',
         currentConfig.menu_icon || '', value => {
             if (value && value.trim() !== '') currentConfig.menu_icon = value;
             else delete currentConfig.menu_icon;
         }));
 
     if (includeHidden) {
-        workspaceElement.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
+        body.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
             currentConfig.hidden, value => {
                 if (value) currentConfig.hidden = true;
                 else delete currentConfig.hidden;
             }, false));
     }
 
-    if (typeof onAfter === 'function') onAfter(context);
+    if (typeof onAfter === 'function') onAfter({ ...context, settingsBody: body });
 }
 
 export function createFullMenuPreview(config) {

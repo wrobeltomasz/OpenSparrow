@@ -349,7 +349,15 @@ function appendClearConfigButton(context) {
     clearHelp.textContent = 'Removes the entire configuration for this section. Press "Save config" in the top bar to apply.';
     dangerGroup.appendChild(clearHelp);
 
-    workspaceElement.appendChild(dangerGroup);
+    const wrap = workspaceElement.querySelector('.admin-page');
+    if (wrap) {
+        wrap.appendChild(dangerGroup);
+    } else {
+        const pageWrap = document.createElement('div');
+        pageWrap.className = 'admin-page';
+        pageWrap.appendChild(dangerGroup);
+        workspaceElement.appendChild(pageWrap);
+    }
 }
 
 function tabIcon(name) {

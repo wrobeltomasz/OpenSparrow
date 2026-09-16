@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { markDirty } from './app.js';
-import { createIconPicker, createTextInput, createCheckbox } from './ui.js';
+import { createIconPicker, createTextInput, createCheckbox, buildSectionCard } from './ui.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
 export function renderViewsEditor(context) {
@@ -228,20 +228,22 @@ export function renderViewsEditor(context) {
     }
 
     function renderSettingsPanel() {
-        const heading = document.createElement('h3');
-        heading.textContent = 'Views Global Settings';
-        listElement.appendChild(heading);
+        const { card, body } = buildSectionCard(
+            'Views Global Settings',
+            'Module-wide menu settings for the Views module.'
+        );
+        listElement.appendChild(card);
 
-        listElement.appendChild(createTextInput('menu_name', 'Menu Display Name',
+        body.appendChild(createTextInput('menu_name', 'Menu Display Name',
             currentConfig.menu_name || 'Views', viewName => { currentConfig.menu_name = viewName; }));
 
-        listElement.appendChild(createIconPicker('menu_icon', 'Menu Icon',
+        body.appendChild(createIconPicker('menu_icon', 'Menu Icon',
             currentConfig.menu_icon || '', viewName => {
                 if (viewName && viewName.trim() !== '') currentConfig.menu_icon = viewName;
                 else delete currentConfig.menu_icon;
             }));
 
-        listElement.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
+        body.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu',
             currentConfig.hidden, viewName => {
                 if (viewName) currentConfig.hidden = true;
                 else delete currentConfig.hidden;
@@ -272,7 +274,7 @@ export function renderViewsEditor(context) {
         clearHelp.textContent = 'Removes all views and resets the menu name, icon and visibility. Press "Save config" in the top bar to apply.';
         dangerGroup.appendChild(clearHelp);
 
-        listElement.appendChild(dangerGroup);
+        body.appendChild(dangerGroup);
     }
 
     function buildViewCard(vName, config) {

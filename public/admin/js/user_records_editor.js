@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { markDirty, getGlobalSchema } from './app.js';
-import { createPageHeader, buildInnerTabs } from './ui.js';
+import { createPageHeader, buildInnerTabs, buildSectionCard } from './ui.js';
 
 export function renderUserRecordsEditor(context) {
     const { workspaceEl: workspaceElement, currentConfig } = context;
@@ -153,7 +153,13 @@ function createColumnMultiSelect(options, selectedValues, onChange) {
 
 function renderSettingsPanel(panel, context) {
     const { currentConfig } = context;
-    panel.style.cssText = 'padding-top:16px; max-width:420px;';
+    panel.style.cssText = 'padding-top:16px;';
+
+    const { card, body } = buildSectionCard(
+        'Global Settings',
+        'Limits and reset actions for the "My records" panel.'
+    );
+    panel.appendChild(card);
 
     const group = document.createElement('div');
     group.className = 'form-group';
@@ -179,7 +185,7 @@ function renderSettingsPanel(panel, context) {
         + 'are shown per table (ordered by assignment date). Set to 0 to show all.';
     group.appendChild(help);
 
-    panel.appendChild(group);
+    body.appendChild(group);
 
     const dangerGroup = document.createElement('div');
     dangerGroup.className = 'form-group';
@@ -204,5 +210,5 @@ function renderSettingsPanel(panel, context) {
         + 'Press "Save config" in the top bar to apply.';
     dangerGroup.appendChild(clearHelp);
 
-    panel.appendChild(dangerGroup);
+    body.appendChild(dangerGroup);
 }

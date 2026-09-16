@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { apiFetch } from '../../assets/js/util/api.js';
-import { createIconPicker, buildInnerTabs } from './ui.js';
+import { createIconPicker, buildInnerTabs, buildSectionCard } from './ui.js';
 import { markDirty } from './app.js';
 
 export function renderPrintEditor(context) {
@@ -33,13 +33,11 @@ export function renderPrintEditor(context) {
         { label: 'Global Settings', icon: 'material/settings.svg' },
     ]);
 
-    const globalHeading = document.createElement('h3');
-    globalHeading.textContent = 'Global Settings';
-    const globalDescription = document.createElement('p');
-    globalDescription.style.cssText = '  margin:0;';
-    globalDescription.textContent = 'Printouts have no module-wide settings yet — each template configures its own view, parameters and blocks below. Use "All Printouts" to add and edit templates.';
-    globalPanel.appendChild(globalHeading);
-    globalPanel.appendChild(globalDescription);
+    const { card: globalCard, body: globalBody } = buildSectionCard(
+        'Global Settings',
+        'Printouts have no module-wide settings yet — each template configures its own view, parameters and blocks below. Use "All Printouts" to add and edit templates.'
+    );
+    globalPanel.appendChild(globalCard);
 
     const dangerGroup = document.createElement('div');
     dangerGroup.className = 'form-group';
@@ -62,7 +60,7 @@ export function renderPrintEditor(context) {
     clearHelp.textContent = 'Removes all printout templates. Press "Save config" in the top bar to apply.';
     dangerGroup.appendChild(clearHelp);
 
-    globalPanel.appendChild(dangerGroup);
+    globalBody.appendChild(dangerGroup);
 
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
