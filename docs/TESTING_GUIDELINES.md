@@ -1,7 +1,7 @@
 # Cypress E2E Testing Guidelines
 ## OpenSparrow Frontend Testing Standards
 
-**Version:** 3.6  
+**Version:** 3.7  
 **Audience:** Frontend Developers  
 **Focus:** All Cypress E2E test files in `cypress/e2e/`  
 

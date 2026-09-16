@@ -125,5 +125,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds an External API module (Admin -> System -> API): admins define read-only API keys, each bound to one schema table with a chosen column set, fixed server-side filters and a row limit. The configuration lives in the spw_config external_api key; keys are stored encrypted (key_enc) plus an HMAC key_hash for constant-time lookup, and are never returned to the browser after generation. External services call public/api/external.php with the key as an Authorization: Bearer header and receive JSON rows; the endpoint accepts no table, column or filter names from the client, refuses hidden and system tables, is rate-limited per key and per IP, and answers 401/403/404/429. No database migration and no configuration keys are removed by this release."
+    },
+    "3.7": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Admin panel UI overhaul, with no backend behaviour changes. Every settings form and data table now renders inside a unified section card (buildSectionCard) with a consistent header style, so all admin tabs share the same look; section cards are never nested and tables get a descriptive title with an overflow-x wrapper. Settings tabs share one width via the .admin-page wrapper, with the per-panel max-width inline styles removed. Statistics and log tabs (External API Usage, Click Statistics Log, Cron) follow the same tile-grid pattern as AI Center Query Statistics, and the Users tabs were unified with the same section-card and tile styles. Typographic scale was unified to three sizes and two weights via CSS tokens. Adds an automation emails admin API with a Cron email queue section, a RAG document preview modal with rechunk success feedback and improved documents/action layouts, and renames the RAG admin section to Centrum AI. Fixes admin tab renderers wiping section descriptions. No database migration and no configuration keys are removed by this release."
     }
 }
