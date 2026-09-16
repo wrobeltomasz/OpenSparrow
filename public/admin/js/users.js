@@ -5,7 +5,7 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { escHtml } from '../../assets/js/util/esc.js';
-import { buildInnerTabs, buildModal, createPageHeader } from './ui.js';
+import { buildInnerTabs, buildModal, buildSectionCard, createPageHeader, el, mkTable, mkThead, td, tdEl } from './ui.js';
 import { showStatusPill } from './app.js';
 
 export async function renderUsersEditor(context) {
@@ -14,7 +14,10 @@ export async function renderUsersEditor(context) {
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
-    wrap.appendChild(createPageHeader('Users'));
+    wrap.appendChild(createPageHeader(
+        'Users',
+        'Manage accounts, roles and per-user frontend access. Roles: Admin (admin panel only), Editor (full frontend CRUD), Viewer (read-only frontend).'
+    ));
 
     const [managePanel, accessPanel, statisticsPanel, settingsPanel] = buildInnerTabs(wrap, [
         { label: 'Manage Users', icon: 'material/user_attributes.svg' },
@@ -48,85 +51,93 @@ async function renderUserAccess(panel) {
         return;
     }
 
-    panel.innerHTML = `
-        <h2 class="admin-page-title">Frontend Access</h2>
-        <p class="admin-page-desc">
-            Restrict a user to a subset of the frontend tables, views and printouts. Each
-            group is independent, and ticking nothing in a group leaves that group
-            unrestricted — which is not the same as revoking access. To cut someone off
-            entirely, deactivate the account in Manage Users. Admin accounts are not
-            listed: they work in this panel and always see everything.
-        </p>
-        <div class="adm-sec-card">
-            <label class="adm-field-label" for="taUser">User</label>
-            <select id="taUser" class="adm-input w-260">
-                ${users.map(user => `<option value="${user.id}">${escHtml(user.username)}${user.is_active ? '' : ' (inactive)'}</option>`).join('')}
-            </select>
-            <div id="taScopes" style="margin-top:16px;"></div>
-        </div>
-    `;
+    panel.innerHTML = '';
+
+    const { card: accessCard, body: accessBody } = buildSectionCard(
+        'Frontend Access',
+        'Restrict a user to a subset of the frontend tables, views and printouts. Each group is independent, '
+        + 'and ticking nothing in a group leaves that group unrestricted — which is not the same as revoking access. '
+        + 'To cut someone off entirely, deactivate the account in Manage Users. Admin accounts are not listed: '
+        + 'they work in this panel and always see everything.'
+    );
+    panel.appendChild(accessCard);
 
     if (users.length === 0) {
-        panel.querySelector('.adm-sec-card').innerHTML =
-            '<p class="help-text">No non-admin users yet. Create one in Manage Users first.</p>';
+        accessBody.innerHTML = '<p class="help-text">No non-admin users yet. Create one in Manage Users first.</p>';
         return;
     }
 
-    const selectElement = panel.querySelector('#taUser');
-    const listElement   = panel.querySelector('#taScopes');
+    const userLabel = el('label', 'adm-field-label', 'User');
+    userLabel.htmlFor = 'taUser';
 
-    selectElement.addEventListener('change', () => loadUserAccess(listElement, selectElement.value));
-    loadUserAccess(listElement, selectElement.value);
+    const selectElement = el('select', 'adm-input w-260');
+    selectElement.id = 'taUser';
+    users.forEach(user => {
+        const option = el('option', '', user.username + (user.is_active ? '' : ' (inactive)'));
+        option.value = user.id;
+        selectElement.appendChild(option);
+    });
+
+    accessBody.append(userLabel, selectElement);
+
+    selectElement.addEventListener('change', () => loadUserAccess(panel, accessCard, selectElement));
+    loadUserAccess(panel, accessCard, selectElement);
 }
 
-function renderScopeSection(container, scope, allItems, selected, hiddenChildren = {}) {
+function renderScopeSection(panel, scope, allItems, selected, hiddenChildren = {}) {
     const names = Object.keys(allItems)
-        .sort((a, checkbox) => (allItems[a] || a).localeCompare(allItems[checkbox] || checkbox));
+        .sort((left, right) => (allItems[left] || left).localeCompare(allItems[right] || right));
 
-    const section = document.createElement('div');
-    section.style.marginBottom = '22px';
+    const { card, body } = buildSectionCard(
+        scope.title,
+        names.length === 0 ? scope.empty : 'Tick items to restrict the user to them. Leave everything unticked for unrestricted access.'
+    );
+    panel.appendChild(card);
 
     if (names.length === 0) {
-        section.innerHTML = `<h4>${escHtml(scope.title)}</h4><p class="help-text">${escHtml(scope.empty)}</p>`;
-        container.appendChild(section);
         return () => [];
     }
 
-    section.innerHTML = `
-        <h4>${escHtml(scope.title)}</h4>
-        <div class="ta-badge" style="margin-bottom:10px;"></div>
-        <table class="adm-tbl">
-            <thead>
-                <tr>
-                    <th class="adm-th">Access</th>
-                    <th class="adm-th">Display Name</th>
-                    <th class="adm-th">Name</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${names.map(selectedCount => `
-                    <tr>
-                        <td class="adm-td">
-                            <input type="checkbox" class="adm-check ta-item" value="${escHtml(selectedCount)}"
-                                   ${selected.has(selectedCount) ? 'checked' : ''}>
-                        </td>
-                        <td class="adm-td"><strong>${escHtml(allItems[selectedCount] || selectedCount)}</strong></td>
-                        <td class="adm-td"><code>${escHtml(selectedCount)}</code></td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-            <button class="btn btn-secondary btn-sm ta-all">Select All</button>
-            <button class="btn btn-secondary btn-sm ta-none">Select None</button>
-        </div>
-        <p class="help-text ta-note" style="margin-top:10px;"></p>
-    `;
-    container.appendChild(section);
+    const badge = el('div', 'ta-badge');
+    badge.style.marginBottom = '10px';
+    body.appendChild(badge);
 
-    const boxes = Array.from(section.querySelectorAll('.ta-item'));
-    const badge = section.querySelector('.ta-badge');
-    const note  = section.querySelector('.ta-note');
+    const tableWrap = el('div');
+    tableWrap.style.cssText = 'overflow-x:auto;';
+    body.appendChild(tableWrap);
+
+    const tableElement = mkTable();
+    mkThead(tableElement, ['Access', 'Display Name', 'Name']);
+    const tbody = tableElement.createTBody();
+    names.forEach(name => {
+        const row = tbody.insertRow();
+        const accessCell = el('td', 'adm-td');
+        const box = el('input', 'adm-check ta-item');
+        box.type = 'checkbox';
+        box.value = name;
+        box.checked = selected.has(name);
+        accessCell.appendChild(box);
+        const displayCell = el('td', 'adm-td');
+        const strong = el('strong', '', allItems[name] || name);
+        displayCell.appendChild(strong);
+        const nameCell = el('td', 'adm-td');
+        nameCell.appendChild(el('code', '', name));
+        row.append(accessCell, displayCell, nameCell);
+    });
+    tableWrap.appendChild(tableElement);
+
+    const buttonRow = el('div');
+    buttonRow.style.cssText = 'display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;';
+    const allButton = el('button', 'btn btn-secondary btn-sm ta-all', 'Select All');
+    const noneButton = el('button', 'btn btn-secondary btn-sm ta-none', 'Select None');
+    buttonRow.append(allButton, noneButton);
+    body.appendChild(buttonRow);
+
+    const note = el('p', 'help-text ta-note');
+    note.style.marginTop = '10px';
+    body.appendChild(note);
+
+    const boxes = Array.from(body.querySelectorAll('.ta-item'));
 
     const refreshBadge = () => {
         const selectedCount = boxes.filter(checkbox => checkbox.checked).length;
@@ -149,11 +160,11 @@ function renderScopeSection(container, scope, allItems, selected, hiddenChildren
     boxes.forEach(checkbox => checkbox.addEventListener('change', refresh));
     refresh();
 
-    section.querySelector('.ta-all').addEventListener('click', () => {
+    allButton.addEventListener('click', () => {
         boxes.forEach(checkbox => { checkbox.checked = true; });
         refresh();
     });
-    section.querySelector('.ta-none').addEventListener('click', () => {
+    noneButton.addEventListener('click', () => {
         boxes.forEach(checkbox => { checkbox.checked = false; });
         refresh();
     });
@@ -161,28 +172,34 @@ function renderScopeSection(container, scope, allItems, selected, hiddenChildren
     return () => boxes.filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
 }
 
-async function loadUserAccess(listElement, userId) {
-    listElement.innerHTML = '<p class="help-text">Loading…</p>';
+async function loadUserAccess(panel, anchorCard, selectElement) {
+    const userId = selectElement.value;
+
+    panel.querySelectorAll('.adm-sec-card').forEach(card => { if (card !== anchorCard) card.remove(); });
+    panel.querySelectorAll('.users-access-save-row').forEach(row => row.remove());
+
+    const statusLine = el('p', 'help-text', 'Loading…');
+    anchorCard.after(statusLine);
 
     let data;
     try {
         const response = await apiFetch(`api.php?action=user_tables_get&user_id=${encodeURIComponent(userId)}`);
         data = await response.json();
     } catch (error) {
-        listElement.innerHTML = '<p class="help-text">Network error while loading access.</p>';
+        statusLine.textContent = 'Network error while loading access.';
         return;
     }
     if (data.status !== 'success') {
-        listElement.innerHTML = `<p class="help-text">${escHtml(data.error || 'Failed to load access.')}</p>`;
+        statusLine.textContent = data.error || 'Failed to load access.';
         return;
     }
 
-    listElement.innerHTML = '';
+    statusLine.remove();
     const scopes  = Array.isArray(data.scopes) ? data.scopes : [];
     const readers = {};
     scopes.forEach(scope => {
         readers[scope.key] = renderScopeSection(
-            listElement,
+            panel,
             scope,
             (data.items || {})[scope.key] || {},
             new Set((data.selected || {})[scope.key] || []),
@@ -191,10 +208,11 @@ async function loadUserAccess(listElement, userId) {
         );
     });
 
-    const saveElement = document.createElement('button');
-    saveElement.className = 'btn btn-success';
-    saveElement.textContent = 'Save Access';
-    listElement.appendChild(saveElement);
+    const saveRow = el('div', 'users-access-save-row');
+    saveRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:4px;';
+    const saveElement = el('button', 'btn btn-success', 'Save Access');
+    saveRow.appendChild(saveElement);
+    panel.appendChild(saveRow);
 
     saveElement.addEventListener('click', async () => {
         const payload = { user_id: parseInt(userId, 10) };
@@ -217,141 +235,215 @@ async function loadUserAccess(listElement, userId) {
 }
 
 async function renderManageUsers(panel, context) {
-    panel.innerHTML = `<h3>System Users</h3><p>Loading users...</p>`;
+    panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading users…</p>';
 
+    let data;
+    let policy;
     try {
         const [usersResult, policyResult] = await Promise.all([
             apiFetch('api.php?action=users_list'),
             apiFetch('api.php?action=user_policy_get'),
         ]);
-        const data = await usersResult.json();
-        const policy = await policyResult.json();
+        data = await usersResult.json();
+        policy = await policyResult.json();
+    } catch (_) {
+        panel.innerHTML = '';
+        panel.appendChild(el('p', '', 'Network error while loading users.')).style.color = 'var(--error)';
+        return;
+    }
 
-        if (data.status !== 'success') {
-            panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
-            return;
-        }
+    if (data.status !== 'success') {
+        panel.innerHTML = '';
+        panel.appendChild(el('p', '', data.error || 'Could not load users.')).style.color = 'var(--error)';
+        return;
+    }
+
+    {
 
         const minPasswordLength = policy.status === 'success' ? policy.min_password_length : 12;
         const defaultRole = policy.status === 'success' ? policy.default_role : 'editor';
 
         const hasContact = data.contact_columns !== false;
 
-        let html = `
-            <h2 class="admin-page-title">System Users Management</h2>
-            <p class="admin-page-desc">
-                Manage user accounts and roles. Roles: <strong>Admin</strong> – admin panel only; <strong>Editor</strong> – full frontend CRUD; <strong>Viewer</strong> – read-only frontend.
-            </p>
-            ${hasContact ? '' : `<p class="admin-page-desc" style="color:var(--error);">
-                Contact details (name, email, phone) are unavailable: run
-                Migrations &rarr; Initialize System Tables to apply the
-                <code>3.3_user_contact</code> migration.
-            </p>`}
-            <table class="adm-tbl" style="margin-bottom: 30px;">
-                <thead>
-                    <tr>
-                        <th class="adm-th">ID</th>
-                        <th class="adm-th">Username</th>
-                        ${hasContact ? `<th class="adm-th">Name</th>
-                        <th class="adm-th">Email</th>
-                        <th class="adm-th">Phone</th>` : ''}
-                        <th class="adm-th">Status</th>
-                        <th class="adm-th">Role</th>
-                        <th class="adm-th">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+        const listDescription = 'Manage user accounts and roles. Roles: Admin — admin panel only; Editor — full frontend CRUD; Viewer — read-only frontend.';
+        const { card: listCard, body: listBody } = buildSectionCard('System Users', listDescription);
+        panel.appendChild(listCard);
+
+        if (!hasContact) {
+            const contactWarning = el('p', 'admin-page-desc');
+            contactWarning.style.color = 'var(--error)';
+            contactWarning.innerHTML = 'Contact details (name, email, phone) are unavailable: run '
+                + 'Migrations &rarr; Initialize System Tables to apply the '
+                + '<code>3.3_user_contact</code> migration.';
+            listBody.appendChild(contactWarning);
+        }
+
+        const tableWrap = el('div');
+        tableWrap.style.cssText = 'overflow-x:auto;';
+        listBody.appendChild(tableWrap);
+
+        const tableElement = mkTable();
+        const headerColumns = ['ID', 'Username'];
+        if (hasContact) headerColumns.push('Name', 'Email', 'Phone');
+        headerColumns.push('Status', 'Role', 'Actions');
+        mkThead(tableElement, headerColumns);
+        const tbody = tableElement.createTBody();
 
         const cell = (cellValue) => (cellValue ?? '').trim()
-            ? escHtml(cellValue)
-            : '<span class="adm-td-empty">&mdash;</span>';
+            ? el('span', '', cellValue)
+            : el('span', 'adm-td-empty');
         const fullName = (user) => [user.first_name ?? '', user.last_name ?? ''].join(' ').trim();
 
         data.users.forEach(user => {
-            html += `
-                <tr>
-                    <td class="adm-td">${escHtml(user.id)}</td>
-                    <td class="adm-td"><strong>${escHtml(user.username)}</strong></td>
-                    ${hasContact ? `<td class="adm-td">${cell(fullName(user))}</td>
-                    <td class="adm-td">${cell(user.email)}</td>
-                    <td class="adm-td">${cell(user.phone)}</td>` : ''}
-                    <td class="adm-td">
-                        <span class="adm-badge ${user.is_active ? 'adm-badge-ok' : 'adm-badge-danger'}">
-                            ${user.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                    </td>
-                    <td class="adm-td">
-                        <select class="select-user-role adm-input" data-id="${user.id}">
-                            <option value="admin"  ${user.role === 'admin'  ? 'selected' : ''}>Admin</option>
-                            <option value="editor" ${user.role === 'editor' || !user.role ? 'selected' : ''}>Editor</option>
-                            <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Viewer</option>
-                        </select>
-                    </td>
-                    <td class="adm-td" style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="btn btn-xs btn-toggle-user ${user.is_active ? 'btn-warning' : 'btn-secondary'}" data-id="${user.id}" data-active="${user.is_active}">
-                            ${user.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button class="btn btn-xs btn-secondary btn-change-pwd" data-id="${user.id}" data-username="${escHtml(user.username)}">
-                            Change pwd
-                        </button>
-                        ${hasContact ? `<button class="btn btn-xs btn-secondary btn-edit-contact" data-id="${user.id}" data-username="${escHtml(user.username)}"
-                            data-first-name="${escHtml(user.first_name ?? '')}" data-last-name="${escHtml(user.last_name ?? '')}"
-                            data-email="${escHtml(user.email ?? '')}" data-phone="${escHtml(user.phone ?? '')}">
-                            Edit Details
-                        </button>` : ''}
-                    </td>
-                </tr>
-            `;
+            const row = tbody.insertRow();
+
+            row.appendChild(td(user.id));
+            const usernameCell = el('td', 'adm-td');
+            usernameCell.appendChild(el('strong', '', user.username));
+            row.appendChild(usernameCell);
+            if (hasContact) {
+                row.appendChild(tdEl(cell(fullName(user))));
+                row.appendChild(tdEl(cell(user.email)));
+                row.appendChild(tdEl(cell(user.phone)));
+            }
+            const statusCell = el('td', 'adm-td');
+            statusCell.appendChild(el(
+                'span',
+                'adm-badge ' + (user.is_active ? 'adm-badge-ok' : 'adm-badge-danger'),
+                user.is_active ? 'Active' : 'Inactive'
+            ));
+            row.appendChild(statusCell);
+
+            const roleCell = el('td', 'adm-td');
+            const roleSelect = el('select', 'select-user-role adm-input');
+            roleSelect.dataset.id = user.id;
+            [['admin', 'Admin'], ['editor', 'Editor'], ['viewer', 'Viewer']].forEach(([roleValue, roleLabel]) => {
+                const option = el('option', '', roleLabel);
+                option.value = roleValue;
+                if ((user.role || 'editor') === roleValue) option.selected = true;
+                roleSelect.appendChild(option);
+            });
+            roleCell.appendChild(roleSelect);
+            row.appendChild(roleCell);
+
+            const actionsCell = el('td', 'adm-td');
+            actionsCell.style.cssText = 'display:flex; gap:6px; flex-wrap:wrap;';
+
+            const toggleButton = el(
+                'button',
+                'btn btn-xs btn-toggle-user ' + (user.is_active ? 'btn-warning' : 'btn-secondary'),
+                user.is_active ? 'Deactivate' : 'Activate'
+            );
+            toggleButton.dataset.id = user.id;
+            toggleButton.dataset.active = String(user.is_active);
+            actionsCell.appendChild(toggleButton);
+
+            const passwordButton = el('button', 'btn btn-xs btn-secondary btn-change-pwd', 'Change pwd');
+            passwordButton.dataset.id = user.id;
+            passwordButton.dataset.username = user.username;
+            actionsCell.appendChild(passwordButton);
+
+            if (hasContact) {
+                const contactButton = el('button', 'btn btn-xs btn-secondary btn-edit-contact', 'Edit Details');
+                contactButton.dataset.id = user.id;
+                contactButton.dataset.username = user.username;
+                contactButton.dataset.firstName = user.first_name ?? '';
+                contactButton.dataset.lastName = user.last_name ?? '';
+                contactButton.dataset.email = user.email ?? '';
+                contactButton.dataset.phone = user.phone ?? '';
+                actionsCell.appendChild(contactButton);
+            }
+
+            row.appendChild(actionsCell);
         });
 
-        html += `
-                </tbody>
-            </table>
+        tableWrap.appendChild(tableElement);
 
-            <div style="background: var(--accent-mid); padding: 20px; border-radius: 6px; border: 1px solid var(--accent-mid);">
-                <h4 style="margin-top: 0; margin-bottom: 15px;">Add New User</h4>
-                <div style="margin-bottom: 15px;">
-                    <label class="adm-field-label">Username</label>
-                    <input type="text" id="newUsername" placeholder="e.g. john_doe" class="adm-input w-full">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label class="adm-field-label">Password</label>
-                    <input type="password" id="newPassword" placeholder="Minimum ${minPasswordLength} characters" class="adm-input" style="width:100%;">
-                    <div id="passwordStrengthBar" style="height: 6px; background: var(--accent-mid); border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;">
-                        <div id="passwordStrengthFill" style="height: 100%; width: 0%; transition: width 0.3s, background 0.3s;"></div>
-                    </div>
-                    <small id="passwordStrengthLabel" style=" display: block; margin-top: 4px;"></small>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label class="adm-field-label">Role</label>
-                    <select id="newRole" class="adm-input w-full">
-                        <option value="editor" ${defaultRole === 'editor' ? 'selected' : ''}>Editor</option>
-                        <option value="viewer" ${defaultRole === 'viewer' ? 'selected' : ''}>Viewer</option>
-                        <option value="admin" ${defaultRole === 'admin' ? 'selected' : ''}>Admin</option>
-                    </select>
-                </div>
-                ${hasContact ? `<div style="margin-bottom: 15px;">
-                    <label class="adm-field-label">First Name (Optional)</label>
-                    <input type="text" id="newFirstName" class="adm-input w-full" maxlength="100">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label class="adm-field-label">Last Name (Optional)</label>
-                    <input type="text" id="newLastName" class="adm-input w-full" maxlength="100">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label class="adm-field-label">Email (Optional)</label>
-                    <input type="email" id="newEmail" class="adm-input w-full" maxlength="255">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label class="adm-field-label">Phone (Optional)</label>
-                    <input type="text" id="newPhone" class="adm-input w-full" maxlength="32">
-                </div>` : ''}
-                <button id="btnAddUser" class="btn btn-success">Create User</button>
-            </div>
-        `;
+        const { card: addCard, body: addBody } = buildSectionCard(
+            'Add New User',
+            'Create a new account. The password policy below sets the minimum length; the strength meter updates as you type.'
+        );
+        panel.appendChild(addCard);
 
-        panel.innerHTML = html;
+        const addForm = el('div');
+        addForm.style.maxWidth = '520px';
+        addBody.appendChild(addForm);
+
+        const addField = (labelText, inputElement) => {
+            const group = el('div');
+            group.style.marginBottom = '15px';
+            group.appendChild(el('label', 'adm-field-label', labelText));
+            inputElement.className = 'adm-input w-full';
+            group.appendChild(inputElement);
+            addForm.appendChild(group);
+            return group;
+        };
+
+        const newUsername = el('input');
+        newUsername.type = 'text';
+        newUsername.id = 'newUsername';
+        newUsername.placeholder = 'e.g. john_doe';
+        addField('Username', newUsername);
+
+        const newPassword = el('input');
+        newPassword.type = 'password';
+        newPassword.id = 'newPassword';
+        newPassword.placeholder = `Minimum ${minPasswordLength} characters`;
+        const passwordGroup = addField('Password', newPassword);
+
+        const strengthBar = el('div');
+        strengthBar.id = 'passwordStrengthBar';
+        strengthBar.style.cssText = 'height: 6px; background: var(--accent-mid); border-radius: 3px; margin-top: 8px; overflow: hidden; max-width: 200px;';
+        const strengthFill = el('div');
+        strengthFill.id = 'passwordStrengthFill';
+        strengthFill.style.cssText = 'height: 100%; width: 0%; transition: width 0.3s, background 0.3s;';
+        strengthBar.appendChild(strengthFill);
+        passwordGroup.appendChild(strengthBar);
+
+        const strengthLabel = el('small');
+        strengthLabel.id = 'passwordStrengthLabel';
+        strengthLabel.style.cssText = 'display: block; margin-top: 4px;';
+        passwordGroup.appendChild(strengthLabel);
+
+        const newRole = el('select');
+        newRole.id = 'newRole';
+        [['editor', 'Editor'], ['viewer', 'Viewer'], ['admin', 'Admin']].forEach(([roleValue, roleLabel]) => {
+            const option = el('option', '', roleLabel);
+            option.value = roleValue;
+            if (defaultRole === roleValue) option.selected = true;
+            newRole.appendChild(option);
+        });
+        addField('Role', newRole);
+
+        if (hasContact) {
+            const newFirstName = el('input');
+            newFirstName.type = 'text';
+            newFirstName.id = 'newFirstName';
+            newFirstName.maxLength = 100;
+            addField('First Name (Optional)', newFirstName);
+
+            const newLastName = el('input');
+            newLastName.type = 'text';
+            newLastName.id = 'newLastName';
+            newLastName.maxLength = 100;
+            addField('Last Name (Optional)', newLastName);
+
+            const newEmail = el('input');
+            newEmail.type = 'email';
+            newEmail.id = 'newEmail';
+            newEmail.maxLength = 255;
+            addField('Email (Optional)', newEmail);
+
+            const newPhone = el('input');
+            newPhone.type = 'text';
+            newPhone.id = 'newPhone';
+            newPhone.maxLength = 32;
+            addField('Phone (Optional)', newPhone);
+        }
+
+        const addButton = el('button', 'btn btn-success', 'Create User');
+        addButton.id = 'btnAddUser';
+        addForm.appendChild(addButton);
 
         panel.querySelectorAll('.btn-toggle-user').forEach(button => {
             button.addEventListener('click', async (event) => {
@@ -555,8 +647,6 @@ async function renderManageUsers(panel, context) {
         });
 
         const passwordInput = panel.querySelector('#newPassword');
-        const strengthFill = panel.querySelector('#passwordStrengthFill');
-        const strengthLabel = panel.querySelector('#passwordStrengthLabel');
 
         function evaluatePassword(newPassword) {
             let score = 0;
@@ -622,144 +712,189 @@ async function renderManageUsers(panel, context) {
                 showStatusPill(addButton, 'Network error.', 'error');
             }
         });
-    } catch (event) {
-        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(event.message)}</p>`;
     }
 }
 
 async function renderUserStatistics(panel) {
-    panel.innerHTML = `<p>Loading statistics...</p>`;
+    panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading statistics…</p>';
 
+    let data;
     try {
         const response = await apiFetch('api.php?action=users_stats');
-        const data = await response.json();
-
-        if (data.status !== 'success') {
-            panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
-            return;
-        }
-
-        let html = `
-            <h2 class="admin-page-title">User Statistics</h2>
-            <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:24px;">
-                <div class="adm-sec-card stat-tile" style="min-width:140px;">
-                    <div class="stat-tile-label admin-page-desc">Total users</div>
-                    <div class="stat-tile-value">${escHtml(data.total)}</div>
-                </div>
-                <div class="adm-sec-card stat-tile" style="min-width:140px;">
-                    <div class="stat-tile-label admin-page-desc">Active</div>
-                    <div class="stat-tile-value c-ok">${escHtml(data.active)}</div>
-                </div>
-                <div class="adm-sec-card stat-tile" style="min-width:140px;">
-                    <div class="stat-tile-label admin-page-desc">Inactive</div>
-                    <div class="stat-tile-value c-danger">${escHtml(data.inactive)}</div>
-                </div>
-            </div>
-
-            <h4>By role</h4>
-            <table class="adm-tbl" style="margin-bottom:30px; max-width:400px;">
-                <thead>
-                    <tr><th class="adm-th">Role</th><th class="adm-th">Count</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td class="adm-td">Admin</td><td class="adm-td">${escHtml(data.by_role.admin)}</td></tr>
-                    <tr><td class="adm-td">Editor</td><td class="adm-td">${escHtml(data.by_role.editor)}</td></tr>
-                    <tr><td class="adm-td">Viewer</td><td class="adm-td">${escHtml(data.by_role.viewer)}</td></tr>
-                </tbody>
-            </table>
-
-            <h4>Recent user activity</h4>
-            <table class="adm-tbl">
-                <thead>
-                    <tr>
-                        <th class="adm-th">Action</th>
-                        <th class="adm-th">By</th>
-                        <th class="adm-th">When</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        if (data.recent.length === 0) {
-            html += `<tr><td class="adm-td" colspan="3">No recent activity.</td></tr>`;
-        } else {
-            data.recent.forEach(recentEntry => {
-                html += `
-                    <tr>
-                        <td class="adm-td">${escHtml(recentEntry.action)}</td>
-                        <td class="adm-td">${escHtml(recentEntry.username || '—')}</td>
-                        <td class="adm-td">${escHtml(recentEntry.created_at)}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        html += `
-                </tbody>
-            </table>
-        `;
-
-        panel.innerHTML = html;
-    } catch (event) {
-        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(event.message)}</p>`;
+        data = await response.json();
+    } catch (_) {
+        panel.innerHTML = '';
+        panel.appendChild(el('p', '', 'Network error while loading statistics.')).style.color = 'var(--error)';
+        return;
     }
+    if (data.status !== 'success') {
+        panel.innerHTML = '';
+        panel.appendChild(el('p', '', data.error || 'Could not load statistics.')).style.color = 'var(--error)';
+        return;
+    }
+
+    panel.innerHTML = '';
+
+    const { card: summaryCard, body: summaryBody } = buildSectionCard(
+        'User Statistics',
+        'Aggregated account metrics across the whole system.'
+    );
+    panel.appendChild(summaryCard);
+
+    const cardsGrid = el('div');
+    cardsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:4px;';
+    summaryBody.appendChild(cardsGrid);
+
+    [
+        ['Total Users', String(data.total ?? 0)],
+        ['Active', String(data.active ?? 0)],
+        ['Inactive', String(data.inactive ?? 0)],
+    ].forEach(([label, value]) => {
+        const box = el('div');
+        box.style.cssText = 'text-align:center;padding:16px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);';
+        const valueEntry = el('div', '', value);
+        valueEntry.style.cssText = 'font-weight:var(--font-weight-bold);margin-bottom:4px;';
+        const labelDiv = el('div', '', label);
+        labelDiv.style.cssText = 'font-weight:var(--font-weight-bold);';
+        box.append(valueEntry, labelDiv);
+        cardsGrid.appendChild(box);
+    });
+
+    const { card: roleCard, body: roleBody } = buildSectionCard(
+        'Users By Role',
+        'How the accounts are distributed across the three roles.'
+    );
+    panel.appendChild(roleCard);
+
+    const roleWrap = el('div');
+    roleWrap.style.cssText = 'overflow-x:auto;';
+    roleBody.appendChild(roleWrap);
+
+    const roleTable = mkTable();
+    mkThead(roleTable, ['Role', 'Count']);
+    const roleTbody = roleTable.createTBody();
+    const byRole = data.by_role ?? {};
+    [['admin', 'Admin'], ['editor', 'Editor'], ['viewer', 'Viewer']].forEach(([roleKey, roleLabel]) => {
+        const row = roleTbody.insertRow();
+        row.appendChild(td(roleLabel));
+        row.appendChild(td(byRole[roleKey] ?? 0));
+    });
+    roleWrap.appendChild(roleTable);
+
+    const { card: recentCard, body: recentBody } = buildSectionCard(
+        'Recent User Activity',
+        'Latest account changes, newest first.'
+    );
+    panel.appendChild(recentCard);
+
+    const recentWrap = el('div');
+    recentWrap.style.cssText = 'overflow-x:auto;';
+    recentBody.appendChild(recentWrap);
+
+    const recentTable = mkTable();
+    mkThead(recentTable, ['Action', 'By', 'When']);
+    const recentTbody = recentTable.createTBody();
+    const recentRows = data.recent ?? [];
+    if (recentRows.length === 0) {
+        const row = recentTbody.insertRow();
+        const emptyCell = row.insertCell();
+        emptyCell.colSpan = 3;
+        emptyCell.textContent = 'No recent activity.';
+        emptyCell.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
+    } else {
+        recentRows.forEach(recentEntry => {
+            const row = recentTbody.insertRow();
+            row.appendChild(td(recentEntry.action));
+            row.appendChild(td(recentEntry.username || '—'));
+            row.appendChild(td(recentEntry.created_at));
+        });
+    }
+    recentWrap.appendChild(recentTable);
 }
 
 async function renderUserSettings(panel, context) {
-    panel.innerHTML = `<p>Loading settings...</p>`;
+    panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading settings…</p>';
 
+    let data;
     try {
         const response = await apiFetch('api.php?action=user_policy_get');
-        const data = await response.json();
-
-        if (data.status !== 'success') {
-            panel.innerHTML = `<h3 style="color:var(--error);">Error</h3><p>${escHtml(data.error)}</p>`;
-            return;
-        }
-
-        panel.innerHTML = `
-            <h2 class="admin-page-title">Global User Settings</h2>
-            <p class="admin-page-desc">Policy applied to new users and password changes across the whole system.</p>
-            <div style="max-width:400px;">
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight:var(--font-weight-bold); margin-bottom: 5px;">Minimum password length</label>
-                    <input type="number" id="policyMinPasswordLength" class="adm-input" style="width:100%;" min="${escHtml(data.password_min_length)}" step="1" value="${escHtml(data.min_password_length)}">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight:var(--font-weight-bold); margin-bottom: 5px;">Default role for new users</label>
-                    <select id="policyDefaultRole" class="adm-input" style="width:100%;">
-                        <option value="editor" ${data.default_role === 'editor' ? 'selected' : ''}>Editor</option>
-                        <option value="viewer" ${data.default_role === 'viewer' ? 'selected' : ''}>Viewer</option>
-                        <option value="admin" ${data.default_role === 'admin' ? 'selected' : ''}>Admin</option>
-                    </select>
-                </div>
-                <button id="btnSaveUserPolicy" class="btn btn-save">Save</button>
-            </div>
-        `;
-
-        panel.querySelector('#btnSaveUserPolicy').addEventListener('click', async (event) => {
-            const saveButton = event.currentTarget;
-            const min_password_length = parseInt(panel.querySelector('#policyMinPasswordLength').value, 10);
-            const default_role = panel.querySelector('#policyDefaultRole').value;
-
-            try {
-                const request = await apiFetch('api.php?action=user_policy_save', {
-                    method: 'POST',
-                    body: JSON.stringify({ min_password_length, default_role })
-                });
-                const resultData = await request.json();
-
-                if (resultData.status === 'success') {
-                    showStatusPill(saveButton, 'Settings saved.', 'success');
-                    renderUserSettings(panel, context);
-                } else {
-                    showStatusPill(saveButton, resultData.error || 'Save failed.', 'error');
-                }
-            } catch (error) {
-                showStatusPill(saveButton, 'Network error.', 'error');
-            }
-        });
-    } catch (event) {
-        panel.innerHTML = `<h3 style="color:var(--error);">Network Error</h3><p>${escHtml(event.message)}</p>`;
+        data = await response.json();
+    } catch (_) {
+        panel.innerHTML = '';
+        panel.appendChild(el('p', '', 'Network error while loading settings.')).style.color = 'var(--error)';
+        return;
     }
+    if (data.status !== 'success') {
+        panel.innerHTML = '';
+        panel.appendChild(el('p', '', data.error || 'Could not load settings.')).style.color = 'var(--error)';
+        return;
+    }
+
+    panel.innerHTML = '';
+
+    const { card: policyCard, body: policyBody } = buildSectionCard(
+        'Global User Settings',
+        'Policy applied to new users and password changes across the whole system.'
+    );
+    panel.appendChild(policyCard);
+
+    const policyForm = el('div');
+    policyForm.style.maxWidth = '400px';
+    policyBody.appendChild(policyForm);
+
+    const minLengthLabel = el('label', 'adm-field-label', 'Minimum password length');
+    minLengthLabel.htmlFor = 'policyMinPasswordLength';
+    policyForm.appendChild(minLengthLabel);
+
+    const minLengthInput = el('input', 'adm-input');
+    minLengthInput.type = 'number';
+    minLengthInput.id = 'policyMinPasswordLength';
+    minLengthInput.style.width = '100%';
+    minLengthInput.min = data.password_min_length ?? 0;
+    minLengthInput.step = '1';
+    minLengthInput.value = data.min_password_length ?? 12;
+    minLengthInput.style.marginBottom = '15px';
+    policyForm.appendChild(minLengthInput);
+
+    const defaultRoleLabel = el('label', 'adm-field-label', 'Default role for new users');
+    defaultRoleLabel.htmlFor = 'policyDefaultRole';
+    policyForm.appendChild(defaultRoleLabel);
+
+    const defaultRoleSelect = el('select', 'adm-input');
+    defaultRoleSelect.id = 'policyDefaultRole';
+    defaultRoleSelect.style.width = '100%';
+    [['editor', 'Editor'], ['viewer', 'Viewer'], ['admin', 'Admin']].forEach(([roleValue, roleLabel]) => {
+        const option = el('option', '', roleLabel);
+        option.value = roleValue;
+        if ((data.default_role ?? 'editor') === roleValue) option.selected = true;
+        defaultRoleSelect.appendChild(option);
+    });
+    defaultRoleSelect.style.marginBottom = '15px';
+    policyForm.appendChild(defaultRoleSelect);
+
+    const saveButton = el('button', 'btn btn-save', 'Save');
+    saveButton.id = 'btnSaveUserPolicy';
+    policyForm.appendChild(saveButton);
+
+    saveButton.addEventListener('click', async () => {
+        const min_password_length = parseInt(minLengthInput.value, 10);
+        const default_role = defaultRoleSelect.value;
+
+        try {
+            const request = await apiFetch('api.php?action=user_policy_save', {
+                method: 'POST',
+                body: JSON.stringify({ min_password_length, default_role })
+            });
+            const resultData = await request.json();
+
+            if (resultData.status === 'success') {
+                showStatusPill(saveButton, 'Settings saved.', 'success');
+                renderUserSettings(panel, context);
+            } else {
+                showStatusPill(saveButton, resultData.error || 'Save failed.', 'error');
+            }
+        } catch (error) {
+            showStatusPill(saveButton, 'Network error.', 'error');
+        }
+    });
 }

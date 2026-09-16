@@ -55,12 +55,14 @@ export async function renderClickstatsPage(context) {
         + 'no request is made, so the application behaves exactly as if the module did not exist.'
     ));
 
-    const [settingsPanel, logPanel] = buildInnerTabs(wrap, [
+    const [logPanel, topPanel, settingsPanel] = buildInnerTabs(wrap, [
+        { label: 'Log', icon: 'material/list.svg' },
+        { label: 'Top Elements', icon: 'material/leaderboard.svg' },
         { label: 'Settings', icon: 'material/settings.svg' },
-        { label: 'Log', icon: 'material/bar_chart.svg' },
     ]);
-    renderSettings(settingsPanel, state);
     renderLog(logPanel, state);
+    renderTopPanel(topPanel);
+    renderSettings(settingsPanel, state);
 }
 
 function renderSettings(panel, state) {
@@ -227,9 +229,10 @@ function renderLog(panel, state) {
     const summary = el('p', 'admin-page-desc', '');
     panel.appendChild(summary);
 
-    const topHost = el('div');
-    const { card: logCard, body: rowsHost } = buildSectionCard('Click log');
-    panel.appendChild(topHost);
+    const { card: logCard, body: rowsHost } = buildSectionCard(
+        'Click log',
+        'Recorded clicks, newest first. Filter by element or user, trim by age or clear the log.'
+    );
     panel.appendChild(logCard);
 
     const pager = el('div');
@@ -262,7 +265,6 @@ function renderLog(panel, state) {
             rowsHost.innerHTML = '';
             rowsHost.appendChild(el('p', '', data.note));
             summary.textContent = '';
-            topHost.innerHTML = '';
             pager.innerHTML = '';
             return;
         }
@@ -273,7 +275,6 @@ function renderLog(panel, state) {
             ? 'No clicks recorded yet.'
             : `${total} recorded click(s).`;
 
-        renderTop(topHost, data.top || []);
         renderRows(rowsHost, data.rows || []);
         renderPager(pager, state, total, limit, load);
     }
@@ -332,22 +333,94 @@ function renderLog(panel, state) {
     load();
 }
 
-function renderTop(host, top) {
-    host.innerHTML = '';
-    if (top.length === 0) return;
+function renderTopPanel(panel) {
+    panel.innerHTML = '';
 
-    const { card, body } = buildSectionCard('Top Elements');
+    const filterBar = el('div');
+    filterBar.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
 
-    const table = mkTable();
-    mkThead(table, ['Element', 'Clicks']);
-    const tbody = table.createTBody();
-    top.forEach(row => {
-        const tr = tbody.insertRow();
-        tr.appendChild(td(row.element));
-        tr.appendChild(td(row.clicks));
+    const elementFilter = document.createElement('input');
+    elementFilter.type = 'search';
+    elementFilter.className = 'adm-input w-220';
+    elementFilter.placeholder = 'Filter by element';
+
+    const userFilter = document.createElement('input');
+    userFilter.type = 'search';
+    userFilter.className = 'adm-input w-160';
+    userFilter.placeholder = 'Filter by user';
+
+    const applyButton = el('button', 'btn btn-secondary', 'Apply');
+    const clearButton = el('button', 'btn btn-secondary', 'Clear Filters');
+    const pillAnchor = el('span');
+
+    filterBar.append(elementFilter, userFilter, applyButton, clearButton, pillAnchor);
+    panel.appendChild(filterBar);
+
+    const filters = { element: '', user: '' };
+
+    const { card, body } = buildSectionCard(
+        'Top Elements',
+        'The most-clicked elements, aggregated from all recorded clicks.'
+    );
+    panel.appendChild(card);
+
+    async function load() {
+        body.innerHTML = '<p>Loading...</p>';
+        const parameters = new URLSearchParams({ action: 'clickstats_log', page: '1' });
+        if (filters.element) parameters.set('element', filters.element);
+        if (filters.user) parameters.set('user', filters.user);
+
+        let data;
+        try {
+            const response = await apiFetch('api.php?' + parameters.toString());
+            data = await response.json();
+        } catch (error) {
+            body.innerHTML = '<p style="color:var(--error);">Request failed.</p>';
+            return;
+        }
+        if (data.status !== 'success') {
+            body.innerHTML = '';
+            body.appendChild(el('p', '', data.error || 'Could not load the statistics.')).style.color = 'var(--error)';
+            return;
+        }
+        if (data.note) {
+            body.innerHTML = '';
+            body.appendChild(el('p', '', data.note));
+            return;
+        }
+
+        const top = data.top || [];
+        body.innerHTML = '';
+        if (top.length === 0) {
+            body.appendChild(el('p', '', 'Nothing to show.'));
+            return;
+        }
+
+        const table = mkTable();
+        mkThead(table, ['Element', 'Clicks']);
+        const tbody = table.createTBody();
+        top.forEach(row => {
+            const tr = tbody.insertRow();
+            tr.appendChild(td(row.element));
+            tr.appendChild(td(row.clicks));
+        });
+        body.appendChild(table);
+    }
+
+    applyButton.addEventListener('click', () => {
+        filters.element = elementFilter.value.trim();
+        filters.user = userFilter.value.trim();
+        load();
     });
-    body.appendChild(table);
-    host.appendChild(card);
+    clearButton.addEventListener('click', () => {
+        elementFilter.value = '';
+        userFilter.value = '';
+        filters.element = '';
+        filters.user = '';
+        load();
+    });
+
+    load();
 }
 
 function renderRows(host, rows) {

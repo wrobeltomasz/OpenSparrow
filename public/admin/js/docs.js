@@ -405,6 +405,7 @@ ${_ul([
     `<strong>${strings.s9q_tab1_label}:</strong> ${strings.s9q_tab1}`,
     `<strong>${strings.s9q_retention_label}:</strong> ${strings.s9q_retention}`,
     `<strong>${strings.s9q_tab2_label}:</strong> ${strings.s9q_tab2}`,
+    `<strong>${strings.s9q_tab3_label}:</strong> ${strings.s9q_tab3}`,
     `<strong>${strings.s9q_off_label}:</strong> ${strings.s9q_off}`,
     `<strong>${strings.s9q_privacy_label}:</strong> ${strings.s9q_privacy}`,
     `<strong>${strings.s9q_labels_label}:</strong> ${strings.s9q_labels}`
