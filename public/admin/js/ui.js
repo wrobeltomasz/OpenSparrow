@@ -1012,14 +1012,14 @@ export function createMultiSelect(key, labelText, options, selectedValues, onCha
     return wrapper;
 }
 
-export function buildInnerTabs(container, tabs) {
+export function buildInnerTabs(container, tabs, descriptions = []) {
     const bar = document.createElement('div');
     bar.className = 'item-panel-items';
 
     const panels = [];
     const btns   = [];
 
-    tabs.forEach(({ label, icon }) => {
+    tabs.forEach(({ label, icon }, index) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'item-btn';
@@ -1036,6 +1036,11 @@ export function buildInnerTabs(container, tabs) {
 
         const panel = document.createElement('div');
         panel.style.display = 'none';
+        if (descriptions[index]) {
+            const description = el('p', 'admin-page-desc', descriptions[index]);
+            description.style.margin = '0 0 16px';
+            panel.appendChild(description);
+        }
         container.appendChild(panel);
         panels.push(panel);
     });

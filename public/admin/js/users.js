@@ -35,23 +35,25 @@ export async function renderUsersEditor(context) {
 }
 
 async function renderUserAccess(panel) {
-    panel.innerHTML = '<p class="help-text">Loading users…</p>';
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '<p class="help-text">Loading users…</p>';
 
     let users;
     try {
         const response  = await apiFetch('api.php?action=users_list');
         const data = await response.json();
         if (data.status !== 'success') {
-            panel.innerHTML = `<p class="help-text">${escHtml(data.error || 'Failed to load users.')}</p>`;
+            content.innerHTML = `<p class="help-text">${escHtml(data.error || 'Failed to load users.')}</p>`;
             return;
         }
         users = data.users.filter(user => user.role !== 'admin');
     } catch (error) {
-        panel.innerHTML = '<p class="help-text">Network error while loading users.</p>';
+        content.innerHTML = '<p class="help-text">Network error while loading users.</p>';
         return;
     }
 
-    panel.innerHTML = '';
+    content.innerHTML = '';
 
     const { card: accessCard, body: accessBody } = buildSectionCard(
         'Frontend Access',
@@ -60,7 +62,7 @@ async function renderUserAccess(panel) {
         + 'To cut someone off entirely, deactivate the account in Manage Users. Admin accounts are not listed: '
         + 'they work in this panel and always see everything.'
     );
-    panel.appendChild(accessCard);
+    content.appendChild(accessCard);
 
     if (users.length === 0) {
         accessBody.innerHTML = '<p class="help-text">No non-admin users yet. Create one in Manage Users first.</p>';
@@ -80,8 +82,8 @@ async function renderUserAccess(panel) {
 
     accessBody.append(userLabel, selectElement);
 
-    selectElement.addEventListener('change', () => loadUserAccess(panel, accessCard, selectElement));
-    loadUserAccess(panel, accessCard, selectElement);
+    selectElement.addEventListener('change', () => loadUserAccess(content, accessCard, selectElement));
+    loadUserAccess(content, accessCard, selectElement);
 }
 
 function renderScopeSection(panel, scope, allItems, selected, hiddenChildren = {}) {
@@ -235,7 +237,9 @@ async function loadUserAccess(panel, anchorCard, selectElement) {
 }
 
 async function renderManageUsers(panel, context) {
-    panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading users…</p>';
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '<p class="c-muted" style="padding:16px;">Loading users…</p>';
 
     let data;
     let policy;
@@ -247,14 +251,14 @@ async function renderManageUsers(panel, context) {
         data = await usersResult.json();
         policy = await policyResult.json();
     } catch (_) {
-        panel.innerHTML = '';
-        panel.appendChild(el('p', '', 'Network error while loading users.')).style.color = 'var(--error)';
+        content.innerHTML = '';
+        content.appendChild(el('p', '', 'Network error while loading users.')).style.color = 'var(--error)';
         return;
     }
 
     if (data.status !== 'success') {
-        panel.innerHTML = '';
-        panel.appendChild(el('p', '', data.error || 'Could not load users.')).style.color = 'var(--error)';
+        content.innerHTML = '';
+        content.appendChild(el('p', '', data.error || 'Could not load users.')).style.color = 'var(--error)';
         return;
     }
 
@@ -267,7 +271,7 @@ async function renderManageUsers(panel, context) {
 
         const listDescription = 'Manage user accounts and roles. Roles: Admin — admin panel only; Editor — full frontend CRUD; Viewer — read-only frontend.';
         const { card: listCard, body: listBody } = buildSectionCard('System Users', listDescription);
-        panel.appendChild(listCard);
+        content.appendChild(listCard);
 
         if (!hasContact) {
             const contactWarning = el('p', 'admin-page-desc');
@@ -363,7 +367,7 @@ async function renderManageUsers(panel, context) {
             'Add New User',
             'Create a new account. The password policy below sets the minimum length; the strength meter updates as you type.'
         );
-        panel.appendChild(addCard);
+        content.appendChild(addCard);
 
         const addForm = el('div');
         addForm.style.maxWidth = '520px';
@@ -445,7 +449,7 @@ async function renderManageUsers(panel, context) {
         addButton.id = 'btnAddUser';
         addForm.appendChild(addButton);
 
-        panel.querySelectorAll('.btn-toggle-user').forEach(button => {
+        content.querySelectorAll('.btn-toggle-user').forEach(button => {
             button.addEventListener('click', async (event) => {
                 const id = event.target.getAttribute('data-id');
                 const currentlyActive = event.target.getAttribute('data-active') === 'true';
@@ -469,7 +473,7 @@ async function renderManageUsers(panel, context) {
             });
         });
 
-        panel.querySelectorAll('.select-user-role').forEach(select => {
+        content.querySelectorAll('.select-user-role').forEach(select => {
             select.addEventListener('change', async (event) => {
                 const id = event.target.getAttribute('data-id');
                 const role = event.target.value;
@@ -494,7 +498,7 @@ async function renderManageUsers(panel, context) {
 
         const currentUserId = parseInt(document.querySelector('meta[name="current-user-id"]')?.content ?? '0', 10);
 
-        panel.querySelectorAll('.btn-change-pwd').forEach(button => {
+        content.querySelectorAll('.btn-change-pwd').forEach(button => {
             button.addEventListener('click', () => {
                 const id       = parseInt(button.getAttribute('data-id'), 10);
                 const username = button.getAttribute('data-username');
@@ -586,7 +590,7 @@ async function renderManageUsers(panel, context) {
             });
         });
 
-        panel.querySelectorAll('.btn-edit-contact').forEach(button => {
+        content.querySelectorAll('.btn-edit-contact').forEach(button => {
             button.addEventListener('click', () => {
                 const id = parseInt(button.getAttribute('data-id'), 10);
 
@@ -646,7 +650,7 @@ async function renderManageUsers(panel, context) {
             });
         });
 
-        const passwordInput = panel.querySelector('#newPassword');
+        const passwordInput = content.querySelector('#newPassword');
 
         function evaluatePassword(newPassword) {
             let score = 0;
@@ -678,13 +682,13 @@ async function renderManageUsers(panel, context) {
             strengthLabel.style.color = result.color;
         });
 
-        panel.querySelector('#btnAddUser').addEventListener('click', async (event) => {
+        content.querySelector('#btnAddUser').addEventListener('click', async (event) => {
             const addButton   = event.currentTarget;
-            const username = panel.querySelector('#newUsername').value;
-            const password = panel.querySelector('#newPassword').value;
-            const role = panel.querySelector('#newRole').value;
+            const username = content.querySelector('#newUsername').value;
+            const password = content.querySelector('#newPassword').value;
+            const role = content.querySelector('#newRole').value;
 
-            const contactValue = (id) => panel.querySelector(id)?.value ?? '';
+            const contactValue = (id) => content.querySelector(id)?.value ?? '';
             const first_name = contactValue('#newFirstName');
             const last_name  = contactValue('#newLastName');
             const email      = contactValue('#newEmail');
@@ -716,30 +720,32 @@ async function renderManageUsers(panel, context) {
 }
 
 async function renderUserStatistics(panel) {
-    panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading statistics…</p>';
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '<p class="c-muted" style="padding:16px;">Loading statistics…</p>';
 
     let data;
     try {
         const response = await apiFetch('api.php?action=users_stats');
         data = await response.json();
     } catch (_) {
-        panel.innerHTML = '';
-        panel.appendChild(el('p', '', 'Network error while loading statistics.')).style.color = 'var(--error)';
+        content.innerHTML = '';
+        content.appendChild(el('p', '', 'Network error while loading statistics.')).style.color = 'var(--error)';
         return;
     }
     if (data.status !== 'success') {
-        panel.innerHTML = '';
-        panel.appendChild(el('p', '', data.error || 'Could not load statistics.')).style.color = 'var(--error)';
+        content.innerHTML = '';
+        content.appendChild(el('p', '', data.error || 'Could not load statistics.')).style.color = 'var(--error)';
         return;
     }
 
-    panel.innerHTML = '';
+    content.innerHTML = '';
 
     const { card: summaryCard, body: summaryBody } = buildSectionCard(
         'User Statistics',
         'Aggregated account metrics across the whole system.'
     );
-    panel.appendChild(summaryCard);
+    content.appendChild(summaryCard);
 
     const cardsGrid = el('div');
     cardsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:4px;';
@@ -764,7 +770,7 @@ async function renderUserStatistics(panel) {
         'Users By Role',
         'How the accounts are distributed across the three roles.'
     );
-    panel.appendChild(roleCard);
+    content.appendChild(roleCard);
 
     const roleWrap = el('div');
     roleWrap.style.cssText = 'overflow-x:auto;';
@@ -785,7 +791,7 @@ async function renderUserStatistics(panel) {
         'Recent User Activity',
         'Latest account changes, newest first.'
     );
-    panel.appendChild(recentCard);
+    content.appendChild(recentCard);
 
     const recentWrap = el('div');
     recentWrap.style.cssText = 'overflow-x:auto;';
@@ -813,30 +819,32 @@ async function renderUserStatistics(panel) {
 }
 
 async function renderUserSettings(panel, context) {
-    panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading settings…</p>';
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '<p class="c-muted" style="padding:16px;">Loading settings…</p>';
 
     let data;
     try {
         const response = await apiFetch('api.php?action=user_policy_get');
         data = await response.json();
     } catch (_) {
-        panel.innerHTML = '';
-        panel.appendChild(el('p', '', 'Network error while loading settings.')).style.color = 'var(--error)';
+        content.innerHTML = '';
+        content.appendChild(el('p', '', 'Network error while loading settings.')).style.color = 'var(--error)';
         return;
     }
     if (data.status !== 'success') {
-        panel.innerHTML = '';
-        panel.appendChild(el('p', '', data.error || 'Could not load settings.')).style.color = 'var(--error)';
+        content.innerHTML = '';
+        content.appendChild(el('p', '', data.error || 'Could not load settings.')).style.color = 'var(--error)';
         return;
     }
 
-    panel.innerHTML = '';
+    content.innerHTML = '';
 
     const { card: policyCard, body: policyBody } = buildSectionCard(
         'Global User Settings',
         'Policy applied to new users and password changes across the whole system.'
     );
-    panel.appendChild(policyCard);
+    content.appendChild(policyCard);
 
     const policyForm = el('div');
     policyForm.style.maxWidth = '400px';

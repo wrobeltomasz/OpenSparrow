@@ -5,7 +5,7 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
-import { createPageHeader, buildInnerTabs } from './ui.js';
+import { createPageHeader, buildInnerTabs, el } from './ui.js';
 import { renderDatabaseSection } from './database.js';
 import { renderAuditEditor } from './audit.js';
 
@@ -43,6 +43,12 @@ export async function renderSettingsPage(context) {
         { label: 'Branding', icon: 'material/image.svg' },
         { label: 'Database', icon: 'material/database.svg' },
         { label: 'Audit & Snapshots', icon: 'material/fact_check.svg' },
+    ], [
+        'Set the site-wide default language for all users. Language files live in languages/*.json.',
+        'Show a floating chat button in the bottom-right corner of every app page to open the AI assistant.',
+        'Replace the default OpenSparrow logo in the frontend header and set the application name shown on the login page.',
+        'PostgreSQL connection settings: host, port, database name, credentials and the system schema for spw_* tables.',
+        'Capture a full JSONB snapshot of every written record to spw_record_snapshots, linked to the audit log.',
     ]);
 
     renderDatabaseSection(databasePanel);

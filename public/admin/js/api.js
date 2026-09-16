@@ -355,7 +355,9 @@ export async function renderApiPage(context) {
 }
 
 function renderUsage(panel) {
-    panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading usage statistics…</p>';
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '<p class="c-muted" style="padding:16px;">Loading usage statistics…</p>';
 
     const state = { filter: '', page: 1 };
 
@@ -365,27 +367,27 @@ function renderUsage(panel) {
             const response = await apiFetch('api.php?action=api_stats');
             data = await response.json();
         } catch (_) {
-            panel.innerHTML = '<p style="color:var(--error); padding:16px;">Request failed.</p>';
+            content.innerHTML = '<p style="color:var(--error); padding:16px;">Request failed.</p>';
             return;
         }
         if (data.status !== 'success') {
-            panel.innerHTML = '';
-            panel.appendChild(el('p', '', data.error || 'Could not load usage statistics.')).style.color = 'var(--error)';
+            content.innerHTML = '';
+            content.appendChild(el('p', '', data.error || 'Could not load usage statistics.')).style.color = 'var(--error)';
             return;
         }
         if (data.note) {
-            panel.innerHTML = '';
-            panel.appendChild(el('p', '', data.note));
+            content.innerHTML = '';
+            content.appendChild(el('p', '', data.note));
             return;
         }
 
-        panel.innerHTML = '';
+        content.innerHTML = '';
 
         const { card: summaryCard, body: summaryBody } = buildSectionCard(
             'Usage Statistics',
             'Aggregated metrics from all requests handled by the external API.'
         );
-        panel.appendChild(summaryCard);
+        content.appendChild(summaryCard);
 
         const cardsGrid = el('div');
         cardsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:4px;';
@@ -426,13 +428,13 @@ function renderUsage(panel) {
         });
         tableWrap.appendChild(table);
         body.appendChild(tableWrap);
-        panel.appendChild(card);
+        content.appendChild(card);
 
         const { card: logCard, body: logHost } = buildSectionCard(
             'Request Log',
             'Recent requests, newest first. Filter by API name, trim by age or clear the log.'
         );
-        panel.appendChild(logCard);
+        content.appendChild(logCard);
         renderLog(logHost, state);
     }
 

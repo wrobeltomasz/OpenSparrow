@@ -66,21 +66,23 @@ export async function renderClickstatsPage(context) {
 }
 
 function renderSettings(panel, state) {
-    panel.innerHTML = '';
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '';
 
     if (!state.tableExists) {
         const warn = el('p', 'admin-page-desc',
             'The spw_clickstats table does not exist yet. Run Admin → Migrations → Initialize System Tables '
             + 'before enabling collection.');
         warn.style.color = 'var(--error)';
-        panel.appendChild(warn);
+        content.appendChild(warn);
     }
 
     const { card, body } = buildSectionCard(
         'Click Statistics Settings',
         'Collection toggle, retention and what is stored with every recorded click.'
     );
-    panel.appendChild(card);
+    content.appendChild(card);
 
     const enabled = checkboxRow(
         'Enable Click Statistics',
@@ -188,7 +190,9 @@ function checkboxRow(title, description, checked) {
 }
 
 function renderLog(panel, state) {
-    panel.innerHTML = '';
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '';
 
     const filterBar = el('div');
     filterBar.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
@@ -209,7 +213,7 @@ function renderLog(panel, state) {
     const pillAnchor = el('span');
 
     filterBar.append(elementFilter, userFilter, applyButton, clearButton, purgeButton, pillAnchor);
-    panel.appendChild(filterBar);
+    content.appendChild(filterBar);
 
     const retentionBar = el('div');
     retentionBar.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
@@ -225,20 +229,20 @@ function renderLog(panel, state) {
     const trimPill = el('span');
 
     retentionBar.append(trimButton, daysInput, el('span', '', 'days'), trimPill);
-    panel.appendChild(retentionBar);
+    content.appendChild(retentionBar);
 
     const summary = el('p', 'admin-page-desc', '');
-    panel.appendChild(summary);
+    content.appendChild(summary);
 
     const { card: logCard, body: rowsHost } = buildSectionCard(
         'Click log',
         'Recorded clicks, newest first. Filter by element or user, trim by age or clear the log.'
     );
-    panel.appendChild(logCard);
+    content.appendChild(logCard);
 
     const pager = el('div');
     pager.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:12px;';
-    panel.appendChild(pager);
+    content.appendChild(pager);
 
     async function load() {
         rowsHost.innerHTML = '<p>Loading...</p>';
@@ -335,7 +339,9 @@ function renderLog(panel, state) {
 }
 
 function renderTopPanel(panel) {
-    panel.innerHTML = '';
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '';
 
     const filterBar = el('div');
     filterBar.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
@@ -355,7 +361,7 @@ function renderTopPanel(panel) {
     const pillAnchor = el('span');
 
     filterBar.append(elementFilter, userFilter, applyButton, clearButton, pillAnchor);
-    panel.appendChild(filterBar);
+    content.appendChild(filterBar);
 
     const filters = { element: '', user: '' };
 
@@ -363,7 +369,7 @@ function renderTopPanel(panel) {
         'Top Elements',
         'The most-clicked elements, aggregated from all recorded clicks.'
     );
-    panel.appendChild(card);
+    content.appendChild(card);
 
     async function load() {
         body.innerHTML = '<p>Loading...</p>';

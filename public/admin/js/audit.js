@@ -5,42 +5,38 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
-import { createPageHeader } from './ui.js';
 
 export async function renderAuditEditor(context) {
     const { workspaceEl: workspaceElement } = context;
-    workspaceElement.innerHTML = '<h3>Loading audit settings...</h3>';
+    const content = document.createElement('div');
+    workspaceElement.appendChild(content);
+    content.innerHTML = '<h3>Loading audit settings...</h3>';
 
-    workspaceElement._renderId = (workspaceElement._renderId || 0) + 1;
-    const myId = workspaceElement._renderId;
+    content._renderId = (content._renderId || 0) + 1;
+    const myId = content._renderId;
 
     let data;
     try {
         const response = await apiFetch('api.php?action=get_snapshot_setting');
         data = await response.json();
     } catch (error) {
-        if (workspaceElement._renderId !== myId) return;
-        workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading audit settings. Check server logs.</h3>';
+        if (content._renderId !== myId) return;
+        content.innerHTML = '<h3 style="color:var(--error);">Error loading audit settings. Check server logs.</h3>';
         return;
     }
 
-    if (workspaceElement._renderId !== myId) return;
+    if (content._renderId !== myId) return;
 
     const lockedByEnvironment = data.locked_by_env ?? false;
     let enabled = data.enabled ?? false;
     const tableExists = data.table_exists ?? false;
     const snapshotCount = data.snapshot_count;
 
-    workspaceElement.innerHTML = '';
+    content.innerHTML = '';
 
     const wrap = document.createElement('div');
     wrap.className = 'admin-page';
-    workspaceElement.appendChild(wrap);
-
-    wrap.appendChild(createPageHeader(
-        'Audit & Record Snapshots',
-        'When enabled, every INSERT, UPDATE, and DELETE on user data tables saves a full JSONB snapshot of the record to spw_record_snapshots, linked to the audit log entry in spw_users_log.'
-    ));
+    content.appendChild(wrap);
 
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid; gap:10px; margin-bottom:24px;';

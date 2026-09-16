@@ -21,77 +21,79 @@ function section(container, title) {
 }
 
 async function renderEnvironmentPanel(panel) {
-    panel.innerHTML = `<h3>Checking system status...</h3>`;
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = `<h3>Checking system status...</h3>`;
 
     let data;
     try {
         const result = await apiFetch('api.php?action=health');
         data = await result.json();
     } catch (error) {
-        panel.innerHTML = `<h3 style="color:var(--error);">Error loading diagnostics. Check server logs.</h3>`;
+        content.innerHTML = `<h3 style="color:var(--error);">Error loading diagnostics. Check server logs.</h3>`;
         return;
     }
 
-    panel.replaceChildren();
+    content.replaceChildren();
 
     const infoBar = el('div', 'adm-sec-card');
     const infoBody = el('div', 'adm-sec-body');
     infoBody.innerHTML = `<strong>OpenSparrow</strong>&nbsp;&nbsp;v${data.app_version}`;
     infoBar.appendChild(infoBody);
-    panel.appendChild(infoBar);
+    content.appendChild(infoBar);
 
-    section(panel, 'PHP Environment');
-    panel.appendChild(card('PHP Version', data.php_version_ok,
+    section(content, 'PHP Environment');
+    content.appendChild(card('PHP Version', data.php_version_ok,
         `Detected: <strong>${data.php_version}</strong> — required: PHP &gt;= 8.4`));
-    panel.appendChild(card('memory_limit', data.memory_limit_ok,
+    content.appendChild(card('memory_limit', data.memory_limit_ok,
         `Current: <strong>${data.memory_limit}</strong> — minimum: 64M`));
-    panel.appendChild(card('upload_max_filesize', data.upload_max_filesize_ok,
+    content.appendChild(card('upload_max_filesize', data.upload_max_filesize_ok,
         `Current: <strong>${data.upload_max_filesize}</strong> — minimum: 8M`));
-    panel.appendChild(card('display_errors = Off', data.display_errors_off,
+    content.appendChild(card('display_errors = Off', data.display_errors_off,
         data.display_errors_off ? 'Disabled — correct for production.' : 'Should be Off in production to avoid leaking error details.'));
 
-    section(panel, 'PHP Extensions');
-    panel.appendChild(card('ext/pgsql', data.pgsql_ok,
+    section(content, 'PHP Extensions');
+    content.appendChild(card('ext/pgsql', data.pgsql_ok,
         data.pgsql_ok ? 'PostgreSQL driver active.' : 'Missing — enable pgsql in php.ini.'));
-    panel.appendChild(card('ext/json', data.json_ok,
+    content.appendChild(card('ext/json', data.json_ok,
         data.json_ok ? 'JSON encode/decode available.' : 'Missing — required for config files.'));
-    panel.appendChild(card('ext/session', data.session_ok,
+    content.appendChild(card('ext/session', data.session_ok,
         data.session_ok ? 'Session handling active.' : 'Missing — required for authentication.'));
-    panel.appendChild(card('ext/mbstring', data.mbstring_ok,
+    content.appendChild(card('ext/mbstring', data.mbstring_ok,
         data.mbstring_ok ? 'Multibyte string support active.' : 'Missing — required for text handling.'));
-    panel.appendChild(card('ext/fileinfo', data.fileinfo_ok,
+    content.appendChild(card('ext/fileinfo', data.fileinfo_ok,
         data.fileinfo_ok ? 'MIME type detection active.' : 'Missing — required for file uploads.'));
-    panel.appendChild(card('ext/openssl', data.openssl_ok,
+    content.appendChild(card('ext/openssl', data.openssl_ok,
         data.openssl_ok ? 'OpenSSL active.' : 'Missing — required for CSRF token generation.'));
 
-    section(panel, 'Security Functions');
-    panel.appendChild(card('PASSWORD_ARGON2ID', data.argon2id_ok,
+    section(content, 'Security Functions');
+    content.appendChild(card('PASSWORD_ARGON2ID', data.argon2id_ok,
         data.argon2id_ok ? 'Argon2id hashing available.' : 'Not available — libargon2 not compiled in. Login will fail.'));
-    panel.appendChild(card('random_bytes()', data.random_bytes_ok,
+    content.appendChild(card('random_bytes()', data.random_bytes_ok,
         data.random_bytes_ok ? 'Cryptographic randomness available.' : 'Missing — CSRF tokens cannot be generated.'));
-    panel.appendChild(card('hash_equals()', data.hash_equals_ok,
+    content.appendChild(card('hash_equals()', data.hash_equals_ok,
         data.hash_equals_ok ? 'Timing-safe comparison available.' : 'Missing — CSRF validation will not work.'));
-    panel.appendChild(card('bin2hex()', data.bin2hex_ok,
+    content.appendChild(card('bin2hex()', data.bin2hex_ok,
         data.bin2hex_ok ? 'Token hex encoding available.' : 'Missing.'));
 
-    section(panel, 'Database');
-    panel.appendChild(card('PostgreSQL Connection', data.db_connected,
+    section(content, 'Database');
+    content.appendChild(card('PostgreSQL Connection', data.db_connected,
         data.db_connected
             ? `Connected: <strong>PostgreSQL ${data.pg_version}</strong>`
             : `Connection failed: <strong>${data.db_error}</strong> — check database.json.`));
 
-    section(panel, 'Filesystem');
-    panel.appendChild(card('includes/ writable', data.dir_writable,
+    section(content, 'Filesystem');
+    content.appendChild(card('includes/ writable', data.dir_writable,
         data.dir_writable ? 'Config JSON files can be saved.' : 'Not writable — chmod 755 on includes/.'));
-    panel.appendChild(card('storage/ writable', data.storage_writable,
+    content.appendChild(card('storage/ writable', data.storage_writable,
         data.storage_writable ? 'Upload root directory is writable.' : 'Not writable — chmod 755 on storage/.'));
-    panel.appendChild(card('storage/files/ writable', data.storage_files_writable,
+    content.appendChild(card('storage/files/ writable', data.storage_files_writable,
         data.storage_files_writable ? 'Upload directory is writable.' : 'Not writable — chmod 755 on storage/files/.'));
 
-    section(panel, 'Config Files');
-    panel.appendChild(card('config/database.json', data.database_json_ok,
+    section(content, 'Config Files');
+    content.appendChild(card('config/database.json', data.database_json_ok,
         data.database_json_ok ? 'Present and valid JSON.' : 'Missing or invalid — create via FTP after first deploy.'));
-    panel.appendChild(card('Schema configuration', data.schema_json_ok,
+    content.appendChild(card('Schema configuration', data.schema_json_ok,
         data.schema_json_ok ? 'Present and valid.' : 'Missing — define tables in the Schema tab.'));
 
     if (data.db_connected) {
@@ -107,12 +109,14 @@ async function renderEnvironmentPanel(panel) {
         });
         migrationsBody.appendChild(gotoButton);
         migrationsBox.appendChild(migrationsBody);
-        panel.appendChild(migrationsBox);
+        content.appendChild(migrationsBox);
     }
 }
 
 async function renderProductionPanel(panel) {
-    panel.innerHTML = `<h3>Checking production readiness...</h3>`;
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = `<h3>Checking production readiness...</h3>`;
 
     let data;
     let migrationsPending = null;
@@ -129,51 +133,51 @@ async function renderProductionPanel(panel) {
             migrationsPending = null;
         }
     } catch (error) {
-        panel.innerHTML = `<h3 style="color:var(--error);">Error loading diagnostics. Check server logs.</h3>`;
+        content.innerHTML = `<h3 style="color:var(--error);">Error loading diagnostics. Check server logs.</h3>`;
         return;
     }
 
-    panel.replaceChildren();
+    content.replaceChildren();
 
     const envBar = el('div', 'adm-sec-card');
     const envBody = el('div', 'adm-sec-body');
     envBody.innerHTML = `Current <strong>APP_ENV</strong>: <strong>${data.app_env}</strong>`;
     envBar.appendChild(envBody);
-    panel.appendChild(envBar);
+    content.appendChild(envBar);
 
-    section(panel, 'Security');
-    panel.appendChild(card('DEMO_MODE = false', data.demo_mode_off,
+    section(content, 'Security');
+    content.appendChild(card('DEMO_MODE = false', data.demo_mode_off,
         data.demo_mode_off ? 'Write actions are not restricted by demo mode.' : 'DEMO_MODE is on — every write action is blocked. Unset it for production.'));
-    panel.appendChild(card('SECURE_COOKIES = true', data.secure_cookies_on,
+    content.appendChild(card('SECURE_COOKIES = true', data.secure_cookies_on,
         data.secure_cookies_on ? 'Session cookies require HTTPS.' : 'Off — only correct on plain HTTP. Set true behind TLS.'));
-    panel.appendChild(card('HTTPS detected', data.https_detected,
+    content.appendChild(card('HTTPS detected', data.https_detected,
         data.https_detected ? 'Request reached the app over HTTPS (directly or via a forwarding header).' : 'No HTTPS signal on this request — verify TLS termination at the proxy/load balancer.'));
-    panel.appendChild(card('display_errors = Off', data.display_errors_off,
+    content.appendChild(card('display_errors = Off', data.display_errors_off,
         data.display_errors_off ? 'Disabled — correct for production.' : 'Should be Off in production to avoid leaking error details.'));
-    panel.appendChild(card('PASSWORD_ARGON2ID', data.argon2id_ok,
+    content.appendChild(card('PASSWORD_ARGON2ID', data.argon2id_ok,
         data.argon2id_ok ? 'Argon2id hashing available.' : 'Not available — libargon2 not compiled in. Login will fail.'));
-    panel.appendChild(card('PASSWORD_MIN_LENGTH &gt;= 12', data.password_min_length_ok,
+    content.appendChild(card('PASSWORD_MIN_LENGTH &gt;= 12', data.password_min_length_ok,
         `Current: <strong>${data.password_min_length}</strong> — recommended minimum: 12`));
 
-    section(panel, 'Network & Rate Limiting');
-    panel.appendChild(card('API_RATE_LIMIT_PER_MIN enabled', data.rate_limit_on,
+    section(content, 'Network & Rate Limiting');
+    content.appendChild(card('API_RATE_LIMIT_PER_MIN enabled', data.rate_limit_on,
         data.rate_limit_on
             ? `Current: <strong>${data.rate_limit_per_min}</strong> requests/min per user.`
             : 'Rate limiting is disabled (0) — every endpoint accepts unlimited requests.'));
-    panel.appendChild(card('SESSION_SAMESITE valid', !!data.session_samesite,
+    content.appendChild(card('SESSION_SAMESITE valid', !!data.session_samesite,
         `Current: <strong>${data.session_samesite}</strong>`));
     if (data.trust_proxy_headers) {
-        panel.appendChild(card('TRUSTED_PROXY_IPS configured', data.trusted_proxy_ips_set,
+        content.appendChild(card('TRUSTED_PROXY_IPS configured', data.trusted_proxy_ips_set,
             data.trusted_proxy_ips_set
                 ? 'Proxy headers are trusted only from the listed addresses.'
                 : 'TRUST_PROXY_HEADERS is on but TRUSTED_PROXY_IPS is empty — every client can spoof its IP.'));
     }
 
-    section(panel, 'Database');
+    section(content, 'Database');
     if (migrationsPending === null) {
-        panel.appendChild(card('Migrations up to date', false, 'Could not load migration status — check the Migrations tab.'));
+        content.appendChild(card('Migrations up to date', false, 'Could not load migration status — check the Migrations tab.'));
     } else {
-        panel.appendChild(card('Migrations up to date', migrationsPending === 0,
+        content.appendChild(card('Migrations up to date', migrationsPending === 0,
             migrationsPending === 0 ? 'All known migrations are applied.' : `${migrationsPending} migration(s) pending — apply them in the Migrations tab.`));
     }
 }

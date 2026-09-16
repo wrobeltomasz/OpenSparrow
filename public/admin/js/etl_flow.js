@@ -185,31 +185,33 @@ function buildFlowCard(flow, index, redraw, status) {
 }
 
 export async function renderFlowsTab(panel) {
-    panel.innerHTML = '<p class="c-muted" style="padding:16px;">Loading flows…</p>';
+    const content = document.createElement('div');
+    panel.appendChild(content);
+    content.innerHTML = '<p class="c-muted" style="padding:16px;">Loading flows…</p>';
 
     try {
         const response  = await apiFetch('api.php?action=etl_flow_load');
         const data = await response.json();
         if (data.status !== 'success') {
-            panel.innerHTML = `<p style="color:var(--error); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
+            content.innerHTML = `<p style="color:var(--error); padding:16px;">${escHtml(data.error || 'Failed to load config.')}</p>`;
             return;
         }
         flowsConfig   = data.config;
         flowsVersion  = data.version || 0;
         jobsForPicker = data.jobs || [];
     } catch (_) {
-        panel.innerHTML = '<p style="color:var(--error); padding:16px;">Network error loading Flows config.</p>';
+        content.innerHTML = '<p style="color:var(--error); padding:16px;">Network error loading Flows config.</p>';
         return;
     }
     if (!Array.isArray(flowsConfig.flows)) flowsConfig.flows = [];
 
-    panel.innerHTML = '';
+    content.innerHTML = '';
     const intro = document.createElement('p');
     intro.className = 'c-muted';
     intro.style.margin = '0 0 16px';
     intro.textContent = 'Chain existing ETL jobs into an ordered sequence: start, one or more jobs, end. '
         + 'The flow runs its steps in order and stops immediately at the first failing step.';
-    panel.appendChild(intro);
+    content.appendChild(intro);
 
     const status = mkStatus();
     const list = document.createElement('div');
@@ -239,6 +241,6 @@ export async function renderFlowsTab(panel) {
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
     bar.append(buttonAdd, buttonSave);
-    panel.append(bar, status, list);
+    content.append(bar, status, list);
     redraw();
 }

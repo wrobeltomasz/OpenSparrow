@@ -191,10 +191,11 @@ export function renderViewsEditor(context) {
             }
 
             listElement.innerHTML = '';
-            const intro = document.createElement('p');
-            intro.style.cssText = '  margin:0 0 14px;';
-            intro.textContent = 'Select which PostgreSQL schemas "↻ Sync PostgreSQL Views" searches for views. Unchecked schemas are skipped.';
-            listElement.appendChild(intro);
+            const { card: schemasCard, body: schemasBody } = buildSectionCard(
+                'Schemas',
+                'Select which PostgreSQL schemas "↻ Sync PostgreSQL Views" searches for views. Unchecked schemas are skipped.'
+            );
+            listElement.appendChild(schemasCard);
 
             const list = document.createElement('div');
             list.style.cssText = 'display:flex; flex-direction:column; gap:8px;';
@@ -221,7 +222,7 @@ export function renderViewsEditor(context) {
                 row.appendChild(nameSpan);
                 list.appendChild(row);
             });
-            listElement.appendChild(list);
+            schemasBody.appendChild(list);
         } catch (_) {
             listElement.innerHTML = '<p style="color:var(--error); padding:16px;">Network error while loading schemas.</p>';
         }

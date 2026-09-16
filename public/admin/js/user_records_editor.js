@@ -38,7 +38,9 @@ export function renderUserRecordsEditor(context) {
 }
 
 function renderColumnsPanel(panel, currentConfig) {
-    panel.innerHTML = '<p class="help-text">Loading tables…</p>';
+    const content = document.createElement('div');
+    panel.appendChild(content);
+    content.innerHTML = '<p class="help-text">Loading tables…</p>';
 
     getGlobalSchema()
         .then((schema) => {
@@ -47,10 +49,10 @@ function renderColumnsPanel(panel, currentConfig) {
                 .filter((t) => !tables[t].hidden)
                 .sort((left, right) => (tables[left].display_name || left).localeCompare(tables[right].display_name || right));
 
-            panel.innerHTML = '';
+            content.innerHTML = '';
 
             if (tableNames.length === 0) {
-                panel.innerHTML = '<p class="help-text">No tables found.</p>';
+                content.innerHTML = '<p class="help-text">No tables found.</p>';
                 return;
             }
 
@@ -59,14 +61,14 @@ function renderColumnsPanel(panel, currentConfig) {
             intro.textContent = 'Pick one or more columns per table. Selected columns are combined '
                 + 'into the record label (e.g. "First Name" + "Last Name" → "Jane Doe"). '
                 + 'Leave a table unchecked to fall back to its first grid column automatically.';
-            panel.appendChild(intro);
+            content.appendChild(intro);
 
             tableNames.forEach((tableName) => {
-                panel.appendChild(buildTableBlock(tableName, tables[tableName], currentConfig));
+                content.appendChild(buildTableBlock(tableName, tables[tableName], currentConfig));
             });
         })
         .catch(() => {
-            panel.innerHTML = '<p class="help-text">Failed to load tables.</p>';
+            content.innerHTML = '<p class="help-text">Failed to load tables.</p>';
         });
 }
 

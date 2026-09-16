@@ -267,7 +267,7 @@ export function renderDashboardLayout(context) {
         title: 'Dashboard Global Settings',
         defaultMenuName: 'Dashboard',
         includeHidden: true,
-        onAfter: ({ settingsBody }) => {
+        onAfter: ({ settingsBody, currentConfig }) => {
             const layoutTitle = document.createElement('h4');
             layoutTitle.textContent = 'Grid Layout';
             layoutTitle.style.marginTop = '20px';

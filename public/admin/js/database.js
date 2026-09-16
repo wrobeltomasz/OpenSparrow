@@ -4,11 +4,13 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { apiFetch } from '../../assets/js/util/api.js';
-import { createTextInput } from './ui.js';
+import { createTextInput, buildSectionCard } from './ui.js';
 import { showStatusPill } from './app.js';
 
 export async function renderDatabaseSection(panel) {
-    panel.innerHTML = '<h3>Loading database settings…</h3>';
+    const content = document.createElement('div');
+    panel.appendChild(content);
+    content.innerHTML = '<h3>Loading database settings…</h3>';
 
     let dbConfig;
     try {
@@ -16,27 +18,24 @@ export async function renderDatabaseSection(panel) {
         dbConfig = await response.json();
         if (!dbConfig.host) dbConfig = { host: 'localhost', port: '5432', dbname: '', user: 'postgres', password: '' };
     } catch (error) {
-        panel.innerHTML = '<h3 style="color:var(--error);">Error loading database settings. Check server logs.</h3>';
+        content.innerHTML = '<h3 style="color:var(--error);">Error loading database settings. Check server logs.</h3>';
         return;
     }
 
-    panel.innerHTML = '';
+    content.innerHTML = '';
 
-    const h3 = document.createElement('h3');
-    h3.textContent = 'PostgreSQL Connection Settings';
-    panel.appendChild(h3);
+    const { card, body } = buildSectionCard(
+        'PostgreSQL Connection Settings',
+        'Configure your database connection. Click "Save configuration" before testing!'
+    );
+    content.appendChild(card);
 
-    const description = document.createElement('p');
-    description.style.cssText = 'color:var(--muted); margin-bottom: 20px;';
-    description.innerHTML = 'Configure your database connection. <strong>Click "Save configuration" before testing!</strong>';
-    panel.appendChild(description);
-
-    panel.appendChild(createTextInput('host', 'DB Host (e.g. localhost or IP)', dbConfig.host || 'localhost', value => dbConfig.host = value));
-    panel.appendChild(createTextInput('port', 'DB Port (default 5432)', dbConfig.port || '5432', value => dbConfig.port = value));
-    panel.appendChild(createTextInput('dbname', 'Database Name', dbConfig.dbname || '', value => dbConfig.dbname = value));
-    panel.appendChild(createTextInput('user', 'DB User', dbConfig.user || 'postgres', value => dbConfig.user = value));
-    panel.appendChild(createTextInput('password', 'DB Password', dbConfig.password || '', value => dbConfig.password = value));
-    panel.appendChild(createTextInput('schema', 'System Schema (for spw_* tables, default: app)', dbConfig.schema || 'app', value => dbConfig.schema = value));
+    body.appendChild(createTextInput('host', 'DB Host (e.g. localhost or IP)', dbConfig.host || 'localhost', value => dbConfig.host = value));
+    body.appendChild(createTextInput('port', 'DB Port (default 5432)', dbConfig.port || '5432', value => dbConfig.port = value));
+    body.appendChild(createTextInput('dbname', 'Database Name', dbConfig.dbname || '', value => dbConfig.dbname = value));
+    body.appendChild(createTextInput('user', 'DB User', dbConfig.user || 'postgres', value => dbConfig.user = value));
+    body.appendChild(createTextInput('password', 'DB Password', dbConfig.password || '', value => dbConfig.password = value));
+    body.appendChild(createTextInput('schema', 'System Schema (for spw_* tables, default: app)', dbConfig.schema || 'app', value => dbConfig.schema = value));
 
     const saveRow = document.createElement('div');
     saveRow.style.cssText = 'display:flex; align-items:center; gap:12px; margin-top:20px;';
@@ -69,7 +68,7 @@ export async function renderDatabaseSection(panel) {
 
     saveRow.appendChild(saveButton);
     saveRow.appendChild(pillAnchor);
-    panel.appendChild(saveRow);
+    body.appendChild(saveRow);
 
     const testButton = document.createElement('button');
     testButton.type = 'button';
@@ -105,5 +104,5 @@ export async function renderDatabaseSection(panel) {
         testButton.style.opacity = '1';
     };
 
-    panel.appendChild(testButton);
+    body.appendChild(testButton);
 }
