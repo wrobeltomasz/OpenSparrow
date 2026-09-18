@@ -5,6 +5,7 @@
 
 import { CellRenderer } from './registry.js';
 import { createInputCell } from './shared.js';
+import { readableTextColor } from '../../util/color.js';
 
 function renderEnumCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
     const value = row[column + '__display'] ?? row[column] ?? '';
@@ -13,7 +14,9 @@ function renderEnumCell({ row, col: column, colCfg: columnConfig, isReadOnly }) 
         makeControl: () => {
             const select = document.createElement('select');
             const applyColor = cellValue => {
-                select.style.backgroundColor = columnConfig.enum_colors?.[cellValue] ?? '';
+                const backgroundColor = columnConfig.enum_colors?.[cellValue] ?? '';
+                select.style.backgroundColor = backgroundColor;
+                select.style.color = readableTextColor(backgroundColor);
             };
 
             const emptyOption = document.createElement('option');
@@ -27,7 +30,11 @@ function renderEnumCell({ row, col: column, colCfg: columnConfig, isReadOnly }) 
                     option.value = optionValue;
                     option.textContent = optionValue;
                     if (optionValue === value) option.selected = true;
-                    if (columnConfig.enum_colors?.[optionValue]) option.style.backgroundColor = columnConfig.enum_colors[optionValue];
+                    if (columnConfig.enum_colors?.[optionValue]) {
+                        const optionBackground = columnConfig.enum_colors[optionValue];
+                        option.style.backgroundColor = optionBackground;
+                        option.style.color = readableTextColor(optionBackground);
+                    }
                     select.appendChild(option);
                 });
             }

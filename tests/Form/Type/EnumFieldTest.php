@@ -75,4 +75,42 @@ final class EnumFieldTest extends TestCase
         $this->assertStringContainsString('enum-badge', $html);
         $this->assertStringContainsString('type="hidden"', $html);
     }
+
+    public function testRenderSelectUsesLightTextOnDarkBackground(): void
+    {
+        $column  = $this->col(['dark'], ['dark' => '#003366']);
+        $html = $this->field->render($column, 'dark', new RenderContext(false));
+        $this->assertStringContainsString('background:#003366;', $html);
+        $this->assertStringContainsString('color:#fff;', $html);
+    }
+
+    public function testRenderSelectUsesDarkTextOnLightBackground(): void
+    {
+        $column  = $this->col(['light'], ['light' => '#fcd34d']);
+        $html = $this->field->render($column, 'light', new RenderContext(false));
+        $this->assertStringContainsString('background:#fcd34d;', $html);
+        $this->assertStringContainsString('color:#333;', $html);
+    }
+
+    public function testRenderOptionCarriesReadableTextColor(): void
+    {
+        $column  = $this->col(['dark', 'light'], ['dark' => '#003366', 'light' => '#fcd34d']);
+        $html = $this->field->render($column, '', new RenderContext(false));
+        $this->assertMatchesRegularExpression(
+            '/<option value="dark"[^>]*background:#003366;[^>]*color:#fff;/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/<option value="light"[^>]*background:#fcd34d;[^>]*color:#333;/',
+            $html
+        );
+    }
+
+    public function testRenderSelectWithoutColorOmitsTextColor(): void
+    {
+        $column  = $this->col(['active']);
+        $html = $this->field->render($column, '', new RenderContext(false));
+        $this->assertStringNotContainsString('color:#333', $html);
+        $this->assertStringNotContainsString('color:#fff', $html);
+    }
 }

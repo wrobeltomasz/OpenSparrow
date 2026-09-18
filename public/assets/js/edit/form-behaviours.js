@@ -3,6 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
+import { readableTextColor } from '../util/color.js';
+
 function initNavButtons() {
     document.querySelectorAll('[data-nav]').forEach(button => {
         button.addEventListener('click', () => { window.location.href = button.dataset.nav; });
@@ -17,7 +19,11 @@ function initEnumColors() {
         } catch (error) {
             return;
         }
-        const apply = () => { selectElement.style.background = colors[selectElement.value] || ''; };
+        const apply = () => {
+            const backgroundColor = colors[selectElement.value] || '';
+            selectElement.style.background = backgroundColor;
+            selectElement.style.color = readableTextColor(backgroundColor);
+        };
         selectElement.addEventListener('change', apply);
         apply();
     });

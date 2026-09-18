@@ -43,20 +43,11 @@ final class EnumField implements FieldTypeInterface
         $requiredAttribute = ($column->notNull && !$locked) ? 'required' : '';
 
         if ($locked) {
-            $color     = $column->enumColors[$value] ?? null;
+            $color             = $column->enumColors[$value] ?? null;
             $backgroundStyle   = $color
                 ? 'background:' . htmlspecialchars($color, ENT_QUOTES, 'UTF-8') . ';'
                 : 'background:#e2e8f0;';
-            $textColor = '#333';
-            if ($color) {
-                $hexColor = ltrim($color, '#');
-                if (strlen($hexColor) === 6) {
-                    $brightness = (hexdec(substr($hexColor, 0, 2)) * 299
-                                 + hexdec(substr($hexColor, 2, 2)) * 587
-                                 + hexdec(substr($hexColor, 4, 2)) * 114) / 1000;
-                    $textColor  = $brightness > 128 ? '#333' : '#fff';
-                }
-            }
+            $textColor        = $color ? $this->readableTextColor($color) : '#333';
             $display = $value !== '' ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : '&mdash;';
             $html    = '<span class="enum-badge" style="' . $backgroundStyle . 'color:' . $textColor . ';">'
                 . $display . '</span>';
@@ -66,9 +57,10 @@ final class EnumField implements FieldTypeInterface
         }
 
         $colorsJson = htmlspecialchars((string)json_encode($column->enumColors), ENT_QUOTES, 'UTF-8');
-        $initialBackground     = $column->enumColors[$value] ?? '';
-        $initialStyle  = $initialBackground
+        $initialBackground = $column->enumColors[$value] ?? '';
+        $initialStyle = $initialBackground
             ? 'background:' . htmlspecialchars($initialBackground, ENT_QUOTES, 'UTF-8') . ';'
+                . 'color:' . $this->readableTextColor($initialBackground) . ';'
             : '';
 
         $html  = '<select name="' . $name . '" ' . $requiredAttribute
@@ -77,9 +69,10 @@ final class EnumField implements FieldTypeInterface
         foreach ($column->options as $option) {
             $optionValue   = (string)$option;
             $selected = $value === $optionValue ? 'selected' : '';
-            $optionBackground    = $column->enumColors[$optionValue] ?? '';
+            $optionBackground = $column->enumColors[$optionValue] ?? '';
             $optionStyle = $optionBackground
-                ? ' style="background:' . htmlspecialchars($optionBackground, ENT_QUOTES, 'UTF-8') . ';"'
+                ? ' style="background:' . htmlspecialchars($optionBackground, ENT_QUOTES, 'UTF-8') . ';'
+                    . 'color:' . $this->readableTextColor($optionBackground) . ';"'
                 : '';
             $html    .= '<option value="' . htmlspecialchars($optionValue, ENT_QUOTES, 'UTF-8') . '"'
                       . $optionStyle . ' ' . $selected . '>'
@@ -88,5 +81,20 @@ final class EnumField implements FieldTypeInterface
         }
         $html .= '</select>';
         return $html;
+    }
+
+    private function readableTextColor(string $color): string
+    {
+        $hexColor = ltrim($color, '#');
+        if (strlen($hexColor) === 3) {
+            $hexColor = $hexColor[0] . $hexColor[0] . $hexColor[1] . $hexColor[1] . $hexColor[2] . $hexColor[2];
+        }
+        if (strlen($hexColor) !== 6 || !ctype_xdigit($hexColor)) {
+            return '#333';
+        }
+        $brightness = (hexdec(substr($hexColor, 0, 2)) * 299
+                     + hexdec(substr($hexColor, 2, 2)) * 587
+                     + hexdec(substr($hexColor, 4, 2)) * 114) / 1000;
+        return $brightness > 128 ? '#333' : '#fff';
     }
 }
