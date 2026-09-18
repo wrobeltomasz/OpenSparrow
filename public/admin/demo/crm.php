@@ -21,6 +21,8 @@ function demo_def_crm($conn): array
             "CREATE TABLE IF NOT EXISTS spw_crm.activities (id SERIAL PRIMARY KEY, deal_id INTEGER REFERENCES spw_crm.deals(id) ON DELETE CASCADE, contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE SET NULL, type VARCHAR(50) DEFAULT 'Call', notes TEXT, scheduled_at TIMESTAMP, done BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW())",
             "CREATE TABLE IF NOT EXISTS spw_crm.leads (id SERIAL PRIMARY KEY, source VARCHAR(50) DEFAULT 'Web', first_name VARCHAR(100) NOT NULL, last_name VARCHAR(100) NOT NULL, email VARCHAR(255), phone VARCHAR(50), company_name VARCHAR(255), status VARCHAR(50) DEFAULT 'New', converted_contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE SET NULL, created_at TIMESTAMP DEFAULT NOW())",
 
+            "CREATE TABLE IF NOT EXISTS spw_crm.projects (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, category VARCHAR(50) DEFAULT 'Infrastructure', start_date DATE, end_date DATE, progress INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW())",
+
             "CREATE TABLE IF NOT EXISTS spw_crm.deal_contacts (id SERIAL PRIMARY KEY, deal_id INTEGER REFERENCES spw_crm.deals(id) ON DELETE CASCADE, contact_id INTEGER REFERENCES spw_crm.contacts(id) ON DELETE CASCADE, role VARCHAR(100), added_at TIMESTAMP DEFAULT NOW())",
 
             'CREATE OR REPLACE VIEW spw_crm.v_demo_crm_company_pipeline AS '
@@ -405,6 +407,22 @@ function demo_def_crm($conn): array
             "UPDATE spw_crm.leads     SET created_at = NOW() - (id % 60)  * INTERVAL '1 day' WHERE created_at >= NOW() - INTERVAL '7 days'",
 
             "UPDATE spw_crm.activities SET created_at = NOW() - (id % 75) * INTERVAL '1 day'",
+
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('CRM Platform Rollout', 'Infrastructure', CURRENT_DATE - INTERVAL '60 days', CURRENT_DATE + INTERVAL '30 days', 65)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Sales Dashboard Redesign', 'Product', CURRENT_DATE - INTERVAL '20 days', CURRENT_DATE + INTERVAL '70 days', 25)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Lead Scoring Engine', 'Product', CURRENT_DATE + INTERVAL '15 days', CURRENT_DATE + INTERVAL '105 days', 0)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('GDPR Compliance Audit', 'Compliance', CURRENT_DATE - INTERVAL '10 days', CURRENT_DATE + INTERVAL '50 days', 40)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Data Warehouse Migration', 'Infrastructure', CURRENT_DATE + INTERVAL '30 days', CURRENT_DATE + INTERVAL '150 days', 0)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Customer Portal v2', 'Product', CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '15 days', 80)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Email Campaign Automation', 'Marketing', CURRENT_DATE - INTERVAL '5 days', CURRENT_DATE + INTERVAL '55 days', 15)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('SSO & MFA Rollout', 'Infrastructure', CURRENT_DATE - INTERVAL '90 days', CURRENT_DATE - INTERVAL '10 days', 100)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Partner Onboarding Kit', 'Marketing', CURRENT_DATE + INTERVAL '20 days', CURRENT_DATE + INTERVAL '80 days', 0)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Mobile App Beta', 'Product', CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE + INTERVAL '90 days', 35)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Quarterly Sales Kickoff', 'Marketing', CURRENT_DATE + INTERVAL '40 days', CURRENT_DATE + INTERVAL '40 days', 0)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Security Penetration Test', 'Compliance', CURRENT_DATE + INTERVAL '10 days', CURRENT_DATE + INTERVAL '10 days', 0)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Legacy CRM Sunset', 'Infrastructure', CURRENT_DATE + INTERVAL '60 days', CURRENT_DATE + INTERVAL '180 days', 0)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('Pricing Model Update', 'Product', CURRENT_DATE - INTERVAL '15 days', CURRENT_DATE + INTERVAL '20 days', 50)",
+            "INSERT INTO spw_crm.projects (name, category, start_date, end_date, progress) VALUES ('ISO 27001 Certification', 'Compliance', CURRENT_DATE - INTERVAL '75 days', CURRENT_DATE + INTERVAL '45 days', 55)",
         ],
         'schema_tables' => [
             'companies' => ['display_name' => 'Companies', 'schema' => 'spw_crm', 'icon' => 'assets/icons/material/apartment.svg', 'columns' => [
@@ -483,6 +501,15 @@ function demo_def_crm($conn): array
             ], 'foreign_keys' => [
                 'converted_contact_id' => ['reference_table' => 'contacts', 'reference_column' => 'id', 'display_column' => ['first_name', 'last_name']],
             ]],
+            'projects' => ['display_name' => 'Projects', 'schema' => 'spw_crm', 'icon' => 'assets/icons/material/timeline.svg', 'columns' => [
+                'id'         => ['type' => 'number', 'display_name' => 'ID', 'description' => 'Unique project identifier'],
+                'name'       => ['type' => 'text', 'show_in_grid' => true, 'not_null' => true, 'display_name' => 'Project Name', 'description' => 'Project or initiative name'],
+                'category'   => ['type' => 'enum', 'show_in_grid' => true, 'options' => ['Infrastructure', 'Product', 'Marketing', 'Compliance'], 'enum_colors' => ['Infrastructure' => '#003366', 'Product' => '#0E7E4F', 'Marketing' => '#C77D0A', 'Compliance' => '#AB0000'], 'display_name' => 'Category', 'description' => 'Project category driving roadmap colors'],
+                'start_date' => ['type' => 'date', 'show_in_grid' => true, 'display_name' => 'Start Date', 'description' => 'Project start date'],
+                'end_date'   => ['type' => 'date', 'show_in_grid' => true, 'display_name' => 'End Date', 'description' => 'Project end date (equal to start date for milestones)'],
+                'progress'   => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Progress', 'description' => 'Completion percentage (0-100)'],
+                'created_at' => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when project record was created'],
+            ]],
             'deal_contacts' => ['display_name' => 'Deal–Contacts', 'schema' => 'spw_crm', 'hidden' => true, 'columns' => [
                 'id'         => ['display_name' => 'ID',      'type' => 'number', 'not_null' => true, 'readonly' => true,  'show_in_grid' => true, 'show_in_edit' => true],
                 'deal_id'    => ['display_name' => 'Deal',    'type' => 'number', 'not_null' => true, 'readonly' => false, 'show_in_grid' => true, 'show_in_edit' => true],
@@ -520,6 +547,24 @@ function demo_def_crm($conn): array
                     'title_column'  => 'title',
                     'card_columns'  => ['company_id', 'value', 'expected_close'],
                     'color'         => '#005A9E',
+                ],
+            ],
+        ],
+        'roadmap' => [
+            'roadmaps' => [
+                [
+                    'id'               => 'demo_crm_projects_roadmap',
+                    'menu_name'        => 'Projects Roadmap',
+                    'menu_icon'        => 'assets/icons/material/timeline.svg',
+                    'hidden'           => false,
+                    'table'            => 'projects',
+                    'title_column'     => 'name',
+                    'start_column'     => 'start_date',
+                    'end_column'       => 'end_date',
+                    'category_column'  => 'category',
+                    'progress_column'  => 'progress',
+                    'card_columns'     => ['category'],
+                    'color'            => '#003366',
                 ],
             ],
         ],
@@ -655,6 +700,7 @@ function demo_def_crm($conn): array
             'deals'     => ['title'],
             'activities' => ['type'],
             'leads'     => ['first_name', 'last_name'],
+            'projects'  => ['name'],
         ],
 
         'demo_users' => [
@@ -814,6 +860,7 @@ function demo_def_crm($conn): array
             ['key' => 'deals'],
             ['key' => 'activities'],
             ['key' => 'board'],
+            ['key' => 'roadmap'],
             ['key' => 'files'],
         ],
         'files_relations' => [

@@ -415,6 +415,26 @@
         "not_configured": "Le tableau n'a pas encore été configuré. Un administrateur peut définir la table source et la colonne de statut dans le panneau d'administration.",
         "load_error": "Impossible de charger le tableau."
     },
+    "roadmap": {
+        "title": "Feuille de route",
+        "task": "Tâche",
+        "progress": "Progression",
+        "not_configured": "La feuille de route n'est pas encore configurée. Un administrateur peut définir la table source et les colonnes de dates dans le panneau d'administration.",
+        "load_error": "Impossible de charger la feuille de route.",
+        "empty": "Aucune tâche ne correspond aux filtres actuels.",
+        "month_jan": "Jan",
+        "month_feb": "Fév",
+        "month_mar": "Mar",
+        "month_apr": "Avr",
+        "month_may": "Mai",
+        "month_jun": "Juin",
+        "month_jul": "Juil",
+        "month_aug": "Août",
+        "month_sep": "Sep",
+        "month_oct": "Oct",
+        "month_nov": "Nov",
+        "month_dec": "Déc"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

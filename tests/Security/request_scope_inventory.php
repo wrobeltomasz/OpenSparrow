@@ -20,6 +20,9 @@ return [
         '_GET.board' => ['scoped', 'The read route resolves ?board= against filter_by_user_access(boards, ...) and falls back to the first board of that filtered list, so an out-of-scope or unmatched id can never select a board the user was not granted. The table the resolved board is bound to is checked separately with user_can_access_table(), and an out-of-scope binding is blanked rather than named.'],
         'body.board' => ['scoped', 'move_card resolves the board id against filter_by_user_access(boards, ...); an unmatched id leaves $boardConfig empty and the request is rejected as an invalid board table. The record table itself was already gated by the write preamble in public/api.php — the board is a separate grant, which is why both apply.'],
     ],
+    'includes/frontapi/roadmap.php' => [
+        '_GET.roadmap' => ['scoped', 'The read route resolves ?roadmap= against filter_by_user_access(roadmaps, ...) and falls back to the first roadmap of that filtered list, so an out-of-scope or unmatched id can never select a roadmap the user was not granted. The table the resolved roadmap is bound to is checked separately with user_can_access_table(), and an out-of-scope binding is blanked rather than named.'],
+    ],
     'includes/frontapi/workflow_procedure.php' => [
         'body.workflow_id' => ['gated', 'Calls require_access(workflows, ...) before looking the procedure up, then workflow_tables_in_scope() on the resolved entry. Both halves are needed: without the first the scope would be cosmetic (a direct POST would fire the procedure of a workflow hidden from the menu and the list), and without the second a workflow granted to someone whose tables do not cover its steps would still run against those tables.'],
     ],
@@ -63,6 +66,9 @@ return [
     'public/board.php' => [
         'os_query_string().board' => ['gated', 'os_require_access(boards, ...) redirects to the grid rather than rendering a shell whose data call comes back empty.'],
     ],
+    'public/roadmap.php' => [
+        'os_query_string().roadmap' => ['gated', 'os_require_access(roadmaps, ...) redirects to the grid rather than rendering a shell whose data call comes back empty.'],
+    ],
     'includes/Controller/CreateController.php' => [
         'query().table' => ['gated', 'os_require_table_access() runs right after the hasTable() check, before the form is built, so a table outside the scope never reaches the field rendering or the POST handler below it. public/create.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],
@@ -84,6 +90,7 @@ return [
         'os_query_string().view'     => ['none', 'Active-entry highlight only, and the view list itself is already filtered — an out-of-scope name matches no entry.'],
         'os_query_string().print'    => ['none', 'Active-entry highlight only, and the printout list itself is already filtered — an out-of-scope name matches no entry.'],
         'os_query_string().board'    => ['none', 'Active-entry highlight only, and the board list itself is already filtered — an out-of-scope id matches no entry.'],
+        'os_query_string().roadmap'  => ['none', 'Active-entry highlight only, and the roadmap list itself is already filtered — an out-of-scope id matches no entry.'],
         'os_query_string().workflow' => ['none', 'Active-entry highlight only, and the workflow list itself is already filtered — an out-of-scope id matches no entry.'],
     ],
     'public/cypress_seed.php' => [

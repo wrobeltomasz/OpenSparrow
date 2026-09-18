@@ -286,6 +286,21 @@ function demo_install_run(
             config_save('board', $boardConfig, null, $seedUserId);
         }
 
+        if (!empty($demoData['roadmap']['roadmaps']) && is_array($demoData['roadmap']['roadmaps'])) {
+            require_once __DIR__ . '/../../../includes/config_store.php';
+            $roadmapConfig = config_get('roadmap') ?? [];
+            if (!isset($roadmapConfig['roadmaps']) || !is_array($roadmapConfig['roadmaps'])) {
+                $roadmapConfig['roadmaps'] = [];
+            }
+            $roadmapConfig['roadmaps'] = array_values(
+                array_filter($roadmapConfig['roadmaps'], fn($roadmap) => !in_array($roadmap['table'] ?? '', $demoTables, true))
+            );
+            foreach ($demoData['roadmap']['roadmaps'] as $roadmap) {
+                $roadmapConfig['roadmaps'][] = $roadmap;
+            }
+            config_save('roadmap', $roadmapConfig, null, $seedUserId);
+        }
+
         if (!empty($demoData['anonymization']) && is_array($demoData['anonymization'])) {
             require_once __DIR__ . '/../../../includes/config_store.php';
             $anonymizationConfig  = config_get('anonymization') ?? [];
@@ -631,6 +646,7 @@ function demo_install_run(
             'automation_ids' => $automationIds,
             'print_keys'     => $printKeys,
             'board_ids'      => array_column($demoData['board']['boards'] ?? [], 'id'),
+            'roadmap_ids'    => array_column($demoData['roadmap']['roadmaps'] ?? [], 'id'),
             'demo_user_ids'  => $demoUserIds,
             'demo_usernames' => $withUsers ? array_column($demoData['demo_users'], 'username') : [],
             'audit_log_ids'  => $auditLogIds,
@@ -870,6 +886,22 @@ if ($action === 'demo_uninstall') {
                 config_delete('board', $cleanUserId);
             } else {
                 config_save('board', $boardConfig, null, $cleanUserId);
+            }
+        }
+
+        $roadmapConfig = config_get('roadmap');
+        if (is_array($roadmapConfig) && !empty($roadmapConfig['roadmaps'])) {
+            $tables = $meta['tables'] ?? [];
+            $ids  = $meta['roadmap_ids'] ?? [];
+            $roadmapConfig['roadmaps'] = array_values(array_filter(
+                $roadmapConfig['roadmaps'],
+                fn($roadmap) => !in_array($roadmap['id'] ?? '', $ids, true)
+                    && !in_array($roadmap['table'] ?? '', $tables, true)
+            ));
+            if (empty($roadmapConfig['roadmaps'])) {
+                config_delete('roadmap', $cleanUserId);
+            } else {
+                config_save('roadmap', $roadmapConfig, null, $cleanUserId);
             }
         }
 

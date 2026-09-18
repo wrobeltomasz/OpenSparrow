@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
 final class RequestScopeInventoryTest extends TestCase
 {
     private const PROTECTED_KEYS = [
-        'table', 'related_table', 'view', 'print', 'board', 'workflow', 'workflow_id',
+        'table', 'related_table', 'view', 'print', 'board', 'roadmap', 'workflow', 'workflow_id',
     ];
 
     private const HOLDERS = [

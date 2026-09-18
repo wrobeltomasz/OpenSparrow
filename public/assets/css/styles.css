@@ -258,7 +258,8 @@ header .filter-chip:hover {
 header .board-filters,
 header .calendar-filters,
 header .dashboard-filters,
-header .print-filters {
+header .print-filters,
+header .roadmap-filters {
   flex-wrap: nowrap;
   min-width: 0;
   overflow-x: auto;
@@ -269,14 +270,16 @@ header .print-filters {
 header .board-filters::-webkit-scrollbar,
 header .calendar-filters::-webkit-scrollbar,
 header .dashboard-filters::-webkit-scrollbar,
-header .print-filters::-webkit-scrollbar {
+header .print-filters::-webkit-scrollbar,
+header .roadmap-filters::-webkit-scrollbar {
   height: 5px;
 }
 
 header .board-filters::-webkit-scrollbar-thumb,
 header .calendar-filters::-webkit-scrollbar-thumb,
 header .dashboard-filters::-webkit-scrollbar-thumb,
-header .print-filters::-webkit-scrollbar-thumb {
+header .print-filters::-webkit-scrollbar-thumb,
+header .roadmap-filters::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,.35);
   border-radius: 3px;
 }
@@ -1928,6 +1931,13 @@ header .dash-filter-label {
   color: var(--muted);
 }
 .board-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.roadmap-filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3868,3 +3878,39 @@ thead th.drag-over {
 .ow-select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); }
 .ow-history-wrap { margin-top: 20px; }
 .ow-history-body { color: var(--muted); }
+
+#roadmapMain { padding: 20px; }
+
+.roadmap-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.roadmap-header h2 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+.roadmap-controls { display: flex; align-items: center; gap: 8px; }
+.roadmap-select { padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--panel); font-size: 13px; font-family: inherit; color: var(--text); cursor: pointer; }
+.roadmap-nav { display: flex; gap: 6px; }
+.roadmap-nav button { padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); font-size: 13px; font-weight: 500; font-family: inherit; color: var(--text); cursor: pointer; transition: background var(--transition), border-color var(--transition); }
+.roadmap-nav button:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+
+.roadmap-scroll { overflow-x: auto; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: var(--panel); box-shadow: var(--shadow-sm); }
+.roadmap-grid { display: grid; grid-template-columns: 220px repeat(12, 88px); grid-auto-rows: 44px; position: relative; min-width: max-content; }
+.roadmap-corner { position: sticky; left: 0; z-index: 3; display: flex; align-items: flex-end; padding: 8px 12px; background: var(--accent-light); border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); font-size: 12px; font-weight: 600; color: var(--accent-dark); }
+.roadmap-month { display: flex; align-items: flex-end; justify-content: center; padding: 8px 4px; background: var(--accent-light); border-bottom: 1px solid var(--border-light); font-size: 12px; font-weight: 600; color: var(--accent-dark); white-space: nowrap; }
+.roadmap-month.q-start { border-left: 1px solid var(--border); }
+.roadmap-row-label { position: sticky; left: 0; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.roadmap-row-label .row-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.roadmap-row-cells { display: contents; }
+.roadmap-cell { border-bottom: 1px solid var(--border-light); background: var(--panel); transition: background var(--transition); }
+.roadmap-cell.q-start { border-left: 1px solid var(--border-light); }
+.roadmap-cell.q-shade { background: var(--accent-light); }
+.roadmap-cell:hover { background: var(--row-col-hover); }
+
+.roadmap-bar { position: absolute; height: 24px; border-radius: var(--radius); color: #fff; font-size: 11.5px; font-weight: 500; display: flex; align-items: center; padding: 0 8px; white-space: nowrap; overflow: hidden; box-shadow: var(--shadow-sm); z-index: 1; cursor: pointer; }
+.roadmap-bar .bar-progress { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255, 255, 255, 0.28); border-radius: var(--radius) 0 0 var(--radius); z-index: -1; }
+.roadmap-milestone { position: absolute; width: 12px; height: 12px; transform: translate(-50%, -50%) rotate(45deg); background: var(--c-stone); border: 2px solid var(--panel); box-shadow: var(--shadow-sm); z-index: 2; cursor: pointer; }
+.roadmap-today { position: absolute; width: 0; border-left: 2px solid var(--accent); z-index: 2; }
+.roadmap-today::after { content: ""; position: absolute; top: -1px; left: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.roadmap-grid:has(.roadmap-empty) { grid-auto-rows: auto; }
+.roadmap-empty { grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--muted); font-size: 13px; }
+.roadmap-loading { padding: 40px; text-align: center; color: var(--muted); }
+
+@media only screen and (max-width: 768px) {
+    .roadmap-grid { grid-template-columns: 140px repeat(12, 72px); }
+}

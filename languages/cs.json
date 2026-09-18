@@ -419,6 +419,26 @@
         "not_configured": "Nástěnka zatím nebyla nakonfigurována. Administrátor může nastavit zdrojovou tabulku a sloupec stavu v administračním panelu.",
         "load_error": "Nástěnku se nepodařilo načíst."
     },
+    "roadmap": {
+        "title": "Plán",
+        "task": "Úkol",
+        "progress": "Postup",
+        "not_configured": "Plán zatím není nakonfigurován. Správce může nastavit zdrojovou tabulku a sloupce dat v administraci.",
+        "load_error": "Plán se nepodařilo načíst.",
+        "empty": "Žádné úkoly neodpovídají aktuálním filtrům.",
+        "month_jan": "Led",
+        "month_feb": "Úno",
+        "month_mar": "Bře",
+        "month_apr": "Dub",
+        "month_may": "Kvě",
+        "month_jun": "Čer",
+        "month_jul": "Čvc",
+        "month_aug": "Srp",
+        "month_sep": "Zář",
+        "month_oct": "Říj",
+        "month_nov": "Lis",
+        "month_dec": "Pro"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

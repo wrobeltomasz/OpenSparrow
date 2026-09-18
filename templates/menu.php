@@ -85,12 +85,14 @@ $currentTable = substr(os_query_string('table'), 0, 64);
 $currentView     = substr(os_query_string('view'), 0, 64);
 $currentPrint    = substr(os_query_string('print'), 0, 64);
 $currentBoard    = substr(os_query_string('board'), 0, 64);
+$currentRoadmap  = substr(os_query_string('roadmap'), 0, 64);
 $currentWorkflow = substr(os_query_string('workflow'), 0, 64);
 $isWorkflows     = isset($queryParameters['workflows']);
 
 $dashConfig  = loadMenuConfig('dashboard', $includeDirectory);
 $calendarConfig   = loadMenuConfig('calendar', $includeDirectory);
 $boardConfig = loadMenuConfig('board', $includeDirectory);
+$roadmapConfig = loadMenuConfig('roadmap', $includeDirectory);
 $filesConfig = loadMenuConfig('files', $includeDirectory);
 $workflowsConfig    = loadMenuConfig('workflows', $includeDirectory);
 $viewsConfig = loadMenuConfig('views', $includeDirectory);
@@ -153,6 +155,40 @@ if (!empty($boardChildren)) {
         'hidden'   => !empty($boardConfig['hidden']),
         'active'   => $currentPage === 'board.php',
         'children' => $boardChildren,
+    ];
+}
+
+$roadmapChildren = [];
+
+foreach (filter_by_user_access('roadmaps', $roadmapConfig['roadmaps'] ?? []) as $roadmapItem) {
+    if (empty($roadmapItem['table']) || empty($roadmapItem['start_column']) || empty($roadmapItem['end_column']) || !empty($roadmapItem['hidden'])) {
+        continue;
+    }
+    if (!user_can_access_table((string) $roadmapItem['table'])) {
+        continue;
+    }
+    $roadmapEntryId  = (string) ($roadmapItem['id'] ?? '');
+    if ($roadmapEntryId === '') {
+        continue;
+    }
+    $roadmapChildren[] = [
+        'type'   => 'roadmap',
+        'href'   => 'roadmap.php?roadmap=' . urlencode($roadmapEntryId),
+        'name'   => $roadmapItem['menu_name'] ?? 'Roadmap',
+        'icon'   => $roadmapItem['menu_icon'] ?? '',
+        'hidden' => false,
+        'active' => $currentPage === 'roadmap.php' && $currentRoadmap === $roadmapEntryId,
+    ];
+}
+if (!empty($roadmapChildren)) {
+    $menuCatalog['roadmap'] = [
+        'type'     => 'roadmap',
+        'href'     => $roadmapChildren[0]['href'],
+        'name'     => $roadmapConfig['menu_name'] ?? 'Roadmap',
+        'icon'     => $roadmapConfig['menu_icon'] ?? 'assets/icons/material/timeline.svg',
+        'hidden'   => !empty($roadmapConfig['hidden']),
+        'active'   => $currentPage === 'roadmap.php',
+        'children' => $roadmapChildren,
     ];
 }
 

@@ -214,6 +214,18 @@ ${_ul([
     `<strong>${strings.s4b_dnd_label}:</strong> ${strings.s4b_dnd}`
 ])}
 
+${_h3('doc-4c', strings.s4c_head)}
+${paragraphHtml(strings.s4c_desc)}
+${_ul([
+    `<strong>${strings.s4c_multi_label}:</strong> ${strings.s4c_multi}`,
+    `<strong>${strings.s4c_table_label}:</strong> ${strings.s4c_table}`,
+    `<strong>${strings.s4c_dates_label}:</strong> ${strings.s4c_dates}`,
+    `<strong>${strings.s4c_category_label}:</strong> ${strings.s4c_category}`,
+    `<strong>${strings.s4c_progress_label}:</strong> ${strings.s4c_progress}`,
+    `<strong>${strings.s4c_milestone_label}:</strong> ${strings.s4c_milestone}`,
+    `<strong>${strings.s4c_readonly_label}:</strong> ${strings.s4c_readonly}`
+])}
+
 ${_h3('doc-5', strings.s5_head)}
 ${paragraphHtml(strings.s5_desc)}
 ${_ul([

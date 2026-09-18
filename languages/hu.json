@@ -415,6 +415,26 @@
         "not_configured": "A tábla még nincs beállítva. Egy adminisztrátor az adminisztrációs panelen megadhatja a forrástáblát és az állapotoszlopot.",
         "load_error": "A táblát nem sikerült betölteni."
     },
+    "roadmap": {
+        "title": "Ütemterv",
+        "task": "Feladat",
+        "progress": "Haladás",
+        "not_configured": "Az ütemterv még nincs konfigurálva. Egy adminisztrátor beállíthatja a forrástáblát és a dátumoszlopokat az admin panelen.",
+        "load_error": "Az ütemterv betöltése nem sikerült.",
+        "empty": "Nincs feladat, amely megfelel a jelenlegi szűrőknek.",
+        "month_jan": "Jan",
+        "month_feb": "Feb",
+        "month_mar": "Már",
+        "month_apr": "Ápr",
+        "month_may": "Máj",
+        "month_jun": "Jún",
+        "month_jul": "Júl",
+        "month_aug": "Aug",
+        "month_sep": "Sze",
+        "month_oct": "Okt",
+        "month_nov": "Nov",
+        "month_dec": "Dec"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

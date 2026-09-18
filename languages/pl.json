@@ -419,6 +419,26 @@
         "not_configured": "Tablica nie została jeszcze skonfigurowana. Administrator może ustawić tabelę źródłową i kolumnę statusu w panelu administracyjnym.",
         "load_error": "Nie udało się załadować tablicy."
     },
+    "roadmap": {
+        "title": "Roadmap",
+        "task": "Zadanie",
+        "progress": "Postęp",
+        "not_configured": "Roadmapa nie została jeszcze skonfigurowana. Administrator może ustawić tabelę źródłową i kolumny dat w panelu administracyjnym.",
+        "load_error": "Nie udało się wczytać roadmapy.",
+        "empty": "Brak zadań pasujących do bieżących filtrów.",
+        "month_jan": "Sty",
+        "month_feb": "Lut",
+        "month_mar": "Mar",
+        "month_apr": "Kwi",
+        "month_may": "Maj",
+        "month_jun": "Cze",
+        "month_jul": "Lip",
+        "month_aug": "Sie",
+        "month_sep": "Wrz",
+        "month_oct": "Paź",
+        "month_nov": "Lis",
+        "month_dec": "Gru"
+    },
     "mass_edit": {
         "title": "Masowa edycja",
         "action_label": "Masowa edycja",

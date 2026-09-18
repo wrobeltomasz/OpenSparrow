@@ -147,13 +147,13 @@ if ($action === 'menu_config' && os_request()->method() === 'POST') {
 }
 
 $allowedFiles = [
-    'schema', 'dashboard', 'calendar', 'board', 'database', 'security',
+    'schema', 'dashboard', 'calendar', 'board', 'roadmap', 'database', 'security',
     'workflows', 'files', 'views', 'automations', 'user_records',
 ];
 
 $dbBackedFiles = [
     'automations', 'board', 'calendar', 'dashboard', 'files',
-    'schema', 'user_records', 'views', 'workflows',
+    'roadmap', 'schema', 'user_records', 'views', 'workflows',
 ];
 
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {

@@ -415,6 +415,26 @@
         "not_configured": "O quadro ainda não foi configurado. Um administrador pode definir a tabela de origem e a coluna de estado no painel de administração.",
         "load_error": "Não foi possível carregar o quadro."
     },
+    "roadmap": {
+        "title": "Roadmap",
+        "task": "Tarefa",
+        "progress": "Progresso",
+        "not_configured": "O roadmap ainda não está configurado. Um administrador pode definir a tabela de origem e as colunas de data no painel de administração.",
+        "load_error": "Não foi possível carregar o roadmap.",
+        "empty": "Nenhuma tarefa corresponde aos filtros atuais.",
+        "month_jan": "Jan",
+        "month_feb": "Fev",
+        "month_mar": "Mar",
+        "month_apr": "Abr",
+        "month_may": "Mai",
+        "month_jun": "Jun",
+        "month_jul": "Jul",
+        "month_aug": "Ago",
+        "month_sep": "Set",
+        "month_oct": "Out",
+        "month_nov": "Nov",
+        "month_dec": "Dez"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

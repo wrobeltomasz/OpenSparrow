@@ -15,6 +15,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
 {
     private const LIST_MODULE     = 'includes/frontapi/list.php';
     private const BOARD_MODULE    = 'includes/frontapi/board.php';
+    private const ROADMAP_MODULE  = 'includes/frontapi/roadmap.php';
     private const WORKFLOWS_MODULE = 'includes/frontapi/workflows.php';
     private const WF_PROC_MODULE  = 'includes/frontapi/workflow_procedure.php';
 
@@ -179,6 +180,27 @@ final class AccessScopeEndpointGuardTest extends TestCase
         );
     }
 
+    public function testRoadmapBindingIsBlankedWhenOutOfScope(): void
+    {
+        $source = $this->code(self::ROADMAP_MODULE);
+
+        $this->assertCodeHas(
+            "\$meta['table'] = '';",
+            $source,
+            'An out-of-scope roadmap must not disclose the table it is bound to.'
+        );
+        $this->assertCodeHas(
+            "\$meta['start_column'] = '';",
+            $source,
+            'An out-of-scope roadmap must not disclose its start date column.'
+        );
+        $this->assertCodeHas(
+            "\$meta['end_column'] = '';",
+            $source,
+            'An out-of-scope roadmap must not disclose its end date column.'
+        );
+    }
+
     public function testWorkflowListIsFilteredByStepTables(): void
     {
         $this->assertCodeHas(
@@ -257,12 +279,32 @@ final class AccessScopeEndpointGuardTest extends TestCase
         );
     }
 
+    public function testRoadmapSelectionStartsFromTheFilteredList(): void
+    {
+        $source = $this->code(self::ROADMAP_MODULE);
+
+        $this->assertCodeHas(
+            "\$roadmaps = filter_by_user_access('roadmaps', \$roadmapsConfig['roadmaps'] ?? [])",
+            $source,
+            'The roadmap branch must resolve ?roadmap= against the filtered list.'
+        );
+        $this->assertFalse(
+            str_contains($source, "\$roadmapConfig = \$roadmapsConfig['roadmaps'][0] ?? [];"),
+            'The roadmap fallback must not reach past the filter into the raw config.'
+        );
+    }
+
     public function testPageGatesCoverBoardsAndWorkflows(): void
     {
         $this->assertCodeHas(
             "os_require_access('boards', \$boardId)",
             $this->code('public/board.php'),
             'board.php must gate ?board= like views.php gates ?view=.'
+        );
+        $this->assertCodeHas(
+            "os_require_access('roadmaps', \$roadmapId)",
+            $this->code('public/roadmap.php'),
+            'roadmap.php must gate ?roadmap= like board.php gates ?board=.'
         );
         $this->assertCodeHas(
             "os_require_access('workflows', \$requestedWorkflow)",

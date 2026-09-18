@@ -91,6 +91,7 @@ $navSections = [
         'items' => [
             ['file' => 'board', 'label' => 'Board', 'icon' => $navIcon('material/account_tree.svg')],
             ['file' => 'calendar', 'label' => 'Calendar', 'icon' => $navIcon('material/calendar_month.svg')],
+            ['file' => 'roadmap', 'label' => 'Roadmap', 'icon' => $navIcon('material/timeline.svg')],
             ['file' => 'csv_import', 'label' => 'CSV Import', 'icon' => $navIcon('material/upload.svg')],
             ['file' => 'dashboard', 'label' => 'Dashboard', 'icon' => $navIcon('material/ballot.svg')],
             ['file' => 'etl', 'label' => 'ETL', 'icon' => $navIcon('material/database.svg')],
@@ -156,6 +157,7 @@ $breadcrumbLabels  = [
     'etl'           => 'ETL',
     'anonymization' => 'Data Anonymization',
     'print'         => 'Printouts',
+    'roadmap'       => 'Roadmap',
     'api'           => 'API',
 ];
 

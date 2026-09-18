@@ -415,6 +415,26 @@
         "not_configured": "Tavlan har inte konfigurerats ännu. En administratör kan ange källtabellen och statuskolumnen i administrationspanelen.",
         "load_error": "Tavlan kunde inte läsas in."
     },
+    "roadmap": {
+        "title": "Roadmap",
+        "task": "Uppgift",
+        "progress": "Framsteg",
+        "not_configured": "Roadmappen är ännu inte konfigurerad. En administratör kan ställa in källtabellen och datumkolumnerna i administrationspanelen.",
+        "load_error": "Det gick inte att läsa in roadmappen.",
+        "empty": "Inga uppgifter matchar de aktuella filtren.",
+        "month_jan": "Jan",
+        "month_feb": "Feb",
+        "month_mar": "Mar",
+        "month_apr": "Apr",
+        "month_may": "Maj",
+        "month_jun": "Jun",
+        "month_jul": "Jul",
+        "month_aug": "Aug",
+        "month_sep": "Sep",
+        "month_oct": "Okt",
+        "month_nov": "Nov",
+        "month_dec": "Dec"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

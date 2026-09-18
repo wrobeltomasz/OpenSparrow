@@ -350,6 +350,11 @@ const USER_ACCESS_SCOPES = [
         'label'  => 'menu_name', 'noun' => 'board',     'plural' => 'boards',
         'title'  => 'Boards',    'empty' => 'No boards configured.',
     ],
+    'roadmaps' => [
+        'config' => 'roadmap',   'path' => 'roadmaps',  'id' => 'id',
+        'label'  => 'menu_name', 'noun' => 'roadmap',   'plural' => 'roadmaps',
+        'title'  => 'Roadmaps',  'empty' => 'No roadmaps configured.',
+    ],
     'workflows' => [
         'config' => 'workflows', 'path' => 'workflows', 'id' => 'id',
         'label'  => 'title',     'noun' => 'workflow',  'plural' => 'workflows',

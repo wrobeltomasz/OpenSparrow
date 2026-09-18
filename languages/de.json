@@ -415,6 +415,26 @@
         "not_configured": "Das Board wurde noch nicht konfiguriert. Ein Administrator kann die Quelltabelle und die Statusspalte im Admin-Panel festlegen.",
         "load_error": "Das Board konnte nicht geladen werden."
     },
+    "roadmap": {
+        "title": "Roadmap",
+        "task": "Aufgabe",
+        "progress": "Fortschritt",
+        "not_configured": "Die Roadmap ist noch nicht konfiguriert. Ein Administrator kann Quelltabelle und Datumsspalten im Adminbereich festlegen.",
+        "load_error": "Die Roadmap konnte nicht geladen werden.",
+        "empty": "Keine Aufgaben entsprechen den aktuellen Filtern.",
+        "month_jan": "Jan",
+        "month_feb": "Feb",
+        "month_mar": "Mär",
+        "month_apr": "Apr",
+        "month_may": "Mai",
+        "month_jun": "Jun",
+        "month_jul": "Jul",
+        "month_aug": "Aug",
+        "month_sep": "Sep",
+        "month_oct": "Okt",
+        "month_nov": "Nov",
+        "month_dec": "Dez"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

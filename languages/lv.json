@@ -415,6 +415,26 @@
         "not_configured": "Dēlis vēl nav konfigurēts. Administrators var iestatīt avota tabulu un statusa kolonnu administrēšanas panelī.",
         "load_error": "Neizdevās ielādēt dēli."
     },
+    "roadmap": {
+        "title": "Ceļa karte",
+        "task": "Uzdevums",
+        "progress": "Progress",
+        "not_configured": "Ceļa karte vēl nav konfigurēta. Administrators var iestatīt avota tabulu un datumu kolonnas administrācijas panelī.",
+        "load_error": "Neizdevās ielādēt ceļa karti.",
+        "empty": "Nav uzdevumu, kas atbilst pašreizējiem filtriem.",
+        "month_jan": "Jan",
+        "month_feb": "Feb",
+        "month_mar": "Mar",
+        "month_apr": "Apr",
+        "month_may": "Mai",
+        "month_jun": "Jūn",
+        "month_jul": "Jūl",
+        "month_aug": "Aug",
+        "month_sep": "Sep",
+        "month_oct": "Okt",
+        "month_nov": "Nov",
+        "month_dec": "Dec"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

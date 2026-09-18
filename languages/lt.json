@@ -419,6 +419,26 @@
         "not_configured": "Lenta dar nesukonfigūruota. Administratorius gali nustatyti šaltinio lentelę ir būsenos stulpelį administravimo skydelyje.",
         "load_error": "Nepavyko įkelti lentos."
     },
+    "roadmap": {
+        "title": "Veiksmų planas",
+        "task": "Užduotis",
+        "progress": "Pažanga",
+        "not_configured": "Veiksmų planas dar nesukonfigūruotas. Administratorius gali nustatyti šaltinio lentelę ir datų stulpelius administravimo skydelyje.",
+        "load_error": "Nepavyko įkelti veiksmų plano.",
+        "empty": "Nėra užduočių, atitinkančių dabartinius filtrus.",
+        "month_jan": "Sau",
+        "month_feb": "Vas",
+        "month_mar": "Kov",
+        "month_apr": "Bal",
+        "month_may": "Geg",
+        "month_jun": "Bir",
+        "month_jul": "Lie",
+        "month_aug": "Rugp",
+        "month_sep": "Rgs",
+        "month_oct": "Spa",
+        "month_nov": "Lap",
+        "month_dec": "Grd"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

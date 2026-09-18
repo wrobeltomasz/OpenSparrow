@@ -415,6 +415,26 @@
         "not_configured": "Tahvel pole veel seadistatud. Administraator saab halduspaneelis määrata lähtetabeli ja olekuveeru.",
         "load_error": "Tahvli laadimine ebaõnnestus."
     },
+    "roadmap": {
+        "title": "Tegevuskava",
+        "task": "Ülesanne",
+        "progress": "Edenemine",
+        "not_configured": "Tegevuskava ei ole veel seadistatud. Administraator saab halduspaneelis määrata lähtetabeli ja kuupäeve veerud.",
+        "load_error": "Tegevuskava laadimine ebaõnnestus.",
+        "empty": "Ühtegi ülesannet ei vasta praegustele filtritele.",
+        "month_jan": "Jaan",
+        "month_feb": "Veeb",
+        "month_mar": "Mär",
+        "month_apr": "Apr",
+        "month_may": "Mai",
+        "month_jun": "Juun",
+        "month_jul": "Juul",
+        "month_aug": "Aug",
+        "month_sep": "Sept",
+        "month_oct": "Okt",
+        "month_nov": "Nov",
+        "month_dec": "Dets"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

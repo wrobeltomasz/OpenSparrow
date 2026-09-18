@@ -419,6 +419,26 @@
         "not_configured": "Panoul nu a fost încă configurat. Un administrator poate seta tabelul sursă și coloana de stare în panoul de administrare.",
         "load_error": "Panoul nu a putut fi încărcat."
     },
+    "roadmap": {
+        "title": "Foaie de parcurs",
+        "task": "Sarcină",
+        "progress": "Progres",
+        "not_configured": "Foaia de parcurs nu este încă configurată. Un administrator poate defini tabelul sursă și coloanele de date în panoul de administrare.",
+        "load_error": "Nu s-a putut încărca foaia de parcurs.",
+        "empty": "Nicio sarcină nu corespunde filtrelor curente.",
+        "month_jan": "Ian",
+        "month_feb": "Feb",
+        "month_mar": "Mar",
+        "month_apr": "Apr",
+        "month_may": "Mai",
+        "month_jun": "Iun",
+        "month_jul": "Iul",
+        "month_aug": "Aug",
+        "month_sep": "Sep",
+        "month_oct": "Oct",
+        "month_nov": "Nov",
+        "month_dec": "Dec"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

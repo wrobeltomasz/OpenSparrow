@@ -10,6 +10,7 @@ import { syncSchemaTables, renderSchemaEditor, renderSchemaGlobalSettings } from
 import { renderDashboardLayout, renderDashboardEditor } from './dashboard.js';
 import { renderCalendarEditor } from './calendar.js';
 import { renderBoardEditor } from './board.js';
+import { renderRoadmapEditor } from './roadmap.js';
 import { renderWorkflowsEditor } from './workflows.js';
 
 const PAGE_MODULES = {
@@ -194,6 +195,33 @@ function getEnumColumnsForTable(tableName) {
     return options;
 }
 
+function getDateColumnsForTable(tableName) {
+    const options = [];
+    const cols = globalSchemaObject?.tables?.[tableName]?.columns;
+    if (cols) {
+        for (const c in cols) {
+            const columnType = (cols[c].type || '').toLowerCase();
+            if (columnType === 'date' || columnType === 'timestamp' || columnType === 'datetime') {
+                options.push({ value: c, label: cols[c].display_name || c });
+            }
+        }
+    }
+    return options;
+}
+
+function getNumberColumnsForTable(tableName) {
+    const options = [];
+    const cols = globalSchemaObject?.tables?.[tableName]?.columns;
+    if (cols) {
+        for (const c in cols) {
+            if ((cols[c].type || '').toLowerCase() === 'number') {
+                options.push({ value: c, label: cols[c].display_name || c });
+            }
+        }
+    }
+    return options;
+}
+
 function getColumnMeta(tableName, columnName) {
     return globalSchemaObject?.tables?.[tableName]?.columns?.[columnName] || null;
 }
@@ -243,6 +271,9 @@ async function loadConfigFile(fileName) {
                 currentConfig.menu_name = 'Board';
             }
             if (!currentConfig.menu_name) currentConfig.menu_name = 'Board';
+        } else if (fileName === 'roadmap') {
+            if (!Array.isArray(currentConfig.roadmaps)) currentConfig.roadmaps = [];
+            if (!currentConfig.menu_name) currentConfig.menu_name = 'Roadmap';
         } else if (fileName === 'workflows') {
             if (!currentConfig.workflows || !Array.isArray(currentConfig.workflows)) currentConfig.workflows = [];
             if (!currentConfig.menu_name) currentConfig.menu_name = 'Workflows';
@@ -266,7 +297,7 @@ async function loadConfigFile(fileName) {
             currentConfig = {};
         }
 
-        if (fileName === 'schema' || fileName === 'dashboard' || fileName === 'calendar' || fileName === 'workflows' || fileName === 'board') {
+        if (fileName === 'schema' || fileName === 'dashboard' || fileName === 'calendar' || fileName === 'workflows' || fileName === 'board' || fileName === 'roadmap') {
             currentItemKey = null;
             renderSidebar();
             renderItemCards();
@@ -306,13 +337,16 @@ function addNewItem() {
     } else if (currentFile === 'board') {
         currentConfig.boards.push({ id: "brd_" + Date.now(), menu_name: "New Board", menu_icon: "", hidden: false, table: "", status_column: "", title_column: "", card_columns: [], color: "#003366" });
         newIndex = currentConfig.boards.length - 1;
+    } else if (currentFile === 'roadmap') {
+        currentConfig.roadmaps.push({ id: "rdm_" + Date.now(), menu_name: "New Roadmap", menu_icon: "", hidden: false, table: "", title_column: "", start_column: "", end_column: "", category_column: "", progress_column: "", card_columns: [], color: "#003366" });
+        newIndex = currentConfig.roadmaps.length - 1;
     }
 
     currentItemKey = newIndex;
     markDirty();
     renderSidebar();
 
-    const items = currentFile === 'dashboard' ? currentConfig.widgets : currentFile === 'workflows' ? currentConfig.workflows : currentFile === 'board' ? currentConfig.boards : currentConfig.sources;
+    const items = currentFile === 'dashboard' ? currentConfig.widgets : currentFile === 'workflows' ? currentConfig.workflows : currentFile === 'board' ? currentConfig.boards : currentFile === 'roadmap' ? currentConfig.roadmaps : currentConfig.sources;
     renderEditor(newIndex, items[newIndex], true);
 }
 
@@ -323,6 +357,7 @@ function clearConfig() {
         else if (currentFile === 'calendar') currentConfig = { sources: [], menu_name: 'Calendar' };
         else if (currentFile === 'workflows') currentConfig = { workflows: [], menu_name: 'Workflows' };
         else if (currentFile === 'board') currentConfig = { boards: [], menu_name: 'Board' };
+        else if (currentFile === 'roadmap') currentConfig = { roadmaps: [], menu_name: 'Roadmap' };
         else if (currentFile === 'files') currentConfig = { menu_name: 'Files' };
 
         markDirty();
@@ -374,6 +409,7 @@ function itemTabIcon() {
                : currentFile === 'calendar'  ? 'material/calendar_month.svg'
                : currentFile === 'workflows' ? 'material/build.svg'
                : currentFile === 'board'     ? 'material/account_tree.svg'
+               : currentFile === 'roadmap'   ? 'material/timeline.svg'
                : 'material/file_present.svg';
     return tabIcon(name);
 }
@@ -385,6 +421,7 @@ const CARD_MODULE_HEADER = {
     workflows: ['Workflows', 'Multi-step guided workflows that walk users through a sequence of record edits.'],
     files:     ['Files', 'Upload, browse, and configure file storage — max size, allowed types/extensions, and record-relation auto-linking.'],
     board:     ['Board', 'Define one or more Kanban boards — each maps a table\'s status column to lanes; users drag cards between lanes to update that column.'],
+    roadmap:   ['Roadmap', 'Define one or more roadmaps — each maps a table\'s date columns to a Gantt timeline with color-coded phases and milestones.'],
 };
 
 function renderSidebar() {
@@ -401,7 +438,7 @@ function renderSidebar() {
         return;
     }
 
-    const isCardTab = currentFile === 'schema' || currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board';
+    const isCardTab = currentFile === 'schema' || currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board' || currentFile === 'roadmap';
 
     const itemsRow = document.createElement('div');
     itemsRow.className = 'item-panel-items';
@@ -473,7 +510,7 @@ function renderSidebar() {
         return;
     }
 
-    if (currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board' || currentFile === 'automations') {
+    if (currentFile === 'dashboard' || currentFile === 'calendar' || currentFile === 'workflows' || currentFile === 'board' || currentFile === 'roadmap' || currentFile === 'automations') {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'item-btn' + (currentItemKey === 'LAYOUT' ? ' active' : '');
@@ -513,11 +550,13 @@ function renderSidebar() {
                        : currentFile === 'dashboard'    ? 'material/dashboard.svg'
                        : currentFile === 'workflows'    ? 'material/build.svg'
                        : currentFile === 'board'        ? 'material/account_tree.svg'
+                       : currentFile === 'roadmap'      ? 'material/timeline.svg'
                        : 'material/calendar_month.svg';
         const allLabel = currentFile === 'schema'       ? 'All PostgreSQL tables'
-                           : currentFile === 'dashboard'    ? 'All Widgets'
-                           : currentFile === 'workflows'    ? 'All Workflows'
-                           : 'All Sources';
+                            : currentFile === 'dashboard'    ? 'All Widgets'
+                            : currentFile === 'workflows'    ? 'All Workflows'
+                            : currentFile === 'roadmap'      ? 'All Roadmaps'
+                            : 'All Sources';
         buttonAll.append(tabIcon(allIcon), document.createTextNode(allLabel));
         buttonAll.onclick = () => {
             currentItemKey = null;
@@ -532,7 +571,7 @@ function renderSidebar() {
         return;
     }
 
-    let itemsToIterate = currentFile === 'board' ? (currentConfig.boards || []) : (currentConfig.sources || []);
+    let itemsToIterate = currentFile === 'board' ? (currentConfig.boards || []) : currentFile === 'roadmap' ? (currentConfig.roadmaps || []) : (currentConfig.sources || []);
     const isArray = Array.isArray(itemsToIterate);
     const keys = isArray ? itemsToIterate.map((_, i) => i) : Object.keys(itemsToIterate);
 
@@ -546,6 +585,7 @@ function renderSidebar() {
         button.className = 'item-btn' + (String(currentItemKey) === String(key) ? ' active' : '');
         const itemLabel = currentFile === 'workflows' ? (item.title || `Workflow ${key}`)
                          : currentFile === 'board'     ? (item.menu_name || `Board ${key}`)
+                         : currentFile === 'roadmap'    ? (item.menu_name || `Roadmap ${key}`)
                          : (item.table || `Source ${key}`);
         button.append(itemTabIcon(), document.createTextNode(itemLabel));
         button.onclick = () => { currentItemKey = key; renderSidebar(); renderEditor(key, item, isArray); };
@@ -593,11 +633,13 @@ function renderItemCards() {
     const isDashboard = currentFile === 'dashboard';
     const isWorkflows = currentFile === 'workflows';
     const isBoard     = currentFile === 'board';
+    const isRoadmap   = currentFile === 'roadmap';
 
     const rawItems    = isSchema    ? (currentConfig.tables    || {})
                       : isDashboard ? (currentConfig.widgets   || [])
                       : isWorkflows ? (currentConfig.workflows || [])
                       : isBoard     ? (currentConfig.boards    || [])
+                      : isRoadmap   ? (currentConfig.roadmaps  || [])
                       : (currentConfig.sources || []);
     const isArray     = Array.isArray(rawItems);
 
@@ -631,7 +673,7 @@ function renderItemCards() {
         const buttonAdd = document.createElement('button');
         buttonAdd.type = 'button';
         buttonAdd.className = 'btn btn-success';
-        buttonAdd.textContent = isDashboard ? '+ Add New Widget' : isWorkflows ? '+ Add New Workflow' : isBoard ? '+ Add New Board' : '+ Add New Source';
+        buttonAdd.textContent = isDashboard ? '+ Add New Widget' : isWorkflows ? '+ Add New Workflow' : isBoard ? '+ Add New Board' : isRoadmap ? '+ Add New Roadmap' : '+ Add New Source';
         buttonAdd.onclick = addNewItem;
         bar.appendChild(buttonAdd);
     }
@@ -646,6 +688,7 @@ function renderItemCards() {
                        : isDashboard ? (currentConfig.widgets   || [])
                        : isWorkflows ? (currentConfig.workflows || [])
                        : isBoard     ? (currentConfig.boards    || [])
+                       : isRoadmap   ? (currentConfig.roadmaps  || [])
                        : (currentConfig.sources || []);
         const freshKeys = getKeys(fresh);
         list.innerHTML = '';
@@ -656,6 +699,7 @@ function renderItemCards() {
                               : isDashboard ? 'No widgets yet. Click "+ Add New Widget".'
                               : isWorkflows ? 'No workflows yet. Click "+ Add New Workflow".'
                               : isBoard     ? 'No boards yet. Click "+ Add New Board".'
+                              : isRoadmap   ? 'No roadmaps yet. Click "+ Add New Roadmap".'
                               : 'No sources yet. Click "+ Add New Source".';
             list.appendChild(empty);
             return;
@@ -673,6 +717,7 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
     const isDashboard = currentFile === 'dashboard';
     const isWorkflows = currentFile === 'workflows';
     const isBoard     = currentFile === 'board';
+    const isRoadmap   = currentFile === 'roadmap';
 
     const card = document.createElement('div');
     card.className = 'column-block collapsed';
@@ -690,6 +735,7 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
                          : isDashboard ? (item.title || `Widget ${key}`)
                          : isWorkflows ? (item.title || `Workflow ${key}`)
                          : isBoard     ? (item.menu_name || `Board ${key}`)
+                         : isRoadmap   ? (item.menu_name || `Roadmap ${key}`)
                          : (item.table || `Source ${key}`);
 
     if (isSchema) {
@@ -741,12 +787,14 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
                     : isDashboard ? (item.title || `Widget ${key}`)
                     : isWorkflows ? (item.title || `Workflow ${key}`)
                     : isBoard     ? (item.menu_name || `Board ${key}`)
+                    : isRoadmap   ? (item.menu_name || `Roadmap ${key}`)
                     : (item.table || `Source ${key}`);
         if (!confirm(`Delete "${label}"?`)) return;
         if (isSchema)         delete currentConfig.tables[key];
         else if (isDashboard) currentConfig.widgets.splice(key, 1);
         else if (isWorkflows) currentConfig.workflows.splice(key, 1);
         else if (isBoard)     currentConfig.boards.splice(key, 1);
+        else if (isRoadmap)   currentConfig.roadmaps.splice(key, 1);
         else                  currentConfig.sources.splice(key, 1);
         markDirty();
         redraw();
@@ -788,6 +836,7 @@ function renderEditorIntoCard(key, item, isArray, bodyElement, nameSpan, redraw)
     const isDashboard = currentFile === 'dashboard';
     const isWorkflows = currentFile === 'workflows';
     const isBoard     = currentFile === 'board';
+    const isRoadmap   = currentFile === 'roadmap';
 
     const cardCtx = {
         workspaceEl: bodyElement,
@@ -795,6 +844,8 @@ function renderEditorIntoCard(key, item, isArray, bodyElement, nameSpan, redraw)
         getTableOptions,
         getColumnOptionsForTable,
         getEnumColumnsForTable,
+        getDateColumnsForTable,
+        getNumberColumnsForTable,
         getColumnMeta,
         renderEditor: (itemKey, itemDataEntry, array) => {
             bodyElement.innerHTML = '';
@@ -806,6 +857,7 @@ function renderEditorIntoCard(key, item, isArray, bodyElement, nameSpan, redraw)
                 nameSpan.textContent = isDashboard ? (item.title || `Widget ${key}`)
                                      : isWorkflows ? (item.title || `Workflow ${key}`)
                                      : isBoard     ? (item.menu_name || `Board ${key}`)
+                                     : isRoadmap   ? (item.menu_name || `Roadmap ${key}`)
                                      : (item.table || `Source ${key}`);
             },
     };
@@ -814,6 +866,7 @@ function renderEditorIntoCard(key, item, isArray, bodyElement, nameSpan, redraw)
     else if (isDashboard) renderDashboardEditor(key, item, isArray, cardCtx);
     else if (isWorkflows) renderWorkflowsEditor(key, item, isArray, cardCtx);
     else if (isBoard)     renderBoardEditor(key, item, isArray, cardCtx);
+    else if (isRoadmap)   renderRoadmapEditor(key, item, isArray, cardCtx);
     else                  renderCalendarEditor(key, item, isArray, cardCtx);
 }
 
@@ -868,7 +921,7 @@ function loadAndRender(loader, context, invoke = null) {
 
 function renderEditor(key, itemData, isArray) {
     workspaceElement.innerHTML = '';
-    const context = { workspaceEl: workspaceElement, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
+    const context = { workspaceEl: workspaceElement, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getDateColumnsForTable, getNumberColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
 
     if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization', 'clickstats', 'api'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER' || key === 'SCHEMA_MAP'))) {
         buttonSave.style.display = 'none';
@@ -939,6 +992,11 @@ function renderEditor(key, itemData, isArray) {
             appendClearConfigButton(context);
             return;
         }
+        if (currentFile === 'roadmap') {
+            renderGlobalSettings(context, { title: 'Roadmap Global Settings', defaultMenuName: 'Roadmap' });
+            appendClearConfigButton(context);
+            return;
+        }
     }
 
     if (currentFile === 'schema' && key === 'GLOBAL_SCHEMA') { renderSchemaGlobalSettings(currentConfig, context); appendClearConfigButton(context); return; }
@@ -957,6 +1015,7 @@ function renderEditor(key, itemData, isArray) {
             if (currentFile === 'dashboard') currentConfig.widgets.splice(key, 1);
             else if (currentFile === 'workflows') currentConfig.workflows.splice(key, 1);
             else if (currentFile === 'board') currentConfig.boards.splice(key, 1);
+            else if (currentFile === 'roadmap') currentConfig.roadmaps.splice(key, 1);
             else currentConfig.sources.splice(key, 1);
             currentItemKey = null;
             markDirty();
@@ -971,6 +1030,7 @@ function renderEditor(key, itemData, isArray) {
     else if (currentFile === 'calendar') renderCalendarEditor(key, itemData, isArray, context);
     else if (currentFile === 'workflows') renderWorkflowsEditor(key, itemData, isArray, context);
     else if (currentFile === 'board') renderBoardEditor(key, itemData, isArray, context);
+    else if (currentFile === 'roadmap') renderRoadmapEditor(key, itemData, isArray, context);
 }
 
 (async () => {

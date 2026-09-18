@@ -290,6 +290,29 @@ final class TableAccessTest extends TestCase
         $this->assertNull(user_allowed_items('tables'));
     }
 
+    public function testRoadmapsAreGrantedById(): void
+    {
+        $this->seedConfig('roadmap', ['roadmaps' => [
+            ['id' => 'rdm_1', 'menu_name' => 'Product 2026'],
+            ['id' => 'rdm_2', 'menu_name' => 'Product 2027'],
+        ]]);
+        $this->seed(['139' => ['roadmaps' => ['rdm_1']]]);
+
+        $this->assertSame(['rdm_1' => 'Product 2026', 'rdm_2' => 'Product 2027'], access_scope_items('roadmaps'));
+
+        $_SESSION['user_id'] = 139;
+        $this->assertTrue(user_can_access('roadmaps', 'rdm_1'));
+        $this->assertFalse(user_can_access('roadmaps', 'rdm_2'));
+
+        $roadmaps = [
+            ['id' => 'rdm_1', 'menu_name' => 'Product 2026'],
+            ['id' => 'rdm_2', 'menu_name' => 'Product 2027'],
+        ];
+        $filtered = filter_by_user_access('roadmaps', $roadmaps);
+        $this->assertTrue(array_is_list($filtered), 'A list scope must come back as a list.');
+        $this->assertSame([['id' => 'rdm_1', 'menu_name' => 'Product 2026']], $filtered);
+    }
+
     public function testFilterKeepsListsAsListsAndMapsAsMaps(): void
     {
         $this->seed(['126' => ['boards' => ['brd_2'], 'views' => ['v_sales']]]);

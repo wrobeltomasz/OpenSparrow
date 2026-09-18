@@ -419,6 +419,26 @@
         "not_configured": "Ploča još nije konfigurirana. Administrator može postaviti izvornu tablicu i stupac statusa u administratorskom panelu.",
         "load_error": "Ploču nije bilo moguće učitati."
     },
+    "roadmap": {
+        "title": "Plan",
+        "task": "Zadatak",
+        "progress": "Napredak",
+        "not_configured": "Plan još nije konfiguriran. Administrator može postaviti izvornu tablicu i stupce datuma u administratorskom panelu.",
+        "load_error": "Plan nije moguće učitati.",
+        "empty": "Nema zadataka koji odgovaraju trenutnim filtrima.",
+        "month_jan": "Sij",
+        "month_feb": "Vel",
+        "month_mar": "Ožu",
+        "month_apr": "Tra",
+        "month_may": "Svi",
+        "month_jun": "Lip",
+        "month_jul": "Srp",
+        "month_aug": "Kol",
+        "month_sep": "Ruj",
+        "month_oct": "Lis",
+        "month_nov": "Stu",
+        "month_dec": "Pro"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",

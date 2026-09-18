@@ -29,6 +29,7 @@ final class FrontApiController
         'dashboard'       => ['dashboard', 'frontapi_dashboard'],
         'calendar'        => ['calendar', 'frontapi_calendar'],
         'board'           => ['board', 'frontapi_board'],
+        'roadmap'         => ['roadmap', 'frontapi_roadmap'],
         'm2m_rows'        => ['m2m', 'frontapi_m2m_rows'],
         'image_rows'      => ['m2m', 'frontapi_image_rows'],
         'list'            => ['list', 'frontapi_list'],

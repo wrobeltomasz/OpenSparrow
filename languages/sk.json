@@ -419,6 +419,26 @@
         "not_configured": "Nástenka zatiaľ nebola nakonfigurovaná. Administrátor môže nastaviť zdrojovú tabuľku a stĺpec stavu v administračnom paneli.",
         "load_error": "Nástenku sa nepodarilo načítať."
     },
+    "roadmap": {
+        "title": "Plán",
+        "task": "Úloha",
+        "progress": "Priebeh",
+        "not_configured": "Plán ešte nie je nakonfigurovaný. Správca môže nastaviť zdrojovú tabuľku a stĺpce dátumov v administrácii.",
+        "load_error": "Plán sa nepodarilo načítať.",
+        "empty": "Žiadne úlohy nezodpovedajú aktuálnym filtrom.",
+        "month_jan": "Jan",
+        "month_feb": "Feb",
+        "month_mar": "Mar",
+        "month_apr": "Apr",
+        "month_may": "Máj",
+        "month_jun": "Jún",
+        "month_jul": "Júl",
+        "month_aug": "Aug",
+        "month_sep": "Sep",
+        "month_oct": "Okt",
+        "month_nov": "Nov",
+        "month_dec": "Dec"
+    },
     "mass_edit": {
         "edit_fields": "Edit Fields",
         "select_column": "Select a column first.",
