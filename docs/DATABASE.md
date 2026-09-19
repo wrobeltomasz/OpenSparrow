@@ -273,7 +273,7 @@ UNIQUE `(user_id, source_table, source_id, notify_date)` — the deduplication k
 | `id` | serial4 PK | Run id. |
 | `started_at` | timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP | Run start. |
 | `finished_at` | timestamp NULL | Run end; NULL while running or after a crash. |
-| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `ok` / `error`. |
+| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `success` / `error`. |
 | `triggered_by` | varchar(20) NOT NULL DEFAULT `'cron'` | `cron` or a manual admin trigger. |
 | `sources_processed` | int4 NULL | Number of configured notification sources scanned. |
 | `notifications_created` | int4 NULL | Rows actually inserted into `spw_users_notifications`. |
@@ -434,7 +434,7 @@ Indexes: `(query_id)`, `(file_id)`.
 | `id` | serial4 PK | Run id, referenced (loosely) by `spw_anonymization_report.log_id`. |
 | `started_at` | timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP | Run start. |
 | `finished_at` | timestamp NULL | Run end. |
-| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `ok` / `error`. |
+| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `success` / `error`. |
 | `triggered_by` | varchar(20) NOT NULL DEFAULT `'cron'` | `cron` or manual admin run. |
 | `rules_processed` | int4 NULL | Anonymization rules evaluated. |
 | `rows_anonymized` | int4 NULL | Rows whose columns were scrubbed. |
@@ -471,7 +471,7 @@ Written by `cron/cron_etl.php`; also the per-step target of flow runs.
 | `job_id` | varchar(64) NOT NULL DEFAULT `''` | Job identifier from the ETL config. |
 | `job_name` | varchar(255) NOT NULL DEFAULT `''` | Job label captured at run time. |
 | `triggered_by` | varchar(20) NOT NULL DEFAULT `'cron'` | `cron`, manual admin run, or a flow. |
-| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `ok` / `error`. |
+| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `success` / `error`. |
 | `rows_read` | int4 NULL | Rows read from the source (MySQL/PostgreSQL). |
 | `rows_written` | int4 NULL | Rows written to the PostgreSQL target. |
 | `error_message` | text NULL | Failure detail. |
@@ -488,7 +488,7 @@ Indexes: `(started_at DESC)`, `(job_id, triggered_by, status, started_at)`.
 | `flow_id` | varchar(64) NOT NULL DEFAULT `''` | Flow identifier from the ETL config. |
 | `flow_name` | varchar(255) NOT NULL DEFAULT `''` | Flow label captured at run time. |
 | `triggered_by` | varchar(20) NOT NULL DEFAULT `'cron'` | `cron` or manual admin run. |
-| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `ok` / `error`. |
+| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `success` / `error`. |
 | `failed_step_index` | int4 NULL | 0-based index of the step that aborted the flow; NULL on success. |
 | `error_message` | text NULL | Failure detail. |
 | `started_at` | timestamp NOT NULL DEFAULT now() | Start time. |
@@ -506,7 +506,7 @@ Index: `(flow_id, status, started_at)`.
 | `step_index` | int4 NOT NULL DEFAULT 0 | 0-based position of the step in the flow. |
 | `job_id` | varchar(64) NOT NULL DEFAULT `''` | ETL job executed by this step. |
 | `job_name` | varchar(255) NOT NULL DEFAULT `''` | Job label captured at run time. |
-| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `ok` / `error`. |
+| `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `success` / `error`. |
 | `rows_read` | int4 NULL | Rows read by the step. |
 | `rows_written` | int4 NULL | Rows written by the step. |
 | `error_message` | text NULL | Failure detail. |

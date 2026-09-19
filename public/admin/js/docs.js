@@ -142,6 +142,10 @@ ${_ul([
     `<strong>${strings.s2_preview_label}:</strong> ${strings.s2_preview}`,
     `<strong>${strings.s2_iconpicker_label}:</strong> ${strings.s2_iconpicker}`,
     `<strong>${strings.s2_typemap_label}:</strong> ${strings.s2_typemap}`,
+    `<strong>${strings.s2_virtual_label}:</strong> ${strings.s2_virtual}`,
+    `<strong>${strings.s2_enumcolors_label}:</strong> ${strings.s2_enumcolors}`,
+    `<strong>${strings.s2_highlights_label}:</strong> ${strings.s2_highlights}`,
+    `<strong>${strings.s2_id_label}:</strong> ${strings.s2_id}`,
     `<strong>${strings.s2_remove_label}:</strong> ${strings.s2_remove}`,
     `<strong>${strings.s2_fksearch_label}:</strong> ${strings.s2_fksearch}`,
     `<strong>${strings.s2_visibility_label}:</strong> ${strings.s2_visibility}`,
@@ -191,6 +195,11 @@ ${_ul([`${strings.s3_filter_ops}: <code>=</code>, <code>!=</code>, <code>&lt;</c
 ${_h4(strings.s3_period_head)}
 ${paragraphHtml(strings.s3_period_desc)}
 ${paragraphHtml(strings.s3_export_desc)}
+${_ul([
+    `<strong>${strings.s3_drill_label}:</strong> ${strings.s3_drill}`,
+    `<strong>${strings.s3_calc_label}:</strong> ${strings.s3_calc}`,
+    `<strong>${strings.s3_access_label}:</strong> ${strings.s3_access}`
+])}
 ${_h4(strings.s3_preview_head)}
 ${paragraphHtml(strings.s3_preview_desc)}
 ${_h4(strings.s3_global_head)}
@@ -201,7 +210,11 @@ ${paragraphHtml(strings.s4_desc)}
 ${_ul([
     `<strong>${strings.s4_sources_label}:</strong> ${strings.s4_sources}`,
     `<strong>${strings.s4_color_label}:</strong> ${strings.s4_color}`,
-    `<strong>${strings.s4_context_label}:</strong> ${strings.s4_context}`
+    `<strong>${strings.s4_context_label}:</strong> ${strings.s4_context}`,
+    `<strong>${strings.s4_page_label}:</strong> ${strings.s4_page}`,
+    `<strong>${strings.s4_notify_label}:</strong> ${strings.s4_notify}`,
+    `<strong>${strings.s4_url_label}:</strong> ${strings.s4_url}`,
+    `<strong>${strings.s4_grants_label}:</strong> ${strings.s4_grants}`
 ])}
 
 ${_h3('doc-4b', strings.s4b_head)}
@@ -211,7 +224,10 @@ ${_ul([
     `<strong>${strings.s4b_table_label}:</strong> ${strings.s4b_table}`,
     `<strong>${strings.s4b_status_label}:</strong> ${strings.s4b_status}`,
     `<strong>${strings.s4b_cards_label}:</strong> ${strings.s4b_cards}`,
-    `<strong>${strings.s4b_dnd_label}:</strong> ${strings.s4b_dnd}`
+    `<strong>${strings.s4b_dnd_label}:</strong> ${strings.s4b_dnd}`,
+    `<strong>${strings.s4b_grants_label}:</strong> ${strings.s4b_grants}`,
+    `<strong>${strings.s4b_owner_label}:</strong> ${strings.s4b_owner}`,
+    `<strong>${strings.s4b_page_label}:</strong> ${strings.s4b_page}`
 ])}
 
 ${_h3('doc-4c', strings.s4c_head)}
@@ -231,7 +247,8 @@ ${paragraphHtml(strings.s5_desc)}
 ${_ul([
     `<strong>${strings.s5_steps_label}:</strong> ${strings.s5_steps}`,
     `<strong>${strings.s5_link_label}:</strong> ${strings.s5_link}`,
-    `<strong>${strings.s5_multi_label}:</strong> ${strings.s5_multi}`
+    `<strong>${strings.s5_multi_label}:</strong> ${strings.s5_multi}`,
+    `<strong>${strings.s5_access_label}:</strong> ${strings.s5_access}`
 ])}
 ${_h4(strings.s5_validation_head)}
 ${paragraphHtml(strings.s5_validation_desc)}
@@ -263,6 +280,7 @@ ${_h3('doc-8', strings.s8_head)}
 ${paragraphHtml(strings.s8_desc)}
 ${_ul([
     `<strong>${strings.s8_format_label}:</strong> <code>YYYYMMDDHHII_tablename</code>.`,
+    `<strong>${strings.s8_minute_note_label}:</strong> ${strings.s8_minute_note}`,
     `<strong>${strings.s8_what_label}:</strong> ${strings.s8_what}`
 ])}
 
@@ -420,7 +438,9 @@ ${_ul([
     `<strong>${strings.s9q_tab3_label}:</strong> ${strings.s9q_tab3}`,
     `<strong>${strings.s9q_off_label}:</strong> ${strings.s9q_off}`,
     `<strong>${strings.s9q_privacy_label}:</strong> ${strings.s9q_privacy}`,
-    `<strong>${strings.s9q_labels_label}:</strong> ${strings.s9q_labels}`
+    `<strong>${strings.s9q_budget_label}:</strong> ${strings.s9q_budget}`,
+    `<strong>${strings.s9q_labels_label}:</strong> ${strings.s9q_labels}`,
+    `<strong>${strings.s9q_user_label}:</strong> ${strings.s9q_user}`
 ])}
 
 ${_h3('doc-9r', strings.s9r_head)}
@@ -431,6 +451,7 @@ ${_ul([
     `<strong>${strings.s9r_filters_label}:</strong> ${strings.s9r_filters}`,
     `<strong>${strings.s9r_response_label}:</strong> ${strings.s9r_response}`,
     `<strong>${strings.s9r_errors_label}:</strong> ${strings.s9r_errors}`,
+    `<strong>${strings.s9r_usage_label}:</strong> ${strings.s9r_usage}`,
     `<strong>${strings.s9r_scope_label}:</strong> ${strings.s9r_scope}`
 ])}
 
@@ -441,7 +462,9 @@ ${_ul([
     `<strong>${strings.s10_meta_label}:</strong> ${strings.s10_meta}`,
     `<strong>${strings.s10_bulk_label}:</strong> ${strings.s10_bulk}`,
     `<strong>${strings.s10_config_label}:</strong> ${strings.s10_config}`,
-    `<strong>${strings.s10_relations_label}:</strong> ${strings.s10_relations}`
+    `<strong>${strings.s10_sniff_label}:</strong> ${strings.s10_sniff}`,
+    `<strong>${strings.s10_relations_label}:</strong> ${strings.s10_relations}`,
+    `<strong>${strings.s10_visibility_label}:</strong> ${strings.s10_visibility}`
 ])}
 
 ${_h3('doc-10b', strings.s10b_head)}
@@ -451,6 +474,7 @@ ${_ul([
     `<strong>${strings.s10b_sync_label}:</strong> ${strings.s10b_sync}`,
     `<strong>${strings.s10b_schemas_label}:</strong> ${strings.s10b_schemas}`,
     `<strong>${strings.s10b_display_label}:</strong> ${strings.s10b_display}`,
+    `<strong>${strings.s10b_columns_label}:</strong> ${strings.s10b_columns}`,
     `<strong>${strings.s10b_readonly_label}:</strong> ${strings.s10b_readonly}`
 ])}
 
@@ -508,7 +532,8 @@ ${_ul([
     `<strong>${strings.s11c_types_label}:</strong> ${strings.s11c_types}`,
     `<strong>${strings.s11c_errors_label}:</strong> ${strings.s11c_errors}`,
     `<strong>${strings.s11c_tables_label}:</strong> ${strings.s11c_tables}`,
-    `<strong>${strings.s11c_history_label}:</strong> ${strings.s11c_history}`
+    `<strong>${strings.s11c_history_label}:</strong> ${strings.s11c_history}`,
+    `<strong>${strings.s11c_storage_label}:</strong> ${strings.s11c_storage}`
 ])}
 
 ${_h3('doc-11d', strings.s11d_head)}
@@ -520,6 +545,7 @@ ${_ul([
     `<strong>${strings.s11d_incremental_label}:</strong> ${strings.s11d_incremental}`,
     `<strong>${strings.s11d_preview_label}:</strong> ${strings.s11d_preview}`,
     `<strong>${strings.s11d_schedule_label}:</strong> ${strings.s11d_schedule}`,
+    `<strong>${strings.s11d_safety_label}:</strong> ${strings.s11d_safety}`,
     `<strong>${strings.s11d_log_label}:</strong> ${strings.s11d_log}`
 ])}
 
@@ -631,6 +657,7 @@ ${paragraphHtml(strings.sPrint_desc)}
 ${_ul([
     `<strong>${strings.sPrint_source_label}:</strong> ${strings.sPrint_source}`,
     `<strong>${strings.sPrint_layout_label}:</strong> ${strings.sPrint_layout}`,
+    `<strong>${strings.sPrint_params_label}:</strong> ${strings.sPrint_params}`,
     `<strong>${strings.sPrint_pagination_label}:</strong> ${strings.sPrint_pagination}`,
     `<strong>${strings.sPrint_access_label}:</strong> ${strings.sPrint_access}`,
     `<strong>${strings.sPrint_config_label}:</strong> ${strings.sPrint_config}`

@@ -252,8 +252,14 @@ Demo Systems:
     on the Schema step seeds the CRM demo right after the admin account is created)
 
 Health Check:
-  - Database connection status, table bloat analysis, index advisor,
-    slow query log, backup status
+  - Environment tab: PHP version (>= 8.4), memory_limit, upload_max_filesize,
+    display_errors, required extensions (pgsql, json, session, mbstring, fileinfo,
+    openssl), security functions (Argon2id, random_bytes, hash_equals), DB
+    connectivity, write permissions (config/, storage/, storage/files/), config
+    file validity
+  - Production Readiness tab: APP_ENV, DEMO_MODE off, SECURE_COOKIES, HTTPS
+    detection (direct or behind a proxy), password policy, rate limiting,
+    SESSION_SAMESITE, trusted proxy IPs, pending database migrations
 
 ETL:
   - Scheduled or on-demand batch import from one or more external source databases
@@ -298,9 +304,9 @@ Anonymization (GDPR):
   - Schedule: manual / daily / weekly / monthly via cron/cron_anonymization.php
   - Scan Schema suggests PII columns by matching column names against a keyword
     dictionary; run history in spw_anonymization_log
-  - Each history entry can expand into a GDPR/EDPB compliance report (JSON, stored in
-    spw_anonymization_report) shown inline, with a Download button saving it as a
-    .json file for the data-protection record
+  - Every run writes a GDPR/EDPB compliance report (JSON, stored in
+    spw_anonymization_report) that can be expanded inline in the history, with a
+    Download button saving it as a .json file for the data-protection record
 
 Click Statistics:
   - Records which page elements users click: user, time, element label, the page, and
@@ -341,7 +347,7 @@ Click Statistics:
 Migrations:
   - Database migrations tab: list of system migrations (pending / applied),
     "Apply pending migrations" button. Applied migrations are recorded in spw_migrations.
-    Five migrations exist:
+    Six migrations exist:
       3.0_baseline        — the whole spw_* schema (tables, constraints, indexes). The
                             pre-3.0 incremental history was collapsed into this single
                             append-only entry; 3.0 is the first shipped version
@@ -360,6 +366,9 @@ Migrations:
       3.3_clickstats      — creates spw_clickstats plus its two indexes, the storage for
                             the optional Click Statistics module. Nothing writes to it
                             until the module is enabled
+      3.6_external_api_log — creates spw_external_api_log plus its two indexes, the
+                            request log of the External API endpoint. Nothing writes to it
+                            until an API key is configured and used
   - A fresh install via the setup wizard applies all of them automatically, so new databases
     are created with the descriptions, the widened reminder column, the user contact
     columns and spw_clickstats already in place, and with nothing reported as pending
@@ -367,20 +376,29 @@ Migrations:
     tracks files and config keys removed between versions, applied manually on upgrade
 
 Performance:
-  - 6 diagnostic sections, each with a Scan button: index advisor (missing indexes with
-    recommended SQL), unused indexes, slow query log, table bloat, DB health (connection
-    pool, cache hit rate), schema warnings (e.g. table without primary key)
+  - 6 diagnostic sections, each with a Scan button, plus Run All: index advisor
+    (missing indexes derived from config — FK columns, subtable joins, default sort,
+    widget filters — with recommended SQL), unused indexes (idx_scan = 0; UNIQUE and
+    primary keys excluded), slow query log (top 15 from pg_stat_statements), table
+    bloat, DB health (cache hit ratio, connections, deadlocks), schema warnings
+    (e.g. large table without initial load limit, subtable without columns_to_show)
   - Copy SQL buttons for recommended fix queries
 
 Settings:
-  - Application settings: system name, theme, menu configuration, notification settings
+  - Five inner tabs: Language (site-wide default language; locales discovered
+    automatically from languages/*.json), Chat Bubble (floating AI assistant button),
+    Branding (custom logo + application name on the login page), Database
+    (PostgreSQL connection settings), Audit & Snapshots (record snapshot capture)
   - Custom Logo: replace the default frontend header logo (PNG/JPEG/WEBP, up to 2 MB);
     independent show/hide toggle
   - Security configuration stored in config/security.json: CORS, HSTS, CSP modes,
     optional IP whitelist, session timeout, password policy
 
 Users:
-  - Three inner tabs: Manage Users, Statistics, Global Settings
+  - Four inner tabs: Manage Users, Access, Statistics, Global Settings
+  - Access: per-user frontend grants in six independent groups (tables, views,
+    printouts, boards, roadmaps, workflows); an empty group means unrestricted,
+    and admin accounts are never restricted
   - Manage Users: user list (ID, name, status active/inactive, role); role dropdown
     per user (admin / editor / viewer); activate / deactivate accounts; per-user
     password change dialog with strength meter; add new user form (name + password + role,
@@ -422,7 +440,8 @@ Configuration:
   spw_release_migrations     — applied release migrations (file/config cleanups from
                                config/migrations.json)
   spw_migrations             — applied database migrations (3.0_baseline,
-                               3.1_table_comments)
+                                3.1_table_comments, 3.1_notes_reminder_time,
+                                3.3_user_contact, 3.3_clickstats, 3.6_external_api_log)
 
 Content attached to records:
   spw_files                  — uploaded files and attachments, including the record

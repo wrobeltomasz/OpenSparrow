@@ -160,7 +160,7 @@ COMMENT ON TABLE  app.spw_users_notifications_log IS 'Run history of the notific
 COMMENT ON COLUMN app.spw_users_notifications_log.id IS 'Run id.';
 COMMENT ON COLUMN app.spw_users_notifications_log.started_at IS 'Run start.';
 COMMENT ON COLUMN app.spw_users_notifications_log.finished_at IS 'Run end; NULL while running or after a crash.';
-COMMENT ON COLUMN app.spw_users_notifications_log.status IS 'running / ok / error.';
+COMMENT ON COLUMN app.spw_users_notifications_log.status IS 'running / success / error.';
 COMMENT ON COLUMN app.spw_users_notifications_log.triggered_by IS 'cron, or a manual admin trigger.';
 COMMENT ON COLUMN app.spw_users_notifications_log.sources_processed IS 'Number of configured notification sources scanned.';
 COMMENT ON COLUMN app.spw_users_notifications_log.notifications_created IS 'Rows actually inserted into spw_users_notifications.';
@@ -274,7 +274,7 @@ COMMENT ON TABLE  app.spw_anonymization_log IS 'Run history of the anonymization
 COMMENT ON COLUMN app.spw_anonymization_log.id IS 'Run id; loosely referenced by spw_anonymization_report.log_id.';
 COMMENT ON COLUMN app.spw_anonymization_log.started_at IS 'Run start.';
 COMMENT ON COLUMN app.spw_anonymization_log.finished_at IS 'Run end.';
-COMMENT ON COLUMN app.spw_anonymization_log.status IS 'running / ok / error.';
+COMMENT ON COLUMN app.spw_anonymization_log.status IS 'running / success / error.';
 COMMENT ON COLUMN app.spw_anonymization_log.triggered_by IS 'cron, or a manual admin run.';
 COMMENT ON COLUMN app.spw_anonymization_log.rules_processed IS 'Anonymization rules evaluated.';
 COMMENT ON COLUMN app.spw_anonymization_log.rows_anonymized IS 'Rows whose columns were scrubbed.';
@@ -299,7 +299,7 @@ COMMENT ON COLUMN app.spw_etl_log.id IS 'Run id.';
 COMMENT ON COLUMN app.spw_etl_log.job_id IS 'Job identifier from the ETL config.';
 COMMENT ON COLUMN app.spw_etl_log.job_name IS 'Job label captured at run time.';
 COMMENT ON COLUMN app.spw_etl_log.triggered_by IS 'cron, a manual admin run, or a flow.';
-COMMENT ON COLUMN app.spw_etl_log.status IS 'running / ok / error.';
+COMMENT ON COLUMN app.spw_etl_log.status IS 'running / success / error.';
 COMMENT ON COLUMN app.spw_etl_log.rows_read IS 'Rows read from the source (MySQL or PostgreSQL).';
 COMMENT ON COLUMN app.spw_etl_log.rows_written IS 'Rows written to the PostgreSQL target.';
 COMMENT ON COLUMN app.spw_etl_log.error_message IS 'Failure detail.';
@@ -311,7 +311,7 @@ COMMENT ON COLUMN app.spw_etl_flow_run_log.id IS 'Flow run id; parent of spw_etl
 COMMENT ON COLUMN app.spw_etl_flow_run_log.flow_id IS 'Flow identifier from the ETL config.';
 COMMENT ON COLUMN app.spw_etl_flow_run_log.flow_name IS 'Flow label captured at run time.';
 COMMENT ON COLUMN app.spw_etl_flow_run_log.triggered_by IS 'cron, or a manual admin run.';
-COMMENT ON COLUMN app.spw_etl_flow_run_log.status IS 'running / ok / error.';
+COMMENT ON COLUMN app.spw_etl_flow_run_log.status IS 'running / success / error.';
 COMMENT ON COLUMN app.spw_etl_flow_run_log.failed_step_index IS 'Zero-based index of the step that aborted the flow; NULL on success.';
 COMMENT ON COLUMN app.spw_etl_flow_run_log.error_message IS 'Failure detail.';
 COMMENT ON COLUMN app.spw_etl_flow_run_log.started_at IS 'Flow start.';
@@ -324,7 +324,7 @@ COMMENT ON COLUMN app.spw_etl_flow_step_log.flow_id IS 'Denormalized flow id for
 COMMENT ON COLUMN app.spw_etl_flow_step_log.step_index IS 'Zero-based position of the step in the flow.';
 COMMENT ON COLUMN app.spw_etl_flow_step_log.job_id IS 'ETL job executed by this step.';
 COMMENT ON COLUMN app.spw_etl_flow_step_log.job_name IS 'Job label captured at run time.';
-COMMENT ON COLUMN app.spw_etl_flow_step_log.status IS 'running / ok / error.';
+COMMENT ON COLUMN app.spw_etl_flow_step_log.status IS 'running / success / error.';
 COMMENT ON COLUMN app.spw_etl_flow_step_log.rows_read IS 'Rows read by the step.';
 COMMENT ON COLUMN app.spw_etl_flow_step_log.rows_written IS 'Rows written by the step.';
 COMMENT ON COLUMN app.spw_etl_flow_step_log.error_message IS 'Failure detail.';

@@ -390,8 +390,8 @@ export async function renderSettingsPage(context) {
         + '<ol style="margin:0; padding-left:18px; line-height:1.8;">'
         + '<li>User selects language via URL <code>?lang=xx</code> → stored in session</li>'
         + '<li>User\'s personal preference from <code>spw_users.locale</code> (if set)</li>'
-        + '<li>Browser <code>Accept-Language</code> header</li>'
         + '<li><strong>Default language</strong> from this settings page</li>'
+        + '<li>Browser <code>Accept-Language</code> header</li>'
         + '<li>Fallback: <code>en</code></li>'
         + '</ol>'
         + '<p style="margin:10px 0 0; ">Add new language: create <code>languages/xx.json</code> — it appears here automatically.</p>';
