@@ -421,7 +421,7 @@ if (!function_exists('renderMenuLink')) {
 
     </ul>
     <button id="sidebarToggle" class="menu-collapse-toggle" data-cy="sidebar-toggle"
-            aria-label="<?= $menuToggleSidebarLabel ?>" aria-expanded="true">
+            aria-label="<?= $toggleSidebarLabel ?>" aria-expanded="true">
         <img class="menu-collapse-icon-left" src="assets/icons/material/keyboard_double_arrow_left.svg" alt="">
         <img class="menu-collapse-icon-right" src="assets/icons/material/keyboard_double_arrow_right.svg" alt="">
     </button>

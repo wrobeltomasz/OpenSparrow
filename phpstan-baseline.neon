@@ -161,3 +161,9 @@ parameters:
 			identifier: nullCoalesce.variable
 			count: 1
 			path: templates/template.php
+
+		-
+			message: '#^Variable \$toggleSidebarLabel might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: templates/menu.php
