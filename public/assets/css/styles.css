@@ -622,6 +622,11 @@ nav.collapsed li a, nav.collapsed .custom-nav-link {
   justify-content: center;
 }
 
+nav .menu-list li a {
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
 nav.collapsed .menu-text { display: none; }
 
 nav.collapsed .menu-submenu-details { display: none; }
