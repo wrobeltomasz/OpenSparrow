@@ -1026,6 +1026,28 @@ thead th.col-hover { background: var(--row-col-hover); }
 tbody tr:hover td.cell-hover:not(.cell-error):not(.cell-success),
 tbody td.col-hover.cell-hover:not(.cell-error):not(.cell-success) { background: var(--cell-hover) !important; }
 
+#grid thead th {
+  background: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--border-light);
+  border-bottom: 2px solid var(--border);
+}
+
+#grid thead th.col-hover { background: var(--row-col-hover); }
+
+#grid thead th.dragging { background: var(--accent-light); }
+
+#grid tbody td {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border-light);
+  border-bottom-color: var(--border);
+}
+
+#grid tbody td:first-child { padding-left: 0.6rem; }
+
+#grid tbody tr:nth-child(even) td { background: var(--panel); }
+#grid tbody tr:nth-child(even):hover td { background: var(--row-col-hover) !important; }
+
 td select,
 td input[type="date"],
 td input[type="datetime-local"],
