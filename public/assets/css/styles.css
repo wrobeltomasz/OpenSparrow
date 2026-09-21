@@ -2670,7 +2670,6 @@ nav.collapsed .menu-collapse-toggle {
 
 nav.collapsed .menu-collapse-icon-left { display: none; }
 nav.collapsed .menu-collapse-icon-right { display: block; }
-nav.collapsed .menu-collapse-toggle .menu-text { display: none; }
 
 .header-controls { display: contents; }
 
