@@ -131,5 +131,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Admin panel UI overhaul, with no backend behaviour changes. Every settings form and data table now renders inside a unified section card (buildSectionCard) with a consistent header style, so all admin tabs share the same look; section cards are never nested and tables get a descriptive title with an overflow-x wrapper. Settings tabs share one width via the .admin-page wrapper, with the per-panel max-width inline styles removed. Statistics and log tabs (External API Usage, Click Statistics Log, Cron) follow the same tile-grid pattern as AI Center Query Statistics, and the Users tabs were unified with the same section-card and tile styles. Typographic scale was unified to three sizes and two weights via CSS tokens. Adds an automation emails admin API with a Cron email queue section, a RAG document preview modal with rechunk success feedback and improved documents/action layouts, and renames the RAG admin section to Centrum AI. Fixes admin tab renderers wiping section descriptions. No database migration and no configuration keys are removed by this release."
+    },
+    "3.8": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Adds a Roadmap (Gantt) module: admins define multiple roadmaps, each bound to a schema table via chosen title, start/end date, category and progress columns, with a read-only frontend view showing a color legend and milestones; access follows the existing roadmaps scope. Fixes docs.js inconsistencies across admin modules and repairs a broken PL string in docs-strings.js. Enum dropdowns now keep readable text color via YIQ contrast on both the grid and the record form. The record grid and view tables are restyled with Excel-like cell borders, a light header and no zebra striping, using existing design tokens. The sidebar toggle moves from the header to the bottom of the menu (the hamburger stays on mobile), menu-list nav links align with the grid at 14px font-sans, and branding assets were refreshed. No database migration and no configuration keys are removed by this release."
     }
 }
