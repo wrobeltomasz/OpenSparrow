@@ -49,7 +49,8 @@ if ($logoEnabled) {
         <img src="<?= $logoPath ?>" alt="OpenSparrow Logo">
     </a>
     <?php endif; ?>
-    <button id="sidebarToggle" data-cy="sidebar-toggle" aria-label="<?= $toggleSidebarLabel ?>">&#9776;</button>
+    <button id="sidebarToggleMobile" class="header-sidebar-toggle"
+            aria-label="<?= $toggleSidebarLabel ?>">&#9776;</button>
     <button class="header-search-toggle" id="searchToggle" aria-label="<?= $toggleSearchLabel ?>">
         <img class="header-search-icon" src="assets/icons/search.png" alt="">
     </button>

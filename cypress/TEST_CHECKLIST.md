@@ -98,7 +98,8 @@ assume it exists. Anything else must be added to the source in the same PR.
 | Source | Hooks |
 |---|---|
 | `public/login.php` | `username`, `password`, `loginBtn`, `login-box`, `login-error` |
-| `templates/header.php` | `sidebar-toggle`, `user-avatar`, `admin-link`, `logout`, `notifications`, `notes`, `my-records`, `my-comments` |
+| `templates/header.php` | `user-avatar`, `admin-link`, `logout`, `notifications`, `notes`, `my-records`, `my-comments` (mobile-only hamburger: `#sidebarToggleMobile`) |
+| `templates/menu.php` | `sidebar-toggle` (desktop collapse button at the bottom of the menu: `#sidebarToggle`) |
 | `templates/template.php` | `search`, `grid`, `grid-title`, `pagination`, `column-filter`, `add`, `export`, `data-cleanup`, `keyboard-help` |
 
 Grid **rows** carry no `data-cy` — row-level assertions go through the grid

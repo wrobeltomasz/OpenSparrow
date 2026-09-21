@@ -192,7 +192,7 @@ describe('OpenSparrow – Dashboard: Navigation', () => {
   });
 
   it('sidebar toggle button exists', () => {
-    cy.get('#sidebarToggle, [data-cy=sidebar-toggle]').should('exist');
+    cy.get('#sidebarToggle, #sidebarToggleMobile, [data-cy=sidebar-toggle]').should('exist');
   });
 });
 
@@ -208,7 +208,7 @@ describe('OpenSparrow – Dashboard: Mobile', () => {
   });
 
   it('sidebar toggle visible on mobile', () => {
-    cy.get('#sidebarToggle').should('exist');
+    cy.get('#sidebarToggleMobile').should('exist');
   });
 
   it('dashboard section renders on mobile', () => {

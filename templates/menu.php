@@ -253,6 +253,7 @@ if (!empty($viewChildren)) {
 }
 
 $printsConfig      = loadMenuConfig('print', $includeDirectory);
+$menuToggleSidebarLabel = htmlspecialchars(t('header.toggle_sidebar'), ENT_QUOTES, 'UTF-8');
 $printChildren = [];
 foreach ($printsConfig['prints'] ?? [] as $printName => $printConfig) {
     if (!empty($printConfig['hidden'])) {
@@ -371,6 +372,7 @@ if (!function_exists('renderMenuLink')) {
              . '</a>';
     }
 }
+$menuToggleSidebarLabel = htmlspecialchars(t('header.toggle_sidebar'), ENT_QUOTES, 'UTF-8');
 ?>
 <nav id="menu" class="menu">
     <ul class="menu-list">
@@ -420,4 +422,10 @@ if (!function_exists('renderMenuLink')) {
         <?php endforeach; ?>
 
     </ul>
+    <button id="sidebarToggle" class="menu-collapse-toggle" data-cy="sidebar-toggle"
+            aria-label="<?= $menuToggleSidebarLabel ?>" aria-expanded="true">
+        <img class="menu-collapse-icon-left" src="assets/icons/material/keyboard_double_arrow_left.svg" alt="">
+        <img class="menu-collapse-icon-right" src="assets/icons/material/keyboard_double_arrow_right.svg" alt="">
+        <span class="menu-text"><?= $menuToggleSidebarLabel ?></span>
+    </button>
 </nav>

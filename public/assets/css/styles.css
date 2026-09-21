@@ -2624,17 +2624,53 @@ thead th.drag-over {
   background: var(--accent-mid);
 }
 
-#sidebarToggle {
+.header-sidebar-toggle { display: none; }
+
+.menu-collapse-toggle {
   background: none;
   border: none;
-  color: #fff;
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: calc(100% - 1rem);
+  margin: 0 0.5rem 0.5rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  margin-left: 0px;
-  margin-right: 5px;
-  line-height: 1;
-  padding: 0 4px;
+  white-space: nowrap;
+  transition: all var(--transition);
 }
+
+.menu-collapse-toggle:hover {
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+.menu-collapse-toggle img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  opacity: 0.6;
+  flex-shrink: 0;
+  transition: opacity var(--transition);
+}
+
+.menu-collapse-toggle:hover img { opacity: 1; }
+
+.menu-collapse-icon-right { display: none; }
+
+nav.collapsed .menu-collapse-toggle {
+  justify-content: center;
+  padding: 0.6rem;
+}
+
+nav.collapsed .menu-collapse-icon-left { display: none; }
+nav.collapsed .menu-collapse-icon-right { display: block; }
+nav.collapsed .menu-collapse-toggle .menu-text { display: none; }
 
 .header-controls { display: contents; }
 

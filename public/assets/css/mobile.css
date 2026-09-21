@@ -14,13 +14,22 @@
         min-height: var(--header-h);
     }
 
-    #sidebarToggle {
+    .header-sidebar-toggle {
         min-width: 44px;
         min-height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0 4px;
+        line-height: 1;
     }
+
+    .menu-collapse-toggle { display: none; }
 
     .header-search-toggle {
         display: flex;

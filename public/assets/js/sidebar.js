@@ -5,10 +5,13 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     const sidebarToggle = document.getElementById('sidebarToggle');
+    const mobileToggle  = document.getElementById('sidebarToggleMobile');
     const searchToggle  = document.getElementById('searchToggle');
     const sidebar       = document.getElementById('menu');
     const headerElement      = document.querySelector('header');
-    if (!sidebarToggle || !sidebar) return;
+
+    const collapseButtons = [sidebarToggle, mobileToggle].filter(Boolean);
+    if (collapseButtons.length === 0 || !sidebar) return;
 
     const isMobile = () => window.innerWidth <= 768;
 
@@ -20,33 +23,42 @@ document.addEventListener('DOMContentLoaded', () => {
     function openSidebar() {
         sidebar.classList.add('mob-open');
         overlay.classList.add('mob-visible');
-        sidebarToggle.setAttribute('aria-expanded', 'true');
+        collapseButtons.forEach((button) => button.setAttribute('aria-expanded', 'true'));
     }
 
     function closeSidebar() {
         sidebar.classList.remove('mob-open');
         overlay.classList.remove('mob-visible');
-        sidebarToggle.setAttribute('aria-expanded', 'false');
+        collapseButtons.forEach((button) => button.setAttribute('aria-expanded', 'false'));
     }
 
     function toggleDesktopCollapse() {
         sidebar.classList.toggle('collapsed');
-        localStorage.setItem('menuCollapsed', sidebar.classList.contains('collapsed'));
+        const collapsed = sidebar.classList.contains('collapsed');
+        localStorage.setItem('menuCollapsed', collapsed);
+        if (sidebarToggle) {
+            sidebarToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        }
     }
 
     function restoreDesktopState() {
         const saved = localStorage.getItem('menuCollapsed');
         if (saved === 'true') sidebar.classList.add('collapsed');
         else sidebar.classList.remove('collapsed');
+        if (sidebarToggle) {
+            sidebarToggle.setAttribute('aria-expanded', saved === 'true' ? 'false' : 'true');
+        }
     }
 
-    sidebarToggle.addEventListener('click', () => {
-        if (isMobile()) {
-            sidebar.classList.contains('mob-open') ? closeSidebar() : openSidebar();
-            if (headerElement) headerElement.classList.remove('mob-search-open');
-        } else {
-            toggleDesktopCollapse();
-        }
+    collapseButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            if (isMobile()) {
+                sidebar.classList.contains('mob-open') ? closeSidebar() : openSidebar();
+                if (headerElement) headerElement.classList.remove('mob-search-open');
+            } else {
+                toggleDesktopCollapse();
+            }
+        });
     });
 
     if (searchToggle) {
