@@ -151,12 +151,6 @@ header(
                     </div>
                 </div>
 
-                <div class="checkbox-group">
-                    <input type="checkbox" id="install-demo">
-                    <label for="install-demo"><?= $escape('setup.install_demo') ?></label>
-                </div>
-                <div class="help-text"><?= $escape('setup.help_install_demo') ?></div>
-
                 <div class="admin-info">
                     <strong><?= $escape('setup.admin_default') ?></strong>
                     <div><?= $escape('setup.username_colon') ?> <code>admin</code></div>
@@ -235,8 +229,6 @@ header(
 
                 <div id="admin-account-note" class="status-message" hidden></div>
 
-                <div id="demo-install-msg" class="status-message" hidden></div>
-
                 <div
                     style="background: var(--accent-light); padding: 12px; border-radius: var(--radius);
                         border-left: 3px solid var(--accent); font-size: 13px; color: var(--accent);
@@ -273,8 +265,6 @@ header(
             'initializing'      => t('setup.initializing'),
             'init_failed'       => t('setup.init_failed'),
             'init_btn'          => t('setup.init_btn'),
-            'demo_installed'    => t('setup.demo_installed'),
-            'demo_failed_prefix' => t('setup.demo_failed_prefix'),
             'schema_exists_text' => t('setup.schema_exists_text', ['schema' => '{schema}']),
         ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     </script>

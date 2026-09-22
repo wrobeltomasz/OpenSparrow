@@ -208,12 +208,12 @@ The wizard walks you through four steps:
 
 1. **Welcome** — intro and requirements overview.
 2. **Database Connection** — enter host, port, database name, username, and password. Click **Test Connection** to verify before proceeding.
-3. **Schema** — choose the PostgreSQL schema name (default: `app`). Optionally tick *Create schema if not exists*, and optionally tick *Install CRM demo data* to have the wizard seed a ready-made example application (companies, contacts, deals, activities, dashboards, board, printouts) you can explore or delete later.
+3. **Schema** — choose the PostgreSQL schema name (default: `app`). Optionally tick *Create schema if not exists*.
 
    > **Destructive option:** the third checkbox, *Drop and recreate this schema*, runs `DROP SCHEMA … CASCADE`. Everything in that schema is permanently deleted, including tables the wizard did not create. Leave it unticked unless you are deliberately wiping a scratch installation.
 4. **Review & Initialize** — confirm settings and click **Initialize System Tables**. The wizard creates all `spw_*` tables, seeds the `admin` account with a **randomly generated password displayed once on this screen** — copy it before leaving the page — and writes `config/database.json`.
 
-After initialization you are redirected to `/login`. Sign in as `admin` with the password shown in the wizard, then go to **System → Users → Change pwd** and set your own password.
+After initialization you are redirected to `/login`. Sign in as `admin` with the password shown in the wizard, then go to **System → Users → Change pwd** and set your own password. If you want a ready-made example application (companies, contacts, deals, activities, dashboards, board, printouts) to explore, install the CRM demo afterwards from **Admin → Demo** — each part is optional there.
 
 > Once `config/database.json` exists, the setup wizard is permanently inaccessible — all entry points redirect to `/login` instead.
 

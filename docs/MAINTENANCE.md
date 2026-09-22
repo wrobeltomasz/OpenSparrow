@@ -355,15 +355,14 @@ reach outside it:
   with an explanation. Writing the stored value there would be a silent no-op,
   because `includes/admin/settings.php` reads the env var first.
 
-### The setup wizard deliberately has no per-part control
+### The setup wizard does not install the demo
 
-`public/setup_api.php` calls `demo_install_run('crm')` with all defaults, so the
-wizard picks up new parts automatically and stays a single checkbox — it is meant
-to be short, and every choice is reversible from Admin > Demo a minute later. The
-one thing it must not do is stay silent about the accounts: `setup.help_install_demo`
-names them, states the fixed password and points at Admin > Users. That string was
-updated in `en` and `pl` only, so the other 18 locales still carry the older text;
-the EN fallback covers missing keys, not stale ones.
+The setup wizard installs the system only — schema, system tables, migrations and
+the first admin account. The CRM demo is deliberately absent from it: every demo
+part is opt-in and reversible from **Admin > Demo** a minute after the first login,
+where each part can be installed or skipped independently. `public/setup_api.php`
+must stay demo-free — do not wire `demo_install_run()` or any `install_demo`
+request field back into it.
 
 ## Per-user frontend access (2026-08-11)
 

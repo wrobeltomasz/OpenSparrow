@@ -143,7 +143,6 @@ if ($action === 'init_database') {
     $schema = $data['schema'] ?? 'app';
     $createSchema = (bool)($data['create_schema'] ?? true);
     $dropSchema = (bool)($data['drop_schema'] ?? false);
-    $installDemo = (bool)($data['install_demo'] ?? false);
 
     if (!$host || !$dbname || !$user || !$schema) {
         throw ResponseException::encoded([
@@ -290,42 +289,6 @@ if ($action === 'init_database') {
             throw new Exception('Configuration file was not created.');
         }
 
-        $demoInstalled = false;
-        $demoError = null;
-        if ($installDemo && $adminId === null) {
-            $demoError = 'Demo data was skipped because no admin account was created.';
-        }
-        if ($installDemo && $adminId !== null) {
-            try {
-                require_once __DIR__ . '/../includes/session.php';
-                require_once __DIR__ . '/../includes/admin_api_errors.php';
-                require_once __DIR__ . '/../includes/api_helpers.php';
-                require_once __DIR__ . '/../includes/config_store.php';
-
-                start_session();
-                session_regenerate_id(true);
-                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-                $_SESSION['user_id'] = $adminId;
-                $_SESSION['username'] = 'admin';
-                $_SESSION['role'] = 'admin';
-                $_SESSION['avatar_id'] = null;
-                $_SESSION['created_at'] = time();
-                $_SESSION['user_agent'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
-
-                require_once __DIR__ . '/admin/demo/seed.php';
-                $demoResult = demo_install_run('crm');
-                $demoInstalled = ($demoResult['status'] ?? '') === 'success';
-                if (!$demoInstalled) {
-                    $demoError = $demoResult['error'] ?? 'Demo installation failed.';
-                }
-            } catch (ControlFlowException $signal) {
-                throw $signal;
-            } catch (Throwable $exception) {
-                error_log('setup demo install error: ' . $exception->getMessage());
-                $demoError = 'Demo installation failed. Check server logs for details.';
-            }
-        }
-
         throw ResponseException::encoded([
             'success'         => true,
             'message'         => $adminId !== null
@@ -335,8 +298,6 @@ if ($action === 'init_database') {
                     . ' Sign in with an existing account.',
             'admin_user'      => $adminId !== null ? 'admin' : null,
             'admin_password'  => $adminId !== null ? $temporaryPassword : null,
-            'demo_installed'  => $demoInstalled,
-            'demo_error'      => $demoError,
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;

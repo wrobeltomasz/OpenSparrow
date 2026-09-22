@@ -153,8 +153,7 @@ function initializeDatabase() {
             password: dbData.password,
             schema: dbData.schema,
             create_schema: document.getElementById('create-schema').checked,
-            drop_schema: document.getElementById('drop-schema').checked,
-            install_demo: document.getElementById('install-demo').checked
+            drop_schema: document.getElementById('drop-schema').checked
         })
     })
     .then(response => response.json())
@@ -168,14 +167,6 @@ function initializeDatabase() {
             if (!hasAdmin) {
                 adminNote.textContent = data.message || '';
                 adminNote.className = 'status-message show error';
-            }
-            const demoMessage = document.getElementById('demo-install-msg');
-            if (document.getElementById('install-demo').checked) {
-                demoMessage.hidden = false;
-                demoMessage.textContent = data.demo_installed
-                    ? TEXT.demo_installed
-                    : (TEXT.demo_failed_prefix + (data.demo_error || ''));
-                demoMessage.className = 'status-message show ' + (data.demo_installed ? 'success' : 'error');
             }
             currentStep = 5;
             updateDisplay();

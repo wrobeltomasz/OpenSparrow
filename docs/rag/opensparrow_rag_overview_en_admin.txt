@@ -248,8 +248,8 @@ Demo Systems:
     record ownership, file and image attachments, and bell-icon notifications —
     so the comment, notes and notification panels are populated right after install
   - Reset button removes the demo data and its configuration entries
-  - Can also be installed directly from the first-run setup wizard (a checkbox
-    on the Schema step seeds the CRM demo right after the admin account is created)
+  - Installed from Admin > Demo after the first login (the first-run setup wizard
+    does not install the demo)
 
 Health Check:
   - Environment tab: PHP version (>= 8.4), memory_limit, upload_max_filesize,
