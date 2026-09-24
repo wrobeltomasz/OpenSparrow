@@ -5,6 +5,7 @@
 
 import { apiFetch } from './util/api.js';
 import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/record-tooltip.js';
+import { enablePointerDrag, registerDropTarget } from './util/touch-dnd.js';
 
 let _i18nBundle = {};
 async function fetchI18n() {
@@ -264,16 +265,16 @@ function renderCalendar() {
         cell.addEventListener('dragover', (event) => {
             event.preventDefault();
             event.dataTransfer.dropEffect = 'move';
-            cell.style.outline = '2px solid var(--accent)';
+            cell.classList.add('drop-target');
         });
 
         cell.addEventListener('dragleave', () => {
-            cell.style.outline = '';
+            cell.classList.remove('drop-target');
         });
 
-        cell.addEventListener('drop', async (event) => {
+        cell.addEventListener('drop', (event) => {
             event.preventDefault();
-            cell.style.outline = '';
+            cell.classList.remove('drop-target');
 
             let payload;
             try {
@@ -282,45 +283,14 @@ function renderCalendar() {
                 return;
             }
 
-            if (payload.date === dateString) return;
-
-            const eventIndex = eventsData.findIndex(event => event.id === payload.id && event.table === payload.table);
-            const originalDate = payload.date;
-
-            if (eventIndex !== -1) {
-                eventsData[eventIndex].date = dateString;
-                renderCalendar();
-            }
-
-            try {
-                const result = await apiFetch('api.php', {
-                    method: 'POST',
-                    body: {
-                        api: 'calendar',
-                        action: 'move_event',
-                        id: payload.id,
-                        table: payload.table,
-                        newDate: dateString
-                    }
-                });
-
-                const data = await result.json();
-
-                if (!result.ok || data.error) {
-                    if (eventIndex !== -1) {
-                        eventsData[eventIndex].date = originalDate;
-                        renderCalendar();
-                    }
-                    console.error('Failed to move event:', data.error ?? result.status);
-                }
-            } catch (error) {
-                if (eventIndex !== -1) {
-                    eventsData[eventIndex].date = originalDate;
-                    renderCalendar();
-                }
-                console.error('Network error during event move:', error);
-            }
+            moveEventTo(payload, dateString);
         });
+
+        if (canEdit) {
+            registerDropTarget(cell, {
+                onDrop: (payload) => moveEventTo(payload, dateString)
+            });
+        }
 
         const dayEvents = monthEvents.filter(event => event.date === dateString);
         dayEvents.forEach(event => {
@@ -343,6 +313,10 @@ function renderCalendar() {
             evElement.addEventListener('dragend', () => {
                 evElement.style.opacity = '';
             });
+
+            if (canEdit) {
+                enablePointerDrag(evElement, { payload: { id: event.id, table: event.table, date: event.date }, direction: 'all' });
+            }
 
             if (event.icon) {
                 if (event.icon.includes('/') || event.icon.includes('.')) {
@@ -399,6 +373,47 @@ function renderCalendar() {
         });
 
         container.appendChild(cell);
+    }
+}
+
+async function moveEventTo(payload, dateString) {
+    if (payload.date === dateString) return;
+
+    const eventIndex = eventsData.findIndex(event => event.id === payload.id && event.table === payload.table);
+    const originalDate = payload.date;
+
+    if (eventIndex !== -1) {
+        eventsData[eventIndex].date = dateString;
+        renderCalendar();
+    }
+
+    try {
+        const result = await apiFetch('api.php', {
+            method: 'POST',
+            body: {
+                api: 'calendar',
+                action: 'move_event',
+                id: payload.id,
+                table: payload.table,
+                newDate: dateString
+            }
+        });
+
+        const data = await result.json();
+
+        if (!result.ok || data.error) {
+            if (eventIndex !== -1) {
+                eventsData[eventIndex].date = originalDate;
+                renderCalendar();
+            }
+            console.error('Failed to move event:', data.error ?? result.status);
+        }
+    } catch (error) {
+        if (eventIndex !== -1) {
+            eventsData[eventIndex].date = originalDate;
+            renderCalendar();
+        }
+        console.error('Network error during event move:', error);
     }
 }
 

@@ -5,6 +5,7 @@
 
 import { apiFetch } from './util/api.js';
 import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/record-tooltip.js';
+import { enablePointerDrag, registerDropTarget } from './util/touch-dnd.js';
 
 let _i18nBundle = {};
 async function fetchI18n() {
@@ -270,6 +271,12 @@ function buildLane(value, label, color, laneCards, droppable) {
             if (payload.status === value) return;
             moveCard(payload.id, value, payload.status);
         });
+        registerDropTarget(body, {
+            onDrop: (payload) => {
+                if (payload.status === value) return;
+                moveCard(payload.id, value, payload.status);
+            }
+        });
     }
 
     if (laneCards.length === 0) {
@@ -299,6 +306,7 @@ function buildCard(card, laneColor) {
             element.classList.add('dragging');
         });
         element.addEventListener('dragend', () => element.classList.remove('dragging'));
+        enablePointerDrag(element, { payload: { id: card.id, status: card.status }, direction: 'horizontal' });
     }
 
     const title = document.createElement('div');

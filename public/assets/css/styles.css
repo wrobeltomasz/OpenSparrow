@@ -1772,6 +1772,28 @@ header .dash-filter-label {
 }
 .calendar-event:hover { opacity: 0.9; }
 
+.calendar-event.dragging {
+  opacity: 0.4;
+}
+
+.calendar-cell.drop-target {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.touch-ghost {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0.85;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 8px 24px rgba(31, 42, 55, 0.3);
+  border-radius: var(--radius);
+}
+
+.touch-drag-h { touch-action: pan-y; }
+.touch-drag-all { touch-action: none; }
+
 .calendar-event-sub { opacity: 0.8; }
 
 .calendar-event-del {
@@ -2014,6 +2036,11 @@ header .dash-filter-label {
   max-height: 100%;
 }
 .board-lane.drag-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-mid);
+}
+.board-lane.drop-target {
   outline: 2px dashed var(--accent);
   outline-offset: -2px;
   background: var(--accent-mid);

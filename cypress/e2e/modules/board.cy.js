@@ -169,6 +169,101 @@ describe('OpenSparrow – Board: Mobile', () => {
   });
 });
 
+describe('OpenSparrow – Board: Touch drag', () => {
+  beforeEach(() => {
+    cy.viewport('iphone-x');
+    loginAsTestUser();
+    cy.visit(`${BASE}/board.php`);
+    cy.get('#boardContainer', { timeout: CypressHelpers.TIMEOUTS.long }).should('exist');
+  });
+
+  const withTwoLanesAndCards = (fn) => {
+    cy.get('body').then($body => {
+      const $cards = $body.find('.board-card');
+      const $lanes = $body.find('.board-lane');
+      if ($cards.length === 0 || $lanes.length < 2) {
+        Cypress.log({ message: 'Board not configured for touch drag — skipping' });
+        return;
+      }
+      fn();
+    });
+  };
+
+  it('horizontal movement shows a ghost and drop-target highlight, drop fires move_card', () => {
+    withTwoLanesAndCards(() => {
+      cy.intercept('POST', '**/api.php*', { statusCode: 200, body: { ok: true } }).as('moveCard');
+
+      cy.get('.board-card').first().then($card => {
+        const $lane = $card.closest('.board-lane');
+        cy.get('.board-lane').not(`[data-status="${$lane.attr('data-status')}"]`).first().then($target => {
+          const cardRect = $card[0].getBoundingClientRect();
+          const targetRect = $target[0].getBoundingClientRect();
+          const startX = cardRect.x + 10;
+          const startY = cardRect.y + 10;
+
+          cy.wrap($card)
+            .trigger('pointerdown', {
+              pointerType: 'touch',
+              button: 0,
+              clientX: startX,
+              clientY: startY,
+              scrollBehavior: false,
+            })
+            .trigger('pointermove', {
+              pointerType: 'touch',
+              clientX: startX + 20,
+              clientY: startY,
+              scrollBehavior: false,
+            })
+            .then(() => {
+              cy.get('.touch-ghost').should('exist');
+              cy.get('.board-card.dragging').should('have.length', 1);
+            });
+
+          cy.document().trigger('pointermove', {
+            pointerType: 'touch',
+            clientX: targetRect.x + targetRect.width / 2,
+            clientY: targetRect.y + 40,
+          });
+          cy.wrap($target).should('have.class', 'drop-target');
+
+          cy.document().trigger('pointerup', { pointerType: 'touch' });
+
+          cy.wait('@moveCard').its('request.body').should(body => {
+            expect(body).to.have.property('id');
+            expect(body.id).to.not.eq(undefined);
+          });
+        });
+      });
+    });
+  });
+
+  it('pointer drag never activates for mouse pointers', () => {
+    withTwoLanesAndCards(() => {
+      cy.get('.board-card').first().then($card => {
+        const cardRect = $card[0].getBoundingClientRect();
+        cy.wrap($card)
+          .trigger('pointerdown', {
+            pointerType: 'mouse',
+            button: 0,
+            clientX: cardRect.x + 10,
+            clientY: cardRect.y + 10,
+            scrollBehavior: false,
+          })
+          .trigger('pointermove', {
+            pointerType: 'mouse',
+            clientX: cardRect.x + 30,
+            clientY: cardRect.y + 10,
+            scrollBehavior: false,
+          });
+        cy.get('.touch-ghost').should('not.exist');
+        cy.get('.board-card.dragging').should('have.length', 0);
+        cy.get('.board-card').first().trigger('pointerup', { pointerType: 'mouse' });
+      });
+    });
+  });
+});
+
 describe('OpenSparrow – Board: API contract', () => {
   beforeEach(() => {
     loginAsTestUser();

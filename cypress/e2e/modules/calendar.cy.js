@@ -297,3 +297,109 @@ describe('OpenSparrow – Calendar: Mobile', () => {
     assertMobileSmoke(['#calendarMain', '#calendarTitle', '#btnPrev', '#btnNext']);
   });
 });
+
+describe('OpenSparrow – Calendar: Touch drag', () => {
+  beforeEach(() => {
+    cy.viewport('iphone-x');
+    loginAsTestUser();
+    cy.visit(`${BASE}/calendar.php`);
+    cy.get('#calendarContainer', { timeout: CypressHelpers.TIMEOUTS.long })
+      .find('.calendar-day-name')
+      .should('have.length', 7);
+  });
+
+  const withEvents = (fn) => {
+    cy.get('body').then($body => {
+      if ($body.find('.calendar-event').length === 0) {
+        Cypress.log({ message: 'No calendar events — skipping touch drag test' });
+        return;
+      }
+      fn();
+    });
+  };
+
+  it('movement shows a ghost, drop over another day fires move_event', () => {
+    withEvents(() => {
+      cy.intercept('POST', '**/api.php*', { statusCode: 200, body: { ok: true } }).as('moveEvent');
+
+      cy.get('.calendar-event').first().scrollIntoView().then($chip => {
+        const $sourceCell = $chip.closest('.calendar-cell');
+
+        cy.get('.calendar-cell:not(.empty)').then($cells => {
+          let targetCell = null;
+          for (let i = $cells.length - 1; i >= 0; i--) {
+            if ($cells[i] !== $sourceCell[0]) {
+              targetCell = $cells[i];
+              break;
+            }
+          }
+          if (!targetCell) return;
+          const chipRect = $chip[0].getBoundingClientRect();
+          const targetRect = targetCell.getBoundingClientRect();
+          const startX = chipRect.x + 10;
+          const startY = chipRect.y + 10;
+
+          cy.wrap($chip)
+            .trigger('pointerdown', {
+              pointerType: 'touch',
+              button: 0,
+              clientX: startX,
+              clientY: startY,
+              scrollBehavior: false,
+            })
+            .trigger('pointermove', {
+              pointerType: 'touch',
+              clientX: startX + 20,
+              clientY: startY,
+              scrollBehavior: false,
+            })
+            .then(() => {
+              cy.get('.touch-ghost').should('exist');
+              cy.get('.calendar-event.dragging').should('have.length', 1);
+            });
+
+          cy.document().trigger('pointermove', {
+            pointerType: 'touch',
+            clientX: targetRect.x + targetRect.width / 2,
+            clientY: targetRect.y + 10,
+          });
+          cy.wrap(targetCell).should('have.class', 'drop-target');
+
+          cy.document().trigger('pointerup', { pointerType: 'touch' });
+
+          cy.wait('@moveEvent').its('request.body').should(body => {
+            expect(body).to.have.property('api', 'calendar');
+            expect(body).to.have.property('action', 'move_event');
+            expect(body).to.have.property('id');
+            expect(body).to.have.property('newDate');
+          });
+        });
+      });
+    });
+  });
+
+  it('pointer drag never activates for mouse pointers', () => {
+    withEvents(() => {
+      cy.get('.calendar-event').first().scrollIntoView().then($chip => {
+        const chipRect = $chip[0].getBoundingClientRect();
+        cy.wrap($chip)
+          .trigger('pointerdown', {
+            pointerType: 'mouse',
+            button: 0,
+            clientX: chipRect.x + 10,
+            clientY: chipRect.y + 10,
+            scrollBehavior: false,
+          })
+          .trigger('pointermove', {
+            pointerType: 'mouse',
+            clientX: chipRect.x + 30,
+            clientY: chipRect.y + 10,
+            scrollBehavior: false,
+          });
+        cy.get('.touch-ghost').should('not.exist');
+        cy.get('.calendar-event.dragging').should('have.length', 0);
+        cy.wrap($chip).trigger('pointerup', { pointerType: 'mouse' });
+      });
+    });
+  });
+});
