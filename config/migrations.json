@@ -137,5 +137,13 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds a Roadmap (Gantt) module: admins define multiple roadmaps, each bound to a schema table via chosen title, start/end date, category and progress columns, with a read-only frontend view showing a color legend and milestones; access follows the existing roadmaps scope. Fixes docs.js inconsistencies across admin modules and repairs a broken PL string in docs-strings.js. Enum dropdowns now keep readable text color via YIQ contrast on both the grid and the record form. The record grid and view tables are restyled with Excel-like cell borders, a light header and no zebra striping, using existing design tokens. The sidebar toggle moves from the header to the bottom of the menu (the hamburger stays on mobile), menu-list nav links align with the grid at 14px font-sans, and branding assets were refreshed. No database migration and no configuration keys are removed by this release."
+    },
+    "3.9": {
+        "removed_files": [
+            "public/mock.html"
+        ],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Adds touch drag and drop for the board and the calendar through a shared pointer-drag shim (public/assets/js/util/touch-dnd.js): touch pointers drag cards and events with a movement-based start (12px slop, direction-aware) instead of hold timers, drop targets highlight via CSS classes, and the touch path calls the same move functions as the native HTML5 drag, so moveCard and moveEventTo stay the single source of truth. The scroll-vs-drag conflict is resolved with touch-action CSS (pan-y on board cards, none on calendar chips), never with preventDefault or long-press timers. Fixes the board lane touch highlight to target the lane element itself so the drop-target styling applies. The setup wizard no longer offers to install the CRM demo: the wizard installs the system only, and every demo part stays opt-in from Admin > Demo after the first login (public/setup_api.php must stay demo-free). The demo install option removal also drops the setup.install_demo, setup.help_install_demo, setup.demo_installed and setup.demo_failed_prefix i18n keys from all 20 language files. Nav menu items get thin borders and the sidebar collapse icon right-aligns to the menu bottom. The unused public/mock.html design mockup and docs/RELEASE_3.7.md are removed. No database migration and no configuration keys are removed by this release."
     }
 }
