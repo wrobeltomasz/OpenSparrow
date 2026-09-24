@@ -271,7 +271,7 @@ function buildLane(value, label, color, laneCards, droppable) {
             if (payload.status === value) return;
             moveCard(payload.id, value, payload.status);
         });
-        registerDropTarget(body, {
+        registerDropTarget(lane, {
             onDrop: (payload) => {
                 if (payload.status === value) return;
                 moveCard(payload.id, value, payload.status);
