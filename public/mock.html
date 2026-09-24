@@ -59,12 +59,18 @@ aside .group-title {
   color: var(--muted); padding: 10px 12px 4px; font-weight: 700;
 }
 aside a {
-  display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: var(--radius);
-  color: var(--text); text-decoration: none; font-size: 13px;
+  display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+  border: 1px solid var(--border-light); border-radius: var(--radius);
+  color: var(--text); text-decoration: none; font-size: 13px; margin-bottom: 4px;
 }
-aside a:hover { background: var(--cell-hover); }
-aside a.active { background: var(--panel); color: var(--accent); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
+aside a:hover { background: var(--cell-hover); border-color: var(--border); }
+aside a.active {
+  background: var(--panel); color: var(--accent); font-weight: 600;
+  border-color: var(--border); box-shadow: inset 3px 0 0 var(--accent);
+}
 aside .table-icon { width: 16px; height: 16px; border: 1px solid var(--border); border-radius: 3px; background: var(--panel); flex-shrink: 0; }
+aside .group-title { margin-top: 6px; }
+aside .group-title:first-child { margin-top: 0; }
 
 /* ===== Arkusz ===== */
 .sheet-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }

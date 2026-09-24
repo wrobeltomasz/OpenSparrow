@@ -607,6 +607,7 @@ nav li a, .custom-nav-link {
   align-items: center;
   gap: 12px;
   padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border-light);
   border-radius: var(--radius);
   color: var(--muted);
   text-decoration: none;
@@ -648,6 +649,7 @@ nav li a img, .custom-nav-link img {
 nav li a:hover, .custom-nav-link:hover {
   color: var(--accent);
   background: var(--accent-light);
+  border-color: var(--border);
 }
 
 nav li a:hover img, .custom-nav-link:hover img { opacity: 1; }
@@ -655,6 +657,7 @@ nav li a:hover img, .custom-nav-link:hover img { opacity: 1; }
 nav li a.active {
   color: var(--accent-dark);
   background: var(--accent-mid);
+  border-color: var(--border);
   font-weight: 600;
 }
 
@@ -2644,6 +2647,8 @@ thead th.drag-over {
   white-space: nowrap;
   transition: all var(--transition);
 }
+
+.menu-collapse-toggle .menu-collapse-icon-left { margin-left: auto; }
 
 .menu-collapse-toggle:hover {
   color: var(--accent);
