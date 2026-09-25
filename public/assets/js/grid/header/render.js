@@ -63,10 +63,18 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         }
 
         let labelText = columnConfig.display_name || columnName;
-        if (state.sortState.column === columnName) {
-            labelText += state.sortState.asc ? ' ↑' : ' ↓';
-        }
         thLabel.appendChild(document.createTextNode(labelText));
+
+        const sortRuleIndex = state.sortState.findIndex(rule => rule.column === columnName);
+        if (sortRuleIndex > -1) {
+            const sortIcon = document.createElement('img');
+            sortIcon.className = 'th-sort-icon';
+            sortIcon.src = `assets/icons/material/timer_${sortRuleIndex + 1}.svg`;
+            sortIcon.alt = '';
+            sortIcon.title = I18n.t('grid.sort_priority', { priority: sortRuleIndex + 1 });
+            thLabel.appendChild(sortIcon);
+            thLabel.appendChild(document.createTextNode(state.sortState[sortRuleIndex].asc ? ' ↑' : ' ↓'));
+        }
         th.appendChild(thLabel);
 
         th.style.cursor = 'pointer';

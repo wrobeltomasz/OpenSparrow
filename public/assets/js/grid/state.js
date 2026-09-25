@@ -9,7 +9,7 @@ export const state = {
     displayedColumns: [],
     filteredData: [],
     unsortedFilteredData: [],
-    sortState: { column: null, asc: true },
+    sortState: [],
     fkCache: new Map(),
     searchTerm: '',
     containerEl: null,
@@ -43,9 +43,9 @@ export function getState() {
 }
 
 export function setFilteredData(rows) {
-    state.filteredData = rows;
+    state.filteredData = rows.slice();
     state.unsortedFilteredData = rows.slice();
-    if (state.sortState.column) {
+    if (state.sortState.length > 0) {
         state.filteredData = sortRows(state.filteredData, state.sortState);
     }
 }
@@ -53,25 +53,36 @@ export function setFilteredData(rows) {
 export function resetFiltersState() {
     state.filteredData = state.fullData.slice();
     state.unsortedFilteredData = state.fullData.slice();
-    state.sortState = { column: null, asc: true };
+    state.sortState = [];
     state.searchTerm = '';
 }
 
-export function sortRows(rows, sortState) {
-    if (!sortState.column) return rows;
-    const columnName = sortState.column;
+const MAX_SORT_RULES = 3;
+
+export function compareByRule(left, right, rule) {
+    const valueA = left[rule.column + '__display'] ?? left[rule.column] ?? '';
+    const valueB = right[rule.column + '__display'] ?? right[rule.column] ?? '';
+    const isNumberA = !isNaN(valueA) && valueA !== '';
+    const isNumberB = !isNaN(valueB) && valueB !== '';
+    if (isNumberA && isNumberB) {
+        const difference = Number(valueA) - Number(valueB);
+        return rule.asc ? difference : -difference;
+    }
+    const stringA = valueA.toString().toLowerCase();
+    const stringB = valueB.toString().toLowerCase();
+    if (stringA < stringB) return rule.asc ? -1 : 1;
+    if (stringA > stringB) return rule.asc ? 1 : -1;
+    return 0;
+}
+
+export function sortRows(rows, sortRules) {
+    if (!Array.isArray(sortRules) || sortRules.length === 0) return rows;
+    const rules = sortRules.slice(0, MAX_SORT_RULES);
     return [...rows].sort((left, right) => {
-        const valueA = left[columnName + '__display'] ?? left[columnName] ?? '';
-        const valueB = right[columnName + '__display'] ?? right[columnName] ?? '';
-        const isNumberA = !isNaN(valueA) && valueA !== '';
-        const isNumberB = !isNaN(valueB) && valueB !== '';
-        if (isNumberA && isNumberB) {
-            return sortState.asc ? Number(valueA) - Number(valueB) : Number(valueB) - Number(valueA);
+        for (const rule of rules) {
+            const outcome = compareByRule(left, right, rule);
+            if (outcome !== 0) return outcome;
         }
-        const stringA = valueA.toString().toLowerCase();
-        const stringB = valueB.toString().toLowerCase();
-        if (stringA < stringB) return sortState.asc ? -1 : 1;
-        if (stringA > stringB) return sortState.asc ? 1 : -1;
         return 0;
     });
 }

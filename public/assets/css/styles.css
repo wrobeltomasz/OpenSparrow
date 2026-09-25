@@ -1009,6 +1009,16 @@ thead th:last-child  { padding-right: 0.6rem; }
   pointer-events: none;
 }
 
+.th-sort-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 4px;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
 tbody tr {
   height: 36px;
 }

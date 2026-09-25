@@ -75,10 +75,11 @@ export async function loadTable(schema, table, gridTitleElement, addRowButton) {
         });
         state.filteredData = state.fullData.slice();
         state.unsortedFilteredData = state.filteredData.slice();
-        const firstSort = schema.tables[table]?.default_sort?.[0];
-        state.sortState = firstSort?.column
-            ? { column: firstSort.column, asc: (firstSort.dir ?? 'asc').toLowerCase() !== 'desc' }
-            : { column: null, asc: true };
+        const defaultSort = schema.tables[table]?.default_sort ?? [];
+        state.sortState = defaultSort
+            .filter(rule => rule?.column)
+            .slice(0, 3)
+            .map(rule => ({ column: rule.column, asc: (rule.dir ?? 'asc').toLowerCase() !== 'desc' }));
         state.gridTitleEl = gridTitleElement;
         state.addRowBtn = addRowButton;
         state.containerEl = document.getElementById('grid');

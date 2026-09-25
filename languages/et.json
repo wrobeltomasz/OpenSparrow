@@ -66,7 +66,8 @@
         "insert_failed": "Insert failed ({status})",
         "select_all_rows": "Select all rows",
         "select_all_toggle": "Select / deselect all",
-        "id_badge": "id: {id}"
+        "id_badge": "id: {id}",
+        "sort_priority": "Sortimise prioriteet {priority}"
     },
     "form": {
         "add_record": "Lisa kirje",

@@ -5,18 +5,27 @@
 
 import { state, sortRows } from '../state.js';
 
+const MAX_SORT_RULES = 3;
+
 export function toggleSortState(column) {
-    if (state.sortState.column === column) {
-        if (state.sortState.asc) {
-            state.sortState = { column: column, asc: false };
+    const existingRule = state.sortState.find(rule => rule.column === column);
+
+    if (existingRule) {
+        if (existingRule.asc) {
+            existingRule.asc = false;
         } else {
-            state.sortState = { column: null, asc: true };
+            state.sortState = state.sortState.filter(rule => rule.column !== column);
         }
+    } else if (state.sortState.length < MAX_SORT_RULES) {
+        state.sortState = [...state.sortState, { column: column, asc: true }];
     } else {
-        state.sortState = { column: column, asc: true };
+        state.sortState = [
+            ...state.sortState.slice(0, MAX_SORT_RULES - 1),
+            { column: column, asc: true },
+        ];
     }
 
-    state.filteredData = state.sortState.column
+    state.filteredData = state.sortState.length > 0
         ? sortRows(state.unsortedFilteredData, state.sortState)
         : state.unsortedFilteredData.slice();
 }

@@ -66,7 +66,8 @@
         "insert_failed": "Wstawianie nie powiodło się ({status})",
         "select_all_rows": "Zaznacz wszystkie wiersze",
         "select_all_toggle": "Zaznacz / odznacz wszystko",
-        "id_badge": "id: {id}"
+        "id_badge": "id: {id}",
+        "sort_priority": "Priorytet sortowania {priority}"
     },
     "form": {
         "add_record": "Dodaj rekord",

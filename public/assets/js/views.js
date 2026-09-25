@@ -609,7 +609,7 @@ function renderView(data) {
         if (Object.keys(columnFilters).length > 0) result = result.filter(rowPassesColumnFilters);
         renderFilterPills();
         syncClearButton();
-        result = sortRows(result, viewSortState);
+        result = sortRows(result, viewSortState.column ? [viewSortState] : []);
         currentFilteredRows = result;
         Object.values(summaryUpdaters).forEach(handler => handler(result));
 
