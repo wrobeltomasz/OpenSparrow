@@ -194,7 +194,7 @@ cd OpenSparrow
 php -S localhost:8000 -t public
 ```
 
-Open **http://localhost:8000** — you are redirected to the **setup wizard**. For plain-HTTP local work set `SECURE_COOKIES=false` in your environment first, otherwise the session cookie will not stick. If you plan to run the Cypress E2E suite against this server, also set `APP_ENV=development` — `cypress_seed.php` hard-404s unless it is set, since that endpoint is disabled in production.
+Open **http://localhost:8000** — you are redirected to the **setup wizard**. For plain-HTTP local work set `SECURE_COOKIES=false` in your environment first, otherwise the session cookie will not stick.
 
 Using Apache/Nginx instead: point the virtual host's document root at `public/` (the shipped `nginx.conf` already does this) and open your local URL.
 
@@ -249,7 +249,7 @@ Granting a board or a workflow does not grant the tables it uses — both ticks 
 
 ## Configuration
 
-**Production dependencies: none.** No Composer, no npm, no build step required to run the application. Development tooling (`composer install` for PHPUnit, `npm install` for Cypress) is optional and never needed to serve the app.
+**Production dependencies: none.** No Composer, no npm, no build step required to run the application. Development tooling (`composer install` for PHPUnit) is optional and never needed to serve the app.
 
 ### Environment variables (optional)
 
@@ -348,7 +348,6 @@ the repository root, *outside* the document root, and cannot be reached over the
 - **`cron/`** — scheduled workers (e.g. `cron_notifications.php`).
 - **`templates/`** — layout wrappers (`template.php`).
 - **`storage/files/`** — user-uploaded files.
-- **`cypress/`** — E2E test suite (Cypress 13.x). Tests live in `e2e/`, shared helpers in `support/`.
 - **`tests/`** — PHPUnit unit test suite. Mirrors `src/` namespace structure under `Tests\`. Run with `vendor/bin/phpunit`.
 
 ### Key files
@@ -369,7 +368,6 @@ All web-served files below live under `public/` (the document root).
 - **`Dockerfile` / `docker-compose.yml`** — containerized deployment (dev stack). **`Dockerfile.standalone`** — single-container image (Nginx + PHP-FPM) used by Render / Railway. **`docker-compose-production.yml`** — hardened production stack.
 - **`render.yaml` / `railway.toml`** — one-click cloud deploy configs.
 - **`phpcs.xml`** — PSR-12 ruleset.
-- **`cypress.config.js`** — Cypress E2E test framework configuration.
 - **`composer.json`** — dev-only dependency manifest (`phpunit/phpunit`). Not required for production.
 - **`phpunit.xml`** — PHPUnit configuration (bootstrap, test suite directory, coverage source).
 
@@ -402,17 +400,7 @@ composer install          # once
 vendor/bin/phpunit
 ```
 
-**Cypress — E2E tests.** 32 suites covering authentication, admin panel, grid operations, CRUD workflows, dashboard, calendar, board, print, files, record image galleries, comments, notifications, views, workflows, mass edit, CSV import, data cleanup, ETL, anonymization, i18n, keyboard shortcuts, API contracts, authorization/IDOR, session security, CSRF, injection, upload/header hardening, and the RAG chat. Requires Node.js 16+ and a running instance (default `http://localhost:8080`).
-
-```bash
-npm install               # once
-npm run cy:run            # headless (CI-friendly)
-npm run cy:open           # interactive Test Runner
-npm run cy:run -- --spec "cypress/e2e/auth/login.cy.js"   # single suite
-npm run cy:run -- --browser edge                     # alternate browser
-```
-
-Shared helpers (`loginAsTestUser()`, `waitForGridOrEmpty()`, polling timeouts) live in `cypress/support/e2e.js`. For the selector strategy, helper patterns, troubleshooting (browser not found, sandbox/IPC errors, flakiness), and the PR checklist, see [docs/TESTING_GUIDELINES.md](docs/TESTING_GUIDELINES.md).
+Behaviour changes are verified manually against a local instance (`php -S localhost:8080 -t public`) — the legacy Cypress E2E suite is no longer part of development (see [docs/TESTING_GUIDELINES.md](docs/TESTING_GUIDELINES.md) for the test policy).
 
 ---
 
@@ -434,4 +422,4 @@ See also: [LICENSE-EXCEPTION](LICENSE-EXCEPTION)
 
 The icons in `public/assets/icons/` are Google **Material Symbols / Material Icons** ([fonts.google.com/icons](https://fonts.google.com/icons)), © Google LLC, licensed under the **Apache License 2.0** — see [NOTICE](NOTICE) for the attribution and [licenses/Apache-2.0.txt](licenses/Apache-2.0.txt) for the full license text.
 
-No third-party source code is bundled: the frontend is vanilla JS/CSS with no libraries or CDN dependencies, and the only Composer/npm packages are dev-time test tooling (PHPUnit, Cypress), which is not distributed.
+No third-party source code is bundled: the frontend is vanilla JS/CSS with no libraries or CDN dependencies, and the only Composer package is the dev-time test tooling (PHPUnit), which is not distributed.

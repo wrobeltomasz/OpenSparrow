@@ -15,8 +15,7 @@ audits are not repeated from scratch.
   `json_encode()` with `JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT`.
 - **CSRF** — single central check in `includes/bootstrap.php`; JS sends the token as
   `X-CSRF-Token` from the meta tag. Timestamps are **not** a CSRF defense; only the
-  unpredictable session token is. GET never mutates state. Contract guarded by
-  `cypress/e2e/api/api_contracts.cy.js`.
+  unpredictable session token is. GET never mutates state.
 - **Auth material stays server-side** — PHP session cookie (HttpOnly, Secure,
   SameSite=Lax, `session_regenerate_id(true)` on login — `public/login.php`).
   `localStorage` is UI-preferences only, never tokens.
@@ -89,7 +88,7 @@ bulk operations and newly added actions each need it applied explicitly.
   The structural risk documented in the DEMO_MODE design stands: there is **no central
   gate**, every write action must still guard itself — which is exactly what
   `tests/Admin/AdminApiGuardsTest.php` now asserts by scanning the sources. Treat that
-  test the way `cypress/e2e/api/api_contracts.cy.js` is treated for CSRF: it is the
+  test the way the admin CSRF contract is guarded: it is the
   regression net, so a new admin action that skips the guard fails CI rather than ship.
   Related gaps closed the same way: record duplication, mass file operations and the
   ETL runner all reused the main-path guard but not the bulk one.

@@ -35,8 +35,7 @@ The web document root is the `public/` directory — point your virtual host at 
     php -S localhost:8000 -t public
 
 Open http://localhost:8000 in a browser. On plain HTTP set `SECURE_COOKIES=false`
-first, otherwise the session cookie will not stick; add `APP_ENV=development` if you
-plan to run the Cypress suite (`cypress_seed.php` 404s without it).
+first, otherwise the session cookie will not stick.
 
 In both cases the **setup wizard** (`setup.php`) walks you through the database
 connection and creates the `admin` account with a randomly generated password

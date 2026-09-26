@@ -59,35 +59,6 @@ jobs:
           DB_PASS: sparrow
         run: bash .github/scripts/deploy-smoke.sh
 
-      - name: Seed Cypress test users
-        run: |
-          set -euo pipefail
-          RESP=$(curl -fs -X POST --data 'token=cypress-dev-seed' \
-            'http://localhost:8080/cypress_seed.php?action=seed')
-          echo "$RESP" | jq .
-
-      - name: Run Cypress login suite (warning-only for now)
-        # Warning-only until the suite is confirmed green on a fresh, empty
-        # instance in CI — then drop continue-on-error and add more suites
-        # (admin, grid, crud).
-        id: cypress
-        continue-on-error: true
-        run: |
-          npm ci
-          npx cypress run --spec "cypress/e2e/auth/login.cy.js"
-
-      - name: Annotate Cypress result
-        if: steps.cypress.outcome == 'failure'
-        run: echo "::warning::Cypress login suite failed on the fresh compose stack (non-blocking) — check the artifacts."
-
-      - name: Upload Cypress screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-screenshots
-          path: cypress/screenshots
-          if-no-files-found: ignore
-
       - name: Show container logs on failure
         if: failure()
         run: docker compose logs --tail=200

@@ -7,7 +7,8 @@ and UI rules live in this document** — see "Where binding rules live" at the e
 ## Code-size review (2026-07-09)
 
 Own code at review time: PHP ~21.4k lines (app 19.6k + `src/` 1.8k), JS ~27.7k
-(admin 18.2k + user 9.6k), CSS ~6k, tests 1.5k PHPUnit + 21 Cypress specs.
+(admin 18.2k + user 9.6k), CSS ~6k, tests 1.5k PHPUnit (the then-21 Cypress
+specs have since been removed from development).
 Verdict: the codebase is not oversized for its feature scope; the cost is
 concentrated in a few places listed below.
 
@@ -159,8 +160,7 @@ records the reasoning and gotchas so they are not re-derived or re-litigated.
   `calendar.php`, `dashboard.php`, `files.php`, `views.php`). Chosen over
   moving the grid's controls into the page body because the header placement
   carries the mobile search drawer (`sidebar.js` + `mobile.css`
-  `.header-controls`), the Cypress selectors, and the `grid/keyboard.js`
-  focus hook for free. Body toolbars for page-level filters were removed
+  `.header-controls`) and the `grid/keyboard.js` focus hook for free. Body toolbars for page-level filters were removed
   (`.board-toolbar`, calendar's in-body bar, files' search/type row).
 - **One shared class family** — `filter-chip`/`off`/`filter-dot`,
   `filter-pill`/`filter-pill-remove`, `filter-range`/`num-filter` replaced the
@@ -210,10 +210,10 @@ records the reasoning and gotchas so they are not re-derived or re-litigated.
   the global `button { display: inline-flex }` (author origin) beats the UA
   `[hidden]` style regardless of specificity. The grid page alone keeps the
   historical inline-style approach (its CSP is `unsafe-style`).
-- **`board.cy.js` asserts `#boardSearch` has `type="search"`** — search inputs
+- **Search inputs are `type="search"`** — search inputs
   across pages are `type="search"` (native clear ×, shared
   `header input[type="search"]` styling); keep ids page-specific but stable —
-  they are Cypress selectors, so renaming one breaks its spec.
+  the ids are part of the public DOM contract.
 - `templates/layout.php` includes `header.php` in the same scope, so any page
   can define `$headerControls` before the include — no template changes
   needed per page.
@@ -1047,8 +1047,9 @@ The connection is injected; the driver is unchanged.
 ### Backward compatibility is deliberate
 
 The old global functions still exist and keep their signatures — they are now
-one-line delegators to the services. 177 PHP files, 27 test files and 30 Cypress
-specs call them; converting every call site in one change would have been a
+one-line delegators to the services. 177 PHP files and 27 test files call them (the
+Cypress specs that also did are gone from development); converting every call site
+in one change would have been a
 large untested diff. The delegators are the migration path, not the destination:
 new code calls the service, and call sites move over as they are touched.
 
@@ -2001,7 +2002,7 @@ normalised body.
 Write scenarios cover the **guards**, not the mutations: no-CSRF (403), unknown table
 (400), empty body (400), bad record id (400), missing row (404). A successful insert or
 delete would make the two recordings differ by construction (new row id), so mutating
-happy paths stay Cypress's job. Two traps here, both found by recording and reading the
+happy paths are verified manually against a local instance. Two traps here, both found by recording and reading the
 output rather than trusting it:
 
 - The token has to go in the **request body**, not only the `X-CSRF-Token` header, or
