@@ -573,7 +573,7 @@ ${_h4(strings.s12_env_head)}
         <tr><td class="adm-td"><code>APP_TIMEZONE</code></td><td class="adm-td"><code>Europe/Warsaw</code></td><td class="adm-td">${strings.env_timezone}</td></tr>
         <tr><td class="adm-td"><code>SECURE_COOKIES</code></td><td class="adm-td"><code>true</code></td><td class="adm-td">${strings.env_cookies}</td></tr>
         <tr><td class="adm-td"><code>SESSION_MAX_LIFETIME</code></td><td class="adm-td"><code>28800</code></td><td class="adm-td">${strings.env_session}</td></tr>
-        <tr><td class="adm-td"><code>IP_HASH_SALT</code></td><td class="adm-td"><em>${strings.env_none}</em></td><td class="adm-td"><strong>${strings.env_iphash_req}</strong> ${strings.env_iphash}</td></tr>
+        <tr><td class="adm-td"><code>IP_HASH_SALT</code></td><td class="adm-td"><em>${strings.env_iphash_req}</em></td><td class="adm-td">${strings.env_iphash}</td></tr>
         <tr><td class="adm-td"><code>LOGIN_MAX_ATTEMPTS_PER_IP</code></td><td class="adm-td"><code>20</code></td><td class="adm-td">${strings.env_ip_attempts}</td></tr>
         <tr><td class="adm-td"><code>LOGIN_MAX_ATTEMPTS_PER_USERNAME</code></td><td class="adm-td"><code>5</code></td><td class="adm-td">${strings.env_user_attempts}</td></tr>
         <tr><td class="adm-td"><code>LOGIN_LOCKOUT_MINUTES</code></td><td class="adm-td"><code>15</code></td><td class="adm-td">${strings.env_lockout}</td></tr>

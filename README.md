@@ -90,11 +90,11 @@ The personal modules — My Notes, My Records and My Comments — are managed fr
 - **Inline editing** — in-grid PATCH updates routed through a single `api.php` gateway.
 - **Record image galleries** — per-table photo galleries: thumbnails render directly in the grid, full-size images open in a popup, and uploads happen from the Edit form. Enabled per table in the `schema` configuration; files are stored alongside attachments in `spw_files`.
 - **Conditional row highlighting** — colour rules evaluated per row in the grid (e.g. overdue invoices in red), defined in the admin panel next to the column settings.
-- **Dashboard engine** — COUNT / SUM / AVG / MIN / MAX / GROUP BY widgets defined in the `dashboard` configuration.
+- **Dashboard engine** — COUNT / SUM / AVG widgets (grouped bar, pie, time-series line, stat cards and data lists) defined in the `dashboard` configuration.
 - **Calendar & notifications** — date-based records on a calendar view, with scheduled reminders via cron. An optional subtitle column adds a second line to each calendar entry.
-- **Admin panel** — collapsible sidebar navigation with visual editors for schema, dashboards, calendar, boards, printouts, views, workflows, automations, files, ETL, anonymization, the knowledge base, and users at `/admin`. Unified login for all roles — no separate admin password.
+- **Admin panel** — collapsible sidebar navigation with visual editors for schema, dashboards, calendar, boards, roadmaps, printouts, views, workflows, automations, files, ETL, anonymization, the knowledge base, and users at `/admin`. Unified login for all roles — no separate admin password.
 - **Visual table builder** — create PostgreSQL tables from the admin UI with per-column type, NOT NULL, default value, index (btree/hash/unique), column comment (`COMMENT ON COLUMN`), and foreign key constraints. Timestamps preset adds `created_at`/`updated_at` automatically. Tables are registered in the app schema configuration in the same step.
-- **Per-user access control** — beyond the three roles, each frontend account can be restricted to a subset of tables, views, printouts, boards and workflows from **System → Users → Access**. The groups are independent, ticking nothing leaves a group unrestricted, and enforcement is server-side on every endpoint — menus, grids, forms, subtable tabs, bulk tools, files and the RAG context all follow the restriction.
+- **Per-user access control** — beyond the three roles, each frontend account can be restricted to a subset of tables, views, printouts, boards, roadmaps and workflows from **System → Users → Access**. The groups are independent, ticking nothing leaves a group unrestricted, and enforcement is server-side on every endpoint — menus, grids, forms, subtable tabs, bulk tools, files and the RAG context all follow the restriction.
 - **Audit logging & record snapshots** — every write is logged to `spw_users_log`; an optional record-snapshot module saves a full JSONB copy of each record after INSERT/UPDATE to `spw_record_snapshots`, toggled from the admin panel or via env var.
 - **Click Statistics** — optional UI-interaction analytics (**System → Click Statistics**), off by default: while disabled nothing is emitted, no collector script loads and no request is made. Once enabled, clicks on buttons, links and elements carrying a `data-stat` attribute are batched client-side and delivered via `navigator.sendBeacon` to `spw_clickstats`, recording who clicked, when, which element, and the table/record in context where applicable. Retention is configurable (90 days by default) and enforced by the notification cron.
 - **CSV export & pagination** — built-in grid utilities.
@@ -106,13 +106,14 @@ The personal modules — My Notes, My Records and My Comments — are managed fr
 - **Record comments** — threaded comments per record (`spw_comments`) with audit trail, shown as a grid badge and an Edit-form tab.
 - **Private notes** — a personal notepad in the user menu (`spw_notes`), visible only to its author, optionally linked to a record and carrying a reminder date **and time**, delivered by the notification cron once that moment has passed.
 - **Kanban boards** — drag records between status lanes; multiple boards can be defined in the `board` configuration, each appearing as its own sidebar item.
+- **Roadmaps (Gantt)** — read-only timeline views over monthly columns: records become bars driven by a start and end date column, with automatic milestones (start = end), an optional progress overlay, category coloring and a today marker. Multiple roadmaps can be defined in the `roadmap` configuration, each appearing as its own sidebar item.
 - **Saved views** — read-only pages backed by PostgreSQL views, ordinary or materialized, discoverable across multiple schemas and configured from the admin panel.
 - **Printable reports** — configurable print templates with paginated output, defined in the `print` configuration and rendered by `print.php`.
 - **ETL module** — scheduled data transfers from MySQL, MariaDB, PostgreSQL or SQLite sources — or a CSV file fetched over FTP/FTPS — into PostgreSQL targets, with multi-step flows, run logs, and a cron worker.
 - **Data anonymization** — GDPR-oriented column scrubbing with preview, scheduled runs, and an audit trail in `spw_anonymization_log`.
 - **Bulk operations** — mass edit, CSV import, and search-and-replace data cleanup, all with preview before applying.
 - **Outbound webhooks (n8n / Make / custom)** — any automation rule can POST/PUT/PATCH/DELETE a JSON payload to an external endpoint on record create, update or delete. The body carries the rule, event and record (mapped fields or the whole row, plus the pre-change state on update and delete). Requests can be signed with an HMAC SHA-256 `X-Sparrow-Signature` header and/or carry custom headers for the receiver's own auth; signing secrets and header values are stored encrypted. Failed sends optionally retry on timeouts and 5xx/429. Point the URL at an n8n Webhook node and no plugin is needed on either side.
-- *(Planned)* Inbound REST API with token authentication, so external systems can read and write OpenSparrow data. Today every endpoint is session-authenticated, so integrations are outbound-only.
+- **External API (read-only)** — expose table data to external services through API keys managed from **System → API**. Each API binds one table, a chosen set of columns, fixed server-side filters and a row limit; the endpoint (`api/external.php`) accepts nothing from the caller except the key (`Authorization: Bearer`). Keys are stored encrypted, requests are logged to `spw_external_api_log` with usage statistics in the panel. Write access for external systems is planned; today integrations are read-only inbound plus the outbound webhooks above.
 
 ---
 
@@ -213,7 +214,7 @@ The wizard walks you through four steps:
    > **Destructive option:** the third checkbox, *Drop and recreate this schema*, runs `DROP SCHEMA … CASCADE`. Everything in that schema is permanently deleted, including tables the wizard did not create. Leave it unticked unless you are deliberately wiping a scratch installation.
 4. **Review & Initialize** — confirm settings and click **Initialize System Tables**. The wizard creates all `spw_*` tables, seeds the `admin` account with a **randomly generated password displayed once on this screen** — copy it before leaving the page — and writes `config/database.json`.
 
-After initialization you are redirected to `/login`. Sign in as `admin` with the password shown in the wizard, then go to **System → Users → Change pwd** and set your own password. If you want a ready-made example application (companies, contacts, deals, activities, dashboards, board, printouts) to explore, install the CRM demo afterwards from **Admin → Demo** — each part is optional there.
+After initialization you are redirected to `/login`. Sign in as `admin` with the password shown in the wizard, then go to **System → Users → Change pwd** and set your own password. If you want a ready-made example application (companies, contacts, deals, activities, dashboards, board, roadmap, printouts) to explore, install the CRM demo afterwards from **System → Demo Systems** — each part (demo users, RAG documents, seeded audit history) is optional there.
 
 > Once `config/database.json` exists, the setup wizard is permanently inaccessible — all entry points redirect to `/login` instead.
 
@@ -227,12 +228,12 @@ All accounts are stored in `spw_users` and managed from **System → Users**. Th
 | `editor` | Blocked | Full CRUD |
 | `viewer` | Blocked | Read-only |
 
-Roles decide *what* an account may do. The **Access** tab decides *where* it may do it: pick a user and tick the tables, views, printouts, boards and workflows they may reach on the frontend. The groups are independent, and leaving a group empty means **no restriction** for that group — not "no access". To cut an account off entirely, deactivate it rather than clearing its checkboxes. Admin accounts are never restricted and are not listed there. The selection is stored in the `user_table_access` configuration key and takes effect on the user's next request, without them logging out.
+Roles decide *what* an account may do. The **Access** tab decides *where* it may do it: pick a user and tick the tables, views, printouts, boards, roadmaps and workflows they may reach on the frontend. The groups are independent, and leaving a group empty means **no restriction** for that group — not "no access". To cut an account off entirely, deactivate it rather than clearing its checkboxes. Admin accounts are never restricted and are not listed there. The selection is stored in the `user_table_access` configuration key and takes effect on the user's next request, without them logging out.
 
-Granting a board or a workflow does not grant the tables it uses — both ticks have to hold, so a board whose table you did not grant is not listed, and a workflow is dropped when any of its steps targets a table the user cannot reach. Hidden tables are the one automatic case: they have no menu entry and no grid, so they cannot be ticked and are granted along with the table whose subtable they are.
+Granting a board, a roadmap or a workflow does not grant the tables it uses — both ticks have to hold, so a board or roadmap whose table you did not grant is not listed, and a workflow is dropped when any of its steps targets a table the user cannot reach. Hidden tables are the one automatic case: they have no menu entry and no grid, so they cannot be ticked and are granted along with the table whose subtable they are.
 
 - **Password reset:** click **Change pwd** next to any user. For your own account the current password is required; for other accounts the admin can override without it.
-- Re-run **System → Migrations → Initialize System Tables** after every upgrade — it uses `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE … ADD COLUMN IF NOT EXISTS` and also migrates legacy roles (`full → editor`, `readonly → viewer`).
+- Re-run **System → Migrations → Apply Pending Migrations** after every upgrade — it uses `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE … ADD COLUMN IF NOT EXISTS`. (Older docs and some in-app messages still call this "Initialize System Tables" — it is the same `init_db` action.)
 
 ---
 
@@ -242,7 +243,7 @@ Granting a board or a workflow does not grant the tables it uses — both ticks 
 2. **Before uploading** — export your configuration from the admin panel: **Configuration → Export config**. Keep this backup safe.
 3. Extract the ZIP and upload all files to your server via FTP, overwriting existing files.
 4. Your `config/database.json` is **not included** in the ZIP and your schema, dashboards, and all other settings live in the database — configuration is preserved automatically.
-5. Log in to `/admin` → **System → Migrations** → **Initialize System Tables** to apply any new system table migrations. Release 3.3 ships two: `3.3_user_contact` (adds nullable first name / last name / email / phone columns to `spw_users`) and `3.3_clickstats` (creates the `spw_clickstats` table backing the optional Click Statistics module). See `config/migrations.json` for the full per-release history.
+5. Log in to `/admin` → **System → Migrations** → **Apply Pending Migrations** to apply any new system table migrations. See `config/migrations.json` for the full per-release history; recent database migrations include `3.3_user_contact` (nullable first name / last name / email / phone columns on `spw_users`), `3.3_clickstats` (the `spw_clickstats` table backing the optional Click Statistics module) and `3.6_external_api_log` (the request log for the External API module).
 6. Check **System → Health Check** — the version shown should match the release tag you just uploaded.
 
 ---
@@ -364,7 +365,7 @@ All web-served files below live under `public/` (the document root).
 - **`api/schema.php`** — filtered schema endpoint for the frontend (hides backend-only structure).
 - **`api/fk.php`** — proxy endpoint for foreign-key dropdowns (never exposes internal relations).
 - **`api/rag.php`** — RAG knowledge base endpoint (`?action=tags` GET, `?action=query` POST); consumed by the slide-in "Ask AI" panel (`assets/js/agent-panel.js`).
-- **Remaining `api/` endpoints** — `comments.php`, `notes.php`, `owners.php`, `files.php`, `notifications.php`, `views.php`, `print.php`, `mass_edit.php`, `data_cleanup.php`: specialized backends for the corresponding modules. Everything else goes through `api.php`.
+- **Remaining `api/` endpoints** — `comments.php`, `notes.php`, `owners.php`, `files.php`, `notifications.php`, `views.php`, `print.php`, `mass_edit.php`, `data_cleanup.php`, `clickstats.php` (Click Statistics collector) and `external.php` (key-authenticated read-only External API): specialized backends for the corresponding modules. Everything else goes through `api.php`.
 - **`Dockerfile` / `docker-compose.yml`** — containerized deployment (dev stack). **`Dockerfile.standalone`** — single-container image (Nginx + PHP-FPM) used by Render / Railway. **`docker-compose-production.yml`** — hardened production stack.
 - **`render.yaml` / `railway.toml`** — one-click cloud deploy configs.
 - **`phpcs.xml`** — PSR-12 ruleset.
@@ -393,7 +394,7 @@ Configuration lives in `config/database.json`. The web document root is the `pub
 
 Testing tooling is **dev-only** — none of it is needed to run the application.
 
-**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer, the admin API guards (CSRF / demo-mode / migration registry) and the language-file contract; no database required. **427 tests, 1067 assertions** across 36 files under `Tests\`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
+**PHPUnit — unit tests.** Pure unit tests covering the OOP `src/` layer, the admin API guards (CSRF / demo-mode / migration registry) and the language-file contract; no database required. **471 tests, 1180 assertions** across 40 files under `tests/`. CI runs on PHP 8.4, 8.5 via `.github/workflows/php-tests.yml`.
 
 ```bash
 composer install          # once
