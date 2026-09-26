@@ -406,7 +406,11 @@
         "select_calendar": "Calendar",
         "no_calendars_configured": "No calendars configured.",
         "delete_event": "Delete event",
-        "delete_confirm": "Delete this event?"
+        "delete_confirm": "Delete this event?",
+        "view_month": "Month",
+        "view_week": "Week",
+        "view_toggle": "Calendar view",
+        "all_day": "All day"
     },
     "board": {
         "title": "Board",

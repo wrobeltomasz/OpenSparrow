@@ -406,7 +406,11 @@
         "select_calendar": "Calendario",
         "no_calendars_configured": "Nessun calendario configurato.",
         "delete_event": "Elimina evento",
-        "delete_confirm": "Eliminare questo evento?"
+        "delete_confirm": "Eliminare questo evento?",
+        "view_month": "Mese",
+        "view_week": "Settimana",
+        "view_toggle": "Vista del calendario",
+        "all_day": "Tutto il giorno"
     },
     "board": {
         "title": "Bacheca",

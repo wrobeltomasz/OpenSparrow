@@ -406,7 +406,11 @@
         "select_calendar": "Kalender",
         "no_calendars_configured": "Keine Kalender konfiguriert.",
         "delete_event": "Termin löschen",
-        "delete_confirm": "Diesen Termin löschen?"
+        "delete_confirm": "Diesen Termin löschen?",
+        "view_month": "Monat",
+        "view_week": "Woche",
+        "view_toggle": "Kalenderansicht",
+        "all_day": "Ganztägig"
     },
     "board": {
         "title": "Board",

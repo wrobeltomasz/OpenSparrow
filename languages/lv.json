@@ -406,7 +406,11 @@
         "select_calendar": "Kalendārs",
         "no_calendars_configured": "Nav konfigurēts neviens kalendārs.",
         "delete_event": "Dzēst notikumu",
-        "delete_confirm": "Dzēst šo notikumu?"
+        "delete_confirm": "Dzēst šo notikumu?",
+        "view_month": "Mēnesis",
+        "view_week": "Nedēļa",
+        "view_toggle": "Kalendāra skats",
+        "all_day": "Visu dienu"
     },
     "board": {
         "title": "Dēlis",

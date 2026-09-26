@@ -31,9 +31,12 @@ $headerControls = os_header_search('calendarSearch')
     . os_header_clear_filters();
 
 $calendarLabels = [
-    'title' => 'Month Year',
-    'prev'  => t('calendar.prev'),
-    'next'  => t('calendar.next'),
+    'title'      => 'Month Year',
+    'prev'       => t('calendar.prev'),
+    'next'       => t('calendar.next'),
+    'view_month' => t('calendar.view_month'),
+    'view_week'  => t('calendar.view_week'),
+    'view_toggle' => t('calendar.view_toggle'),
 ];
 
 ob_start();

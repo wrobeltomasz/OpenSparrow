@@ -406,7 +406,11 @@
         "select_calendar": "Kalender",
         "no_calendars_configured": "Ingen kalendere konfigureret.",
         "delete_event": "Slet begivenhed",
-        "delete_confirm": "Slet denne begivenhed?"
+        "delete_confirm": "Slet denne begivenhed?",
+        "view_month": "Måned",
+        "view_week": "Uge",
+        "view_toggle": "Kalendervisning",
+        "all_day": "Hele dagen"
     },
     "board": {
         "title": "Tavle",

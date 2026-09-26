@@ -410,7 +410,11 @@
         "select_calendar": "Calendar",
         "no_calendars_configured": "Niciun calendar configurat.",
         "delete_event": "Șterge evenimentul",
-        "delete_confirm": "Ștergeți acest eveniment?"
+        "delete_confirm": "Ștergeți acest eveniment?",
+        "view_month": "Lună",
+        "view_week": "Săptămână",
+        "view_toggle": "Vizualizare calendar",
+        "all_day": "Toată ziua"
     },
     "board": {
         "title": "Panou",

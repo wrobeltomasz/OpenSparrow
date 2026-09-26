@@ -406,7 +406,11 @@
         "select_calendar": "Calendrier",
         "no_calendars_configured": "Aucun calendrier configuré.",
         "delete_event": "Supprimer l'événement",
-        "delete_confirm": "Supprimer cet événement ?"
+        "delete_confirm": "Supprimer cet événement ?",
+        "view_month": "Mois",
+        "view_week": "Semaine",
+        "view_toggle": "Vue du calendrier",
+        "all_day": "Toute la journée"
     },
     "board": {
         "title": "Tableau",

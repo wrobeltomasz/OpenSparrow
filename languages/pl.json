@@ -410,7 +410,11 @@
         "select_calendar": "Kalendarz",
         "no_calendars_configured": "Brak skonfigurowanych kalendarzy.",
         "delete_event": "Usuń wydarzenie",
-        "delete_confirm": "Usunąć to wydarzenie?"
+        "delete_confirm": "Usunąć to wydarzenie?",
+        "view_month": "Miesiąc",
+        "view_week": "Tydzień",
+        "view_toggle": "Widok kalendarza",
+        "all_day": "Cały dzień"
     },
     "board": {
         "title": "Tablica",

@@ -23,24 +23,9 @@ function frontapi_calendar(FrontApiContext $context): never
         throw ResponseException::encoded(['events' => []]);
     }
 
-    $requestedYear  = filter_var(
-        $_GET['year'] ?? date('Y'),
-        FILTER_VALIDATE_INT,
-        ['options' => ['min_range' => 1, 'max_range' => 9999]]
-    );
-    $requestedMonth = filter_var(
-        $_GET['month'] ?? date('n'),
-        FILTER_VALIDATE_INT,
-        ['options' => ['min_range' => 1, 'max_range' => 12]]
-    );
-    if ($requestedYear  === false) {
-        $requestedYear  = (int)date('Y');
-    }
-    if ($requestedMonth === false) {
-        $requestedMonth = (int)date('n');
-    }
-    $dateFrom = sprintf('%04d-%02d-01', $requestedYear, $requestedMonth);
-    $dateTo   = date('Y-m-t', mktime(0, 0, 0, $requestedMonth, 1, $requestedYear));
+    $range = calendar_read_range();
+    $dateFrom = $range['from'];
+    $dateTo   = $range['to'];
 
     $events = [];
     foreach ($calendar['sources'] ?? [] as $sourceEntry) {
@@ -103,6 +88,8 @@ function frontapi_calendar(FrontApiContext $context): never
                 pg_free_result($result);
                 $rows = map_fk_display($schema, $tableConfig, $rows, $conn);
                 foreach ($rows as $row) {
+                    $rawDate = (string) ($row[$dateColumn] ?? '');
+                    $hasTime = strlen($rawDate) > 10;
                     $events[] = [
                         'id' => $row[$idColumn],
                         'table' => $table,
@@ -110,7 +97,9 @@ function frontapi_calendar(FrontApiContext $context): never
                         'subtitle' => $subtitleColumn !== ''
                             ? (string)($row[$subtitleColumn . '__display'] ?? $row[$subtitleColumn] ?? '')
                             : '',
-                        'date' => substr($row[$dateColumn], 0, 10),
+                        'date' => substr($rawDate, 0, 10),
+                        'time' => $hasTime ? substr($rawDate, 11, 5) : '',
+                        'allDay' => !$hasTime,
                         'color' => $color,
                         'icon' => $sourceEntry['icon'] ?? null,
                         'rowData' => $row
@@ -127,6 +116,52 @@ function frontapi_calendar(FrontApiContext $context): never
         'events' => $events
     ]);
     throw ResponseException::sent();
+}
+
+function calendar_valid_date(string $value): bool
+{
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1
+        && checkdate((int)substr($value, 5, 2), (int)substr($value, 8, 2), (int)substr($value, 0, 4));
+}
+
+function calendar_read_range(): array
+{
+    $rangeFrom = trim((string)($_GET['from'] ?? ''));
+    $rangeTo   = trim((string)($_GET['to'] ?? ''));
+
+    if ($rangeFrom === '' && $rangeTo === '') {
+        $requestedYear  = filter_var(
+            $_GET['year'] ?? date('Y'),
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1, 'max_range' => 9999]]
+        );
+        $requestedMonth = filter_var(
+            $_GET['month'] ?? date('n'),
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1, 'max_range' => 12]]
+        );
+        if ($requestedYear  === false) {
+            $requestedYear  = (int)date('Y');
+        }
+        if ($requestedMonth === false) {
+            $requestedMonth = (int)date('n');
+        }
+        return [
+            'from' => sprintf('%04d-%02d-01', $requestedYear, $requestedMonth),
+            'to'   => date('Y-m-t', mktime(0, 0, 0, $requestedMonth, 1, $requestedYear)),
+        ];
+    }
+
+    if (!calendar_valid_date($rangeFrom) || !calendar_valid_date($rangeTo)) {
+        throw new BadRequestException('Invalid date range');
+    }
+
+    $spanDays = (int)floor((strtotime($rangeTo) - strtotime($rangeFrom)) / 86400);
+    if ($spanDays < 0 || $spanDays > 62) {
+        throw new BadRequestException('Invalid date range');
+    }
+
+    return ['from' => $rangeFrom, 'to' => $rangeTo];
 }
 
 function frontapi_calendar_move_event(FrontApiWriteContext $context): never
@@ -167,6 +202,13 @@ function frontapi_calendar_move_event(FrontApiWriteContext $context): never
         throw new BadRequestException('Invalid date format');
     }
 
+    $newTime = trim((string)($body['newTime'] ?? ''));
+    $timeIsValid = $newTime === ''
+        || (preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $newTime));
+    if (!$timeIsValid) {
+        throw new BadRequestException('Invalid time format');
+    }
+
     $dateColumn = '';
     foreach ($sources as $source) {
         if ($source['table'] === $table) {
@@ -183,14 +225,41 @@ function frontapi_calendar_move_event(FrontApiWriteContext $context): never
         throw new BadRequestException('Invalid column name');
     }
 
-    $sql = sprintf(
-        'UPDATE %s.%s SET %s = $1 WHERE %s = $2',
-        pg_ident($schemaName),
-        pg_ident($table),
-        pg_ident($dateColumn),
-        pg_ident($idColumn)
-    );
-    $result = @pg_query_params($conn, $sql, [$newDate, $id]);
+    $columnType = strtolower(trim($tableConfig['columns'][$dateColumn]['type'] ?? ''));
+    $isTimestampColumn = str_starts_with($columnType, 'timestamp');
+
+    if ($newTime !== '' && !$isTimestampColumn) {
+        throw new BadRequestException('Time change not supported for this column');
+    }
+
+    if ($isTimestampColumn) {
+        $assignmentExpression = $newTime !== ''
+            ? '$1::date + $2::time'
+            : '$1::date + coalesce(' . pg_ident($dateColumn) . "::time, '00:00')";
+        $timeParameters = $newTime !== ''
+            ? [$newDate, $newTime, $id]
+            : [$newDate, $id];
+        $sql = sprintf(
+            'UPDATE %s.%s SET %s = %s WHERE %s = $%d AND %s IS NOT NULL',
+            pg_ident($schemaName),
+            pg_ident($table),
+            pg_ident($dateColumn),
+            $assignmentExpression,
+            pg_ident($idColumn),
+            count($timeParameters),
+            pg_ident($dateColumn)
+        );
+    } else {
+        $timeParameters = [$newDate, $id];
+        $sql = sprintf(
+            'UPDATE %s.%s SET %s = $1 WHERE %s = $2',
+            pg_ident($schemaName),
+            pg_ident($table),
+            pg_ident($dateColumn),
+            pg_ident($idColumn)
+        );
+    }
+    $result = @pg_query_params($conn, $sql, $timeParameters);
     if (!$result) {
         http_response_code(500);
         echo json_encode(['error' => 'Database error']);

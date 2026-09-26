@@ -269,4 +269,25 @@
     .dash-widget[data-w="3"] {
         grid-column: span 1;
     }
+
+    .cal-week-head,
+    .cal-week-allday,
+    .cal-week-body {
+        grid-template-columns: 44px repeat(7, 110px);
+        min-width: 824px;
+    }
+
+    .cal-week {
+        overflow-x: auto;
+    }
+
+    .cal-week-body {
+        max-height: 60vh;
+    }
+
+    .calendar-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
 }

@@ -410,7 +410,11 @@
         "select_calendar": "Kalendář",
         "no_calendars_configured": "Nejsou nakonfigurovány žádné kalendáře.",
         "delete_event": "Smazat událost",
-        "delete_confirm": "Smazat tuto událost?"
+        "delete_confirm": "Smazat tuto událost?",
+        "view_month": "Měsíc",
+        "view_week": "Týden",
+        "view_toggle": "Zobrazení kalendáře",
+        "all_day": "Celý den"
     },
     "board": {
         "title": "Nástěnka",

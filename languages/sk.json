@@ -410,7 +410,11 @@
         "select_calendar": "Kalendár",
         "no_calendars_configured": "Nie sú nakonfigurované žiadne kalendáre.",
         "delete_event": "Odstrániť udalosť",
-        "delete_confirm": "Odstrániť túto udalosť?"
+        "delete_confirm": "Odstrániť túto udalosť?",
+        "view_month": "Mesiac",
+        "view_week": "Týždeň",
+        "view_toggle": "Zobrazenie kalendára",
+        "all_day": "Celý deň"
     },
     "board": {
         "title": "Nástenka",

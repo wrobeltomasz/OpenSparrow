@@ -406,7 +406,11 @@
         "select_calendar": "Kalender",
         "no_calendars_configured": "Inga kalendrar konfigurerade.",
         "delete_event": "Ta bort händelse",
-        "delete_confirm": "Ta bort den här händelsen?"
+        "delete_confirm": "Ta bort den här händelsen?",
+        "view_month": "Månad",
+        "view_week": "Vecka",
+        "view_toggle": "Kalendervy",
+        "all_day": "Hela dagen"
     },
     "board": {
         "title": "Tavla",

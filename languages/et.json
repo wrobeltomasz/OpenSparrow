@@ -406,7 +406,11 @@
         "select_calendar": "Kalender",
         "no_calendars_configured": "Kalendreid pole seadistatud.",
         "delete_event": "Kustuta sündmus",
-        "delete_confirm": "Kas kustutada see sündmus?"
+        "delete_confirm": "Kas kustutada see sündmus?",
+        "view_month": "Kuu",
+        "view_week": "Nädal",
+        "view_toggle": "Kalendrivaade",
+        "all_day": "Kogu päev"
     },
     "board": {
         "title": "Tahvel",

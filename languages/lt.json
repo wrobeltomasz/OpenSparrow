@@ -410,7 +410,11 @@
         "select_calendar": "Kalendorius",
         "no_calendars_configured": "Nesukonfigūruotas nė vienas kalendorius.",
         "delete_event": "Ištrinti įvykį",
-        "delete_confirm": "Ištrinti šį įvykį?"
+        "delete_confirm": "Ištrinti šį įvykį?",
+        "view_month": "Mėnuo",
+        "view_week": "Savaitė",
+        "view_toggle": "Kalendoriaus rodinys",
+        "all_day": "Visą dieną"
     },
     "board": {
         "title": "Lenta",

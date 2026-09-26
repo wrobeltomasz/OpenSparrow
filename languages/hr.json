@@ -410,7 +410,11 @@
         "select_calendar": "Kalendar",
         "no_calendars_configured": "Nema konfiguriranih kalendara.",
         "delete_event": "Izbriši događaj",
-        "delete_confirm": "Izbrisati ovaj događaj?"
+        "delete_confirm": "Izbrisati ovaj događaj?",
+        "view_month": "Mjesec",
+        "view_week": "Tjedan",
+        "view_toggle": "Prikaz kalendara",
+        "all_day": "Cijeli dan"
     },
     "board": {
         "title": "Ploča",

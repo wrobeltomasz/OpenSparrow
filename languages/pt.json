@@ -406,7 +406,11 @@
         "select_calendar": "Calendário",
         "no_calendars_configured": "Nenhum calendário configurado.",
         "delete_event": "Eliminar evento",
-        "delete_confirm": "Eliminar este evento?"
+        "delete_confirm": "Eliminar este evento?",
+        "view_month": "Mês",
+        "view_week": "Semana",
+        "view_toggle": "Vista do calendário",
+        "all_day": "Todo o dia"
     },
     "board": {
         "title": "Quadro",

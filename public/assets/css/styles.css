@@ -1843,6 +1843,167 @@ header .dash-filter-label {
   font-weight: 700;
 }
 
+.calendar-view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--panel);
+}
+.calendar-view-toggle button {
+  padding: 5px 15px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--text);
+}
+.calendar-view-toggle button.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-week {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  background: var(--border-light);
+  overflow: hidden;
+}
+.calendar-grid.week-mode {
+  display: block;
+  background: transparent;
+  border: none;
+}
+
+.cal-week-head {
+  display: grid;
+  grid-template-columns: 56px repeat(7, minmax(110px, 1fr));
+  background: var(--accent-mid);
+  border-bottom: 1px solid var(--border-light);
+}
+.cal-week-gutter {
+  background: var(--accent-mid);
+  color: var(--accent-dark);
+}
+.cal-week-day {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 4px;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+.cal-week-dayname {
+  font-size: 12px;
+}
+.cal-week-daynum {
+  font-size: 14px;
+}
+.cal-week-day.today .cal-week-daynum {
+  color: #fff;
+  background: var(--accent);
+  border-radius: 50%;
+  min-width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+}
+
+.cal-week-allday {
+  display: grid;
+  grid-template-columns: 56px repeat(7, minmax(110px, 1fr));
+  background: var(--panel);
+  border-bottom: 1px solid var(--border-light);
+}
+.cal-week-allday-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  padding: 4px;
+}
+.cal-week-allday-cell {
+  position: relative;
+  min-height: 44px;
+  padding: 3px;
+  background: #fff;
+  border-left: 1px solid var(--border-light);
+}
+.cal-week-allday-cell.today {
+  background: var(--accent-light);
+}
+.cal-week-allday-cell .calendar-event {
+  margin-bottom: 2px;
+}
+
+.cal-week-body {
+  display: grid;
+  grid-template-columns: 56px repeat(7, minmax(110px, 1fr));
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+  position: relative;
+}
+.cal-week-hours {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--border-light);
+}
+.cal-week-hour {
+  height: 48px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: var(--muted);
+  box-sizing: border-box;
+}
+.cal-week-col {
+  position: relative;
+  background: #fff;
+  border-left: 1px solid var(--border-light);
+}
+.cal-week-col.today {
+  background: var(--accent-light);
+}
+.cal-week-slot {
+  height: 48px;
+  border-bottom: 1px solid var(--border-light);
+}
+.cal-week-slot:nth-of-type(even) {
+  border-bottom-style: dashed;
+}
+.cal-week-slot.drop-target {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-light);
+}
+
+.cal-week-event {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  z-index: 2;
+}
+.calendar-event-time {
+  font-weight: 700;
+  margin-right: 4px;
+  opacity: 0.9;
+}
+
 .cal-modal-backdrop {
   position: fixed;
   inset: 0;

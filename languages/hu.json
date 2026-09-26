@@ -406,7 +406,11 @@
         "select_calendar": "Naptár",
         "no_calendars_configured": "Nincs beállított naptár.",
         "delete_event": "Esemény törlése",
-        "delete_confirm": "Törli ezt az eseményt?"
+        "delete_confirm": "Törli ezt az eseményt?",
+        "view_month": "Hónap",
+        "view_week": "Hét",
+        "view_toggle": "Naptárnézet",
+        "all_day": "Egész nap"
     },
     "board": {
         "title": "Tábla",
