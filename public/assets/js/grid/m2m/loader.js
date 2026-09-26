@@ -16,6 +16,14 @@ export function clearM2mStore() {
     store.clear();
 }
 
+export function setM2mItems(rowId, m2mIndex, labels) {
+    store.set(`${state.currentTable}:${rowId}:${m2mIndex}`, labels);
+}
+
+export function renderM2mChips(td, items) {
+    renderChips(td, items);
+}
+
 export async function loadM2mColumns(pageRows, schema) {
     const m2mList = schema.tables[state.currentTable]?.many_to_many;
     if (!m2mList?.length || !pageRows.length) return;

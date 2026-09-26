@@ -31,6 +31,7 @@ final class FrontApiController
         'board'           => ['board', 'frontapi_board'],
         'roadmap'         => ['roadmap', 'frontapi_roadmap'],
         'm2m_rows'        => ['m2m', 'frontapi_m2m_rows'],
+        'm2m_options'     => ['m2m', 'frontapi_m2m_options'],
         'image_rows'      => ['m2m', 'frontapi_image_rows'],
         'list'            => ['list', 'frontapi_list'],
         'subtable_counts' => ['list', 'frontapi_subtable_counts'],
@@ -159,6 +160,13 @@ final class FrontApiController
                         fn(): bool => $method === 'POST' && isset($body['data']),
                         'record',
                         'frontapi_record_insert',
+                    ],
+                    [
+                        fn(): bool => $method === 'POST'
+                            && ($body['api'] ?? '') === 'm2m_sync'
+                            && isset($body['id'], $body['m2m_index'], $body['ids']),
+                        'record',
+                        'frontapi_record_m2m_sync',
                     ],
                     [
                         fn(): bool => $method === 'POST'

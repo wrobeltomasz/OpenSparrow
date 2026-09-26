@@ -91,7 +91,7 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
         const m2mList = schema.tables[state.currentTable]?.many_to_many || [];
         for (let m2mIndex = 0; m2mIndex < m2mList.length; m2mIndex++) {
             const tdM2m = document.createElement('td');
-            tdM2m.className = 'td-m2m';
+            tdM2m.className = isReadOnly ? 'td-m2m' : 'td-m2m is-editable';
             tdM2m.dataset.m2mRowId = String(row['id']);
             tdM2m.dataset.m2mIndex = String(m2mIndex);
             tdM2m.dataset.m2mLabel = m2mList[m2mIndex].label || 'Related';

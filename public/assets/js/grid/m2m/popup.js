@@ -7,11 +7,22 @@ import { getM2mItems } from './loader.js';
 import { createHoverPopup } from '../hover-popup.js';
 
 let popup = null;
+let suppressed = false;
+
+export function suppressM2mPopup() {
+    suppressed = true;
+    popup.el.hidden = true;
+}
+
+export function resumeM2mPopup() {
+    suppressed = false;
+}
 
 export function initM2mPopup() {
     popup = createHoverPopup({ className: 'm2m-popup', width: 260, verticalThreshold: 160 });
 
     document.addEventListener('mouseover', event => {
+        if (suppressed) return;
         const td = event.target.closest('[data-m2m-row-id]');
         if (!td) return;
 

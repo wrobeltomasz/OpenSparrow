@@ -15,6 +15,7 @@ import { loadSubtableCounts } from './body/subtable-counts.js';
 import { initPreviewPopup, clearPreviewCache } from './comments/preview-popup.js';
 import { loadM2mColumns, clearM2mStore } from './m2m/loader.js';
 import { initM2mPopup } from './m2m/popup.js';
+import { initM2mEditor } from './m2m/editor.js';
 import { loadImageColumn, clearImageStore } from './images/loader.js';
 import { initImagePopup } from './images/popup.js';
 import { computeVirtual } from './cells/virtual-cell.js';
@@ -216,5 +217,6 @@ export async function serverSearchRows(schema, search) {
 document.addEventListener('DOMContentLoaded', () => {
     initPreviewPopup();
     initM2mPopup();
+    initM2mEditor();
     initImagePopup();
 });

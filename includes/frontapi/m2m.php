@@ -8,6 +8,43 @@
 declare(strict_types=1);
 
 use App\Exception\ResponseException;
+use App\Service\M2MService;
+
+function frontapi_m2m_options(FrontApiContext $context): never
+{
+    $schema = $context->schema;
+    $table  = $_GET['table'] ?? '';
+    $m2mIndex = (int)($_GET['m2m_index'] ?? 0);
+    $rowId = (int)($_GET['row_id'] ?? 0);
+    if (!isset($schema['tables'][$table])) {
+        throw ResponseException::encoded(['options' => [], 'selected' => []]);
+    }
+    require_table_access($table);
+
+    if ($rowId <= 0) {
+        throw ResponseException::encoded(['options' => [], 'selected' => []]);
+    }
+
+    $tableConfig = $schema['tables'][$table];
+    if (!empty($tableConfig['owner_restricted'])) {
+        $visibleIds = filter_visible_ids($context->conn, $tableConfig, $table, [$rowId], $context->userId);
+        if (empty($visibleIds)) {
+            throw ResponseException::encoded(['options' => [], 'selected' => []]);
+        }
+    }
+
+    $m2mList = $schema['tables'][$table]['many_to_many'] ?? [];
+    if (!isset($m2mList[$m2mIndex])) {
+        throw ResponseException::encoded(['options' => [], 'selected' => []]);
+    }
+
+    $m2mService = new M2MService($context->conn);
+    $config   = $m2mList[$m2mIndex];
+    $options  = $m2mService->options($config, $schema);
+    $selected = $m2mService->selected($config, $rowId, $schema);
+
+    throw ResponseException::encoded(['options' => $options, 'selected' => $selected]);
+}
 
 function frontapi_m2m_rows(FrontApiContext $context): never
 {

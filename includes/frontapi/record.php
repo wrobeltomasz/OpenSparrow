@@ -9,6 +9,55 @@ declare(strict_types=1);
 
 use App\Exception\BadRequestException;
 use App\Exception\ResponseException;
+use App\Service\M2MService;
+
+function frontapi_record_m2m_sync(FrontApiWriteContext $context): never
+{
+    $conn       = $context->conn;
+    $body       = $context->body;
+    $table      = $context->table;
+    $tableConfig   = $context->tableConfig;
+    $schemaName = $context->schemaName;
+    $idColumn   = $context->idColumn;
+    $userId     = $context->userId;
+
+    $recordId = (int)($body['id']);
+    if ($recordId <= 0) {
+        throw new BadRequestException('Invalid record ID');
+    }
+
+    $m2mIndex = (int)($body['m2m_index']);
+    $m2mList = $tableConfig['many_to_many'] ?? [];
+    if (!isset($m2mList[$m2mIndex])) {
+        throw new BadRequestException('Invalid relation index');
+    }
+
+    check_record_ownership($conn, $tableConfig, $table, $recordId, $userId, 'Forbidden: you do not own this record.');
+
+    $selectedIds = [];
+    foreach ((array)($body['ids'] ?? []) as $otherId) {
+        if (ctype_digit((string) $otherId)) {
+            $selectedIds[] = (string) $otherId;
+        }
+    }
+
+    $oldRecord = auto_capture_old_record($conn, $schemaName, $table, $recordId);
+
+    $m2mService = new M2MService($conn);
+    $synced = $m2mService->sync($m2mList[$m2mIndex], $recordId, $selectedIds, $context->schema);
+    if (!$synced) {
+        error_log('[api][m2m_sync] sync failed');
+        http_response_code(422);
+        throw ResponseException::encoded(['error' => 'Database error']);
+    }
+
+    $logId = log_user_action($conn, $userId, 'UPDATE', $table, $recordId);
+    if (RECORD_SNAPSHOTS_ENABLED && $logId !== null) {
+        snapshot_record($conn, $schemaName, $table, $recordId, $logId);
+    }
+    evaluate_automation_rules($conn, $schemaName, $table, $recordId, 'update', $userId, $oldRecord);
+    throw ResponseException::encoded(['ok' => true]);
+}
 
 function frontapi_record_patch(FrontApiWriteContext $context): never
 {
