@@ -1044,7 +1044,8 @@ thead th.col-hover { background: var(--row-col-hover); }
 tbody tr:hover td.cell-hover:not(.cell-error):not(.cell-success),
 tbody td.col-hover.cell-hover:not(.cell-error):not(.cell-success) { background: var(--cell-hover) !important; }
 
-#grid thead th {
+#grid thead th,
+#filesGrid thead th {
   background: var(--bg);
   color: var(--muted);
   border: 1px solid var(--border-light);
@@ -1055,16 +1056,23 @@ tbody td.col-hover.cell-hover:not(.cell-error):not(.cell-success) { background: 
 
 #grid thead th.dragging { background: var(--accent-light); }
 
-#grid tbody td {
+#grid tbody td,
+#filesGrid tbody td {
   padding: 0.3rem 0.6rem;
   border: 1px solid var(--border-light);
   border-bottom-color: var(--border);
 }
 
-#grid tbody td:first-child { padding-left: 0.6rem; }
+#grid tbody td:first-child,
+#filesGrid tbody td:first-child { padding-left: 0.6rem; }
 
-#grid tbody tr:nth-child(even) td { background: var(--panel); }
-#grid tbody tr:nth-child(even):hover td { background: var(--row-col-hover) !important; }
+#grid tbody tr:nth-child(even) td,
+#filesGrid tbody tr:nth-child(even) td { background: var(--panel); }
+#grid tbody tr:nth-child(even):hover td,
+#filesGrid tbody tr:nth-child(even):hover td { background: var(--row-col-hover) !important; }
+
+#filesGrid tbody td.f-td-empty,
+#filesGrid tbody td.f-td-error { padding: 30px; }
 
 td select,
 td input[type="date"],
@@ -3265,6 +3273,10 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
 }
 #filesSection {
   background: var(--panel);
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
@@ -3273,6 +3285,7 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
 #filesGrid {
   overflow-x: auto;
   overflow-y: auto;
+  flex-grow: 1;
   max-height: calc(100vh - var(--header-h) - 50px);
 }
 #filesGrid th[data-sort] { cursor: pointer; }
