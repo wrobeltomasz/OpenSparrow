@@ -6,7 +6,7 @@
 
 # Stray data exports — scoped to the repo root only (the storage/ tree is
 # ignored wholesale below). Avoids blanket *.txt / *.csv globs that silently
-# untracked legitimate files such as docs/rag*/*.txt and cypress fixtures.
+# untracked legitimate files such as docs/rag*/*.txt.
 /*.txt
 /*.csv
 
@@ -91,12 +91,8 @@ public/assets/img/uploads/*
 /.claude
 CLAUDE.md
 
-# Cypress — commit test files & docs, ignore generated artifacts
-cypress/screenshots/
-cypress/videos/
-cypress/downloads/
-cypress/wyniki/
-cypress/results/
+# Cypress — legacy, out of development scope; ignore the whole test tree
+/cypress/
 .cypress-cache/
 node_modules/
 
