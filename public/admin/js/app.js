@@ -40,27 +40,173 @@ let currentFile = 'overview';
 let currentItemKey = null;
 let globalSchemaObject = null;
 let isDirty = false;
+let autosaveFailed = false;
+let configVersion = 0;
+let autosaveTimer = null;
+let autosaveInFlight = false;
+let autosavePending = false;
+
+const AUTOSAVE_DELAY_MS = 1000;
+
+const autosaveAnchor = document.createElement('span');
 
 let activeSaveHandler = null;
 function setSaveHandler(handler) { activeSaveHandler = handler; }
 
 const itemPanelElement = document.getElementById('itemPanel');
 const workspaceElement = document.getElementById('editorForm');
-const buttonSave = document.getElementById('btnSave');
 const tabs = document.querySelectorAll('.admin-tab');
 
 const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization', 'clickstats', 'api']);
 
 const NON_CONFIG_SCHEMA_KEYS = new Set(['MENU_PREVIEW', 'ADD_TABLE', 'M2M_BUILDER', 'SCHEMA_MAP']);
 
+const AUTOSAVE_EXCLUDED_TABS = new Set(['docs', 'automations', 'database']);
+
+function isAutosaveEligible() {
+    if (NON_CONFIG_TABS.has(currentFile)) return false;
+    if (AUTOSAVE_EXCLUDED_TABS.has(currentFile)) return false;
+    if (currentFile === 'schema' && NON_CONFIG_SCHEMA_KEYS.has(currentItemKey)) return false;
+    return true;
+}
+
 export function markDirty() {
     if (NON_CONFIG_TABS.has(currentFile)) return;
     if (currentFile === 'schema' && NON_CONFIG_SCHEMA_KEYS.has(currentItemKey)) return;
     isDirty = true;
+    if (isAutosaveEligible()) scheduleAutosave();
 }
-export function markClean() { isDirty = false; }
+
+export function markClean() {
+    isDirty = false;
+    autosaveFailed = false;
+    cancelAutosaveTimer();
+}
+
+function cancelAutosaveTimer() {
+    if (autosaveTimer !== null) {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+    }
+}
+
+function scheduleAutosave() {
+    if (autosaveInFlight) {
+        autosavePending = true;
+        return;
+    }
+    cancelAutosaveTimer();
+    autosaveTimer = setTimeout(() => {
+        autosaveTimer = null;
+        void flushAutosave();
+    }, AUTOSAVE_DELAY_MS);
+}
+
+async function flushAutosave() {
+    if (autosaveInFlight) {
+        autosavePending = true;
+        return;
+    }
+    cancelAutosaveTimer();
+    if (!isDirty) return;
+    if (!isAutosaveEligible()) {
+        isDirty = false;
+        autosaveFailed = false;
+        return;
+    }
+    autosaveInFlight = true;
+    try {
+        await persistCurrentConfig();
+    } finally {
+        autosaveInFlight = false;
+        if (autosavePending && isDirty) {
+            autosavePending = false;
+            scheduleAutosave();
+        }
+    }
+}
+
+function mountAutosaveAnchor() {
+    if (!autosaveAnchor.parentNode) {
+        workspaceElement.parentNode.insertBefore(autosaveAnchor, workspaceElement);
+    }
+}
+
+async function persistCurrentConfig() {
+    mountAutosaveAnchor();
+    const savedFile = currentFile;
+
+    if (activeSaveHandler) {
+        try {
+            const handlerResult = await activeSaveHandler();
+            if (currentFile !== savedFile) return;
+            if (handlerResult.status === 'success') {
+                markClean();
+                showStatusPill(autosaveAnchor, handlerResult.message || 'Saved', 'success');
+            } else {
+                autosaveFailed = true;
+                showStatusPill(autosaveAnchor, 'Error saving: ' + (handlerResult.error || 'Unknown error'), 'error');
+            }
+        } catch {
+            if (currentFile === savedFile) autosaveFailed = true;
+            showStatusPill(autosaveAnchor, 'Failed to save changes.', 'error');
+        }
+        return;
+    }
+
+    if (!currentConfig) {
+        markClean();
+        return;
+    }
+
+    if (savedFile === 'workflows') {
+        const validationError = validateWorkflowsConfig(currentConfig);
+        if (validationError) {
+            autosaveFailed = true;
+            showStatusPill(autosaveAnchor, 'Not saved: ' + validationError, 'error');
+            return;
+        }
+    }
+
+    const savedVersion = configVersion;
+    try {
+        const response = await apiFetch(`api.php?action=save&file=${savedFile}`, {
+            method: 'POST',
+            body: JSON.stringify({ ...currentConfig, version: savedVersion })
+        });
+
+        if (response.status === 409) {
+            if (currentFile === savedFile) autosaveFailed = true;
+            showStatusPill(autosaveAnchor, 'Configuration was changed by someone else. Reload the page and re-apply your edits.', 'error');
+            return;
+        }
+
+        const result = await response.json();
+        if (result.status === 'success') {
+            if (currentFile === savedFile) {
+                configVersion = result.version ?? savedVersion + 1;
+                markClean();
+            }
+            showStatusPill(autosaveAnchor, `${savedFile}.json saved`, 'success');
+            if (savedFile === 'schema') getGlobalSchema({ force: true });
+        } else {
+            if (currentFile === savedFile) autosaveFailed = true;
+            showStatusPill(autosaveAnchor, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
+        }
+    } catch {
+        if (currentFile === savedFile) autosaveFailed = true;
+        showStatusPill(autosaveAnchor, 'Failed to save changes.', 'error');
+    }
+}
+
 function confirmDiscard() {
-    return !isDirty || confirm('You have unsaved changes that will be lost. Continue?');
+    if (autosaveFailed) {
+        return confirm('Some changes could not be saved (validation error or conflict). Discard them and continue?');
+    }
+    if (autosaveInFlight && isDirty) {
+        return confirm('A save is still in progress. Unsaved edits will be lost. Continue?');
+    }
+    return true;
 }
 
 export function showStatusPill(anchor, message, variant = 'success') {
@@ -107,6 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabs.forEach(tab => {
         tab.addEventListener('click', (event) => {
             if (!confirmDiscard()) return;
+            void flushAutosave();
             tabs.forEach(tabElement => tabElement.classList.remove('active'));
             event.currentTarget.classList.add('active');
             currentFile = event.currentTarget.dataset.file;
@@ -120,8 +267,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     workspaceElement.addEventListener('input', markDirty);
     workspaceElement.addEventListener('change', markDirty);
 
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') void flushAutosave();
+    });
+
     window.addEventListener('beforeunload', (event) => {
         if (isDirty) {
+            void flushAutosave();
             event.preventDefault();
             event.returnValue = '';
         }
@@ -134,7 +286,8 @@ async function fetchGlobalSchema() {
     try {
         const fetchResponse = await apiFetch('api.php?action=get&file=schema');
         if (!fetchResponse.ok) throw new Error(`HTTP ${fetchResponse.status}`);
-        globalSchemaObject = await fetchResponse.json();
+        const schemaData = await fetchResponse.json();
+        globalSchemaObject = schemaData.config ?? schemaData;
     } catch (schemaError) {
         globalSchemaObject = null;
         console.warn('Could not load global schema', schemaError);
@@ -237,7 +390,9 @@ async function loadConfigFile(fileName) {
 
     try {
         const response = await apiFetch(`api.php?action=get&file=${fileName}`);
-        currentConfig = await response.json();
+        const responseData = await response.json();
+        currentConfig = responseData.config ?? responseData;
+        configVersion = responseData.version ?? 0;
 
         if (fileName === 'schema') {
             if (!currentConfig.tables || Array.isArray(currentConfig.tables)) currentConfig.tables = {};
@@ -319,7 +474,8 @@ async function loadConfigFile(fileName) {
 
         markClean();
     } catch (error) {
-        showStatusPill(buttonSave, `Failed to load ${fileName}.json`, 'error');
+        mountAutosaveAnchor();
+        showStatusPill(autosaveAnchor, `Failed to load ${fileName}.json`, 'error');
     }
 }
 
@@ -362,7 +518,7 @@ function clearConfig() {
 
         markDirty();
         renderSidebar();
-        workspaceElement.innerHTML = `<h2>Configuration cleared. Click "Save config" to apply!</h2>`;
+        workspaceElement.innerHTML = `<h2>Configuration cleared. Changes save automatically.</h2>`;
     }
 }
 
@@ -381,7 +537,7 @@ function appendClearConfigButton(context) {
 
     const clearHelp = document.createElement('span');
     clearHelp.className = 'help-text';
-    clearHelp.textContent = 'Removes the entire configuration for this section. Press "Save config" in the top bar to apply.';
+    clearHelp.textContent = 'Removes the entire configuration for this section. The change saves automatically.';
     dangerGroup.appendChild(clearHelp);
 
     const wrap = workspaceElement.querySelector('.admin-page');
@@ -625,7 +781,6 @@ function renderSidebar() {
 
 function renderItemCards() {
     workspaceElement.innerHTML = '';
-    buttonSave.style.display = 'inline-block';
 
     if (!currentConfig) return;
 
@@ -660,7 +815,7 @@ function renderItemCards() {
             if (schemaName) syncSchemaTables(currentConfig, schemaName,
                 (added) => {
                     if (added > 0) markDirty();
-                    showStatusPill(buttonSync, `Added ${added} new table${added === 1 ? '' : 's'}. Click "Save config" to persist.`, added > 0 ? 'success' : 'info');
+                    showStatusPill(buttonSync, `Added ${added} new table${added === 1 ? '' : 's'}. The change saves automatically.`, added > 0 ? 'success' : 'info');
                     fetchGlobalSchema();
                     currentItemKey = null;
                     renderItemCards();
@@ -923,12 +1078,6 @@ function renderEditor(key, itemData, isArray) {
     workspaceElement.innerHTML = '';
     const context = { workspaceEl: workspaceElement, currentConfig, getTableOptions, getColumnOptionsForTable, getEnumColumnsForTable, getDateColumnsForTable, getNumberColumnsForTable, getColumnMeta, renderEditor, renderSidebar, setSaveHandler };
 
-    if (['overview', 'health', 'docs', 'users', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'automations', 'anonymization', 'clickstats', 'api'].includes(currentFile) || (currentFile === 'files' && key === 'MANAGER') || (currentFile === 'schema' && (key === 'MENU_PREVIEW' || key === 'ADD_TABLE' || key === 'M2M_BUILDER' || key === 'SCHEMA_MAP'))) {
-        buttonSave.style.display = 'none';
-    } else {
-        buttonSave.style.display = 'inline-block';
-    }
-
     const pageLoader = PAGE_MODULES[currentFile];
     if (pageLoader) return loadAndRender(pageLoader, context);
 
@@ -1019,7 +1168,7 @@ function renderEditor(key, itemData, isArray) {
             else currentConfig.sources.splice(key, 1);
             currentItemKey = null;
             markDirty();
-            workspaceElement.innerHTML = '<h2>Item deleted. Click "Save config" to apply.</h2>';
+            workspaceElement.innerHTML = '<h2>Item deleted. The change saves automatically.</h2>';
             renderSidebar();
         }
     };
@@ -1088,56 +1237,3 @@ function validateWorkflowsConfig(config) {
     }
     return null;
 }
-
-buttonSave.addEventListener('click', async () => {
-    if (buttonSave.disabled) return;
-    buttonSave.disabled = true;
-
-    try {
-        if (activeSaveHandler) {
-            try {
-                const result = await activeSaveHandler();
-                if (result.status === 'success') {
-                    markClean();
-                    showStatusPill(buttonSave, result.message || `${currentFile}.json saved`, 'success');
-                } else {
-                    showStatusPill(buttonSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
-                }
-            } catch {
-                showStatusPill(buttonSave, 'Failed to save changes.', 'error');
-            }
-            return;
-        }
-
-        if (!currentConfig) return;
-
-        if (currentFile === 'workflows') {
-            const error = validateWorkflowsConfig(currentConfig);
-            if (error) {
-                showStatusPill(buttonSave, error, 'error');
-                return;
-            }
-        }
-
-        try {
-            const response = await apiFetch(`api.php?action=save&file=${currentFile}`, {
-                method: 'POST',
-                body: JSON.stringify(currentConfig)
-            });
-            const result = await response.json();
-
-            if (result.status === 'success') {
-                markClean();
-                showStatusPill(buttonSave, `${currentFile}.json saved`, 'success');
-
-                if (currentFile === 'schema') getGlobalSchema({ force: true });
-            } else {
-                showStatusPill(buttonSave, 'Error saving: ' + (result.error || 'Unknown error'), 'error');
-            }
-        } catch (error) {
-            showStatusPill(buttonSave, 'Failed to save changes.', 'error');
-        }
-    } finally {
-        buttonSave.disabled = false;
-    }
-});

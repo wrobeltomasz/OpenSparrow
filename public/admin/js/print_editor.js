@@ -57,7 +57,7 @@ export function renderPrintEditor(context) {
 
     const clearHelp = document.createElement('span');
     clearHelp.className = 'help-text';
-    clearHelp.textContent = 'Removes all printout templates. Press "Save config" in the top bar to apply.';
+    clearHelp.textContent = 'Removes all printout templates. The change saves automatically.';
     dangerGroup.appendChild(clearHelp);
 
     globalBody.appendChild(dangerGroup);
@@ -749,7 +749,7 @@ export function renderPrintEditor(context) {
             params: [],
         };
         renderList();
-        setStatus(`Printout "${key}" added. Configure it below, then click Save config in the top right.`, 'ok');
+        setStatus(`Printout "${key}" added. Configure it below — changes save automatically.`, 'ok');
     });
 
     (async () => {

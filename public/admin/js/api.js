@@ -26,7 +26,8 @@ let shownKeys = {};
 async function loadSchemaTables() {
     try {
         const response = await apiFetch('api.php?action=get&file=schema');
-        const schema = await response.json();
+        const schemaData = await response.json();
+        const schema = schemaData.config ?? schemaData;
         schemaTables = Object.entries(schema?.tables ?? {})
             .filter(([, tableConfig]) => !tableConfig?.hidden)
             .map(([name, tableConfig]) => ({

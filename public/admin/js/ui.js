@@ -359,6 +359,7 @@ export function createIconPicker(key, labelText, value, onChange) {
             input.value = entry.path;
             onChange(entry.path);
             rememberRecentIcon(entry.path);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
             modal.close();
         };
 

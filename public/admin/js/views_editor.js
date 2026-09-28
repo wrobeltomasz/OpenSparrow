@@ -58,7 +58,7 @@ export function renderViewsEditor(context) {
     const headerElement = document.createElement('div');
     headerElement.innerHTML = `
         <h2 class="admin-page-title">Views Configuration</h2>
-        <p class="admin-page-desc">Sync to discover PostgreSQL views, configure display names, column colors, and drill-down. Use "Save config" in the top bar to persist.</p>
+        <p class="admin-page-desc">Sync to discover PostgreSQL views, configure display names, column colors, and drill-down. Changes save automatically.</p>
     `;
     wrap.appendChild(headerElement);
 
@@ -139,7 +139,7 @@ export function renderViewsEditor(context) {
             });
 
             markDirty();
-            setStatus(`Found ${synced.length} ${label} view(s). Edit below, then click "Save config".`, 'ok');
+            setStatus(`Found ${synced.length} ${label} view(s). Edit below — changes save automatically.`, 'ok');
             renderList();
         } catch (_) {
             setStatus('Network error during sync.', 'error');
@@ -272,7 +272,7 @@ export function renderViewsEditor(context) {
 
         const clearHelp = document.createElement('span');
         clearHelp.className = 'help-text';
-        clearHelp.textContent = 'Removes all views and resets the menu name, icon and visibility. Press "Save config" in the top bar to apply.';
+        clearHelp.textContent = 'Removes all views and resets the menu name, icon and visibility. The change saves automatically.';
         dangerGroup.appendChild(clearHelp);
 
         body.appendChild(dangerGroup);

@@ -159,9 +159,11 @@ $dbBackedFiles = [
 if ($action === 'get' && in_array($file, $allowedFiles, true)) {
     if (in_array($file, $dbBackedFiles, true)) {
         require_once __DIR__ . '/../config_store.php';
-        $config = config_get($file);
-        echo $config !== null ? json_encode($config) : json_encode(new stdClass());
-        throw ResponseException::sent();
+        $configRow = config_get_row($file);
+        throw ResponseException::encoded([
+            'config' => $configRow['value'] ?? new stdClass(),
+            'version' => $configRow['version'] ?? 0,
+        ]);
     }
     $filePath = __DIR__ . '/../../config/' . $file . '.json';
     if (file_exists($filePath)) {
@@ -196,11 +198,17 @@ if ($action === 'save' && in_array($file, $allowedFiles, true)) {
         require_once __DIR__ . '/../config_store.php';
 
         $userId = admin_user_id();
-        $result = config_save($file, $parsedData, null, $userId);
+        $expectedVersion = admin_expected_version($parsedData);
+        unset($parsedData['version']);
+        $result = config_save($file, $parsedData, $expectedVersion, $userId);
+        if ($result['status'] === 'conflict') {
+            http_response_code(409);
+            admin_err('Config was modified by someone else — reload and retry.');
+        }
         if ($result['status'] !== 'ok') {
             admin_err($result['error'] ?? 'Save failed');
         }
-        admin_ok();
+        admin_ok(['version' => $result['version']]);
     }
     if ($parsedData !== null) {
         if (!is_dir(__DIR__ . '/../../config/')) {

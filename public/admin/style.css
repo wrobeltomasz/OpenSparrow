@@ -152,21 +152,6 @@ body {
     cursor: pointer;
 }
 
-.btn-save {
-    background: var(--ok);
-    color: #fff;
-    border: none;
-    padding: 7px 14px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-bold);
-    transition: background var(--transition);
-    white-space: nowrap;
-}
-
-.btn-save:hover { background: var(--ok); filter: brightness(0.88); }
-
 .btn-header-icon {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.18);

@@ -25,7 +25,7 @@ export function renderUserRecordsEditor(context) {
         'User Records Configuration',
         'Controls the "My records" panel every user opens from the avatar menu: which columns '
         + 'label each assigned record, and how many recently-assigned records are shown per table. '
-        + 'Use "Save config" in the top bar to persist.'
+        + 'Changes save automatically.'
     ));
 
     const [columnsPanel, settingsPanel] = buildInnerTabs(wrap, [
@@ -209,7 +209,7 @@ function renderSettingsPanel(panel, context) {
     const clearHelp = document.createElement('span');
     clearHelp.className = 'help-text';
     clearHelp.textContent = 'Removes all column mappings and resets the limit to 20. '
-        + 'Press "Save config" in the top bar to apply.';
+        + 'The change saves automatically.';
     dangerGroup.appendChild(clearHelp);
 
     body.appendChild(dangerGroup);

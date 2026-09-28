@@ -5,7 +5,7 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { getCsrfToken } from '../../assets/js/util/csrf.js';
-import { showStatusPill } from './app.js';
+import { showStatusPill, markDirty } from './app.js';
 
 const FILES_API = '../api/files.php';
 
@@ -88,9 +88,6 @@ function buildSkeleton() {
                 <div id="f-relations-list" style="display:flex; flex-direction:column; gap:10px; margin-top:10px;"></div>
                 <button id="f-add-relation-btn" type="button" class="btn btn-primary btn-xs" style="margin-top:10px;">+ Add Relation</button>
             </div>
-
-            <button type="button" id="f-save-cfg" class="btn btn-success">Save configuration</button>
-            <span id="f-cfg-msg" style="margin-left:12px;"></span>
             </div>
         </div>
 
@@ -151,9 +148,25 @@ function buildSkeleton() {
 }
 
 function bindEvents(root) {
-    root.querySelector('#f-save-cfg').addEventListener('click', saveConfig);
+    const configBlock = root.querySelector('#files-cfg-block');
+    configBlock.addEventListener('input', syncConfigFromForm);
+    configBlock.addEventListener('change', syncConfigFromForm);
+    configBlock.addEventListener('click', event => {
+        if (event.target.closest('.btn-del-rel')) syncConfigFromForm();
+    });
+
+    const uploadBlock = root.querySelector('#files-upload-block');
+    const libraryBlock = root.querySelector('#files-lib-block');
+    [uploadBlock, libraryBlock].forEach(block => {
+        block.addEventListener('input', event => event.stopPropagation());
+        block.addEventListener('change', event => event.stopPropagation());
+    });
+
     root.querySelector('#f-upload-btn').addEventListener('click', uploadFile);
-    root.querySelector('#f-add-relation-btn').addEventListener('click', () => addRelationRow());
+    root.querySelector('#f-add-relation-btn').addEventListener('click', () => {
+        addRelationRow();
+        syncConfigFromForm();
+    });
 
     root.querySelector('#f-search').addEventListener('input', debounce(event => {
         _state.search = event.target.value.trim();
@@ -246,12 +259,11 @@ function fillConfigForm(config) {
     relations.forEach(relation => addRelationRow(relation));
 }
 
-async function saveConfig() {
+function syncConfigFromForm() {
     const maxElement   = document.getElementById('f-max-size');
     const pathElement  = document.getElementById('f-storage-path');
     const extensionsElement  = document.getElementById('f-allowed-exts');
     const checks  = document.querySelectorAll('#f-allowed-types input[type=checkbox]:checked');
-    const messageElement   = document.getElementById('f-cfg-msg');
 
     const relations = Array.from(document.querySelectorAll('.f-relation-row')).map(row => {
         return {
@@ -269,16 +281,7 @@ async function saveConfig() {
     _state.config.allowed_extensions = extensionsArray;
     _state.config.relations          = relations;
 
-    try {
-        const result  = await apiFetch('api.php?action=save&file=files', {
-            method: 'POST',
-            body: JSON.stringify(_state.config),
-        });
-        const data = await result.json();
-        showMessage(messageElement, data.status === 'success' ? 'Saved successfully' : (data.error || 'Save failed'), data.status === 'success');
-    } catch {
-        showMessage(messageElement, 'Network error during save', false);
-    }
+    markDirty();
 }
 
 async function uploadFile() {

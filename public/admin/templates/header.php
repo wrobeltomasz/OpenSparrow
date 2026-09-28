@@ -42,8 +42,6 @@ $firstRun          ??= false;
             Debug FE
         </label>
 
-        <button id="btnSave" type="button" class="btn-save">Save config</button>
-
         <button class="admin-tab btn-header-icon" data-file="docs" title="Documentation">
             <img src="../assets/icons/book_3s.png" alt="Docs">
             <span>Docs</span>
