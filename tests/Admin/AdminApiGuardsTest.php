@@ -25,6 +25,7 @@ final class AdminApiGuardsTest extends TestCase
         'create_table', 'add_column', 'schema_add_table',
         'run_cron_notifications', 'cron_purge_log',
         'backup_tables',
+        'backup_settings_save', 'backup_cleanup',
         'set_snapshot_setting', 'set_language_setting', 'set_chat_bubble_setting',
         'set_logo_enabled', 'set_app_name', 'upload_logo', 'remove_logo',
         'set_automation_email_setting', 'test_smtp_connection',

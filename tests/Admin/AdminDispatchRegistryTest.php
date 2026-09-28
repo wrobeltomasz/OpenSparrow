@@ -16,7 +16,7 @@ final class AdminDispatchRegistryTest extends TestCase
     private const API_PHP    = __DIR__ . '/../../public/admin/api.php';
     private const MODULE_DIR = __DIR__ . '/../../includes/admin';
 
-    private const NON_ACTION_MODULES = ['helpers', 'etl_common'];
+    private const NON_ACTION_MODULES = ['helpers', 'etl_common', 'backup_common'];
 
     private static function dispatchMap(): array
     {
