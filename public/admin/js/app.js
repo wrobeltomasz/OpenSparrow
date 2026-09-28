@@ -873,6 +873,7 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
     const isWorkflows = currentFile === 'workflows';
     const isBoard     = currentFile === 'board';
     const isRoadmap   = currentFile === 'roadmap';
+    const isCalendar  = currentFile === 'calendar';
 
     const card = document.createElement('div');
     card.className = 'column-block collapsed';
@@ -901,6 +902,16 @@ function buildItemCard(key, item, index, total, isArray, itemsReference, redraw)
     }
 
     headerElement.appendChild(chevron);
+
+    const itemIconPath = (isBoard || isRoadmap) ? item.menu_icon : item.icon;
+    if ((isSchema || isWorkflows || isBoard || isRoadmap || isCalendar) && itemIconPath) {
+        const itemIcon = document.createElement('img');
+        itemIcon.src = '../' + itemIconPath;
+        itemIcon.alt = item.menu_name || item.title || item.display_name || key;
+        itemIcon.className = 'block-type-icon';
+        headerElement.appendChild(itemIcon);
+    }
+
     headerElement.appendChild(nameSpan);
 
     const buttonUp = document.createElement('button');

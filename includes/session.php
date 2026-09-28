@@ -43,17 +43,21 @@ function send_security_headers(
     }
 
     $nonce = $cspNonce !== '' ? " 'nonce-{$cspNonce}'" : '';
+    $imageSources = "img-src 'self' data:";
 
     $policy = match ($cspMode) {
         'download'     => "default-src 'none'",
 
-        'login'        => "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'{$nonce}",
+        'login'        => "default-src 'self'; {$imageSources}; style-src 'self' 'unsafe-inline';"
+            . " script-src 'self'{$nonce}",
 
-        'no-connect'   => "default-src 'self'; style-src 'self'{$nonce}; script-src 'self'{$nonce}",
+        'no-connect'   => "default-src 'self'; {$imageSources}; style-src 'self'{$nonce};"
+            . " script-src 'self'{$nonce}",
 
-        'unsafe-style' => "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'{$nonce};"
-            . " connect-src 'self'",
-        default        => "default-src 'self'; style-src 'self'{$nonce}; script-src 'self'{$nonce}; connect-src 'self'",
+        'unsafe-style' => "default-src 'self'; {$imageSources}; style-src 'self' 'unsafe-inline';"
+            . " script-src 'self'{$nonce}; connect-src 'self'",
+        default        => "default-src 'self'; {$imageSources}; style-src 'self'{$nonce};"
+            . " script-src 'self'{$nonce}; connect-src 'self'",
     };
 
     if (CSP_REPORT_URI !== '') {

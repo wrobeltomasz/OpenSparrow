@@ -335,6 +335,15 @@ export function renderViewsEditor(context) {
         });
 
         cardHdr.appendChild(chevron);
+
+        if (config.icon) {
+            const viewIcon = document.createElement('img');
+            viewIcon.src = '../' + config.icon;
+            viewIcon.alt = config.display_name ?? vName;
+            viewIcon.className = 'block-type-icon';
+            cardHdr.appendChild(viewIcon);
+        }
+
         cardHdr.appendChild(nameSpan);
         cardHdr.appendChild(visibleLabel);
         cardHdr.appendChild(delButton);

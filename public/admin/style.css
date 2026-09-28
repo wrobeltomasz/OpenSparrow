@@ -505,6 +505,13 @@ body {
     transition: transform var(--transition);
 }
 
+.block-type-icon {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
 .column-block:not(.collapsed) .block-chevron {
     transform: rotate(90deg);
 }

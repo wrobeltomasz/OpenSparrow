@@ -4,6 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { CellRenderer } from './registry.js';
+import { matchesRule } from '../highlight-rules.js';
 
 export function computeVirtual(formula, row) {
     if (!formula?.op || !Array.isArray(formula.cols) || formula.cols.length === 0) return '';
@@ -46,6 +47,15 @@ function formatVirtualValue(value) {
     return String(value ?? '');
 }
 
+function matchIconRule(value, iconRules) {
+    if (!Array.isArray(iconRules)) return null;
+    for (const rule of iconRules) {
+        if (!rule.op || !rule.icon) continue;
+        if (matchesRule(value, rule.op, rule.value)) return rule.icon;
+    }
+    return null;
+}
+
 function renderVirtualCell({ row, col: column, colCfg: columnConfig }) {
     const td = document.createElement('td');
     td.dataset.column = column;
@@ -55,7 +65,16 @@ function renderVirtualCell({ row, col: column, colCfg: columnConfig }) {
         ? row[column]
         : computeVirtual(columnConfig.formula, row);
 
-    td.textContent = formatVirtualValue(value);
+    const matchedIcon = matchIconRule(value, columnConfig.icon_rules);
+    if (matchedIcon) {
+        const icon = document.createElement('img');
+        icon.src = matchedIcon;
+        icon.alt = '';
+        icon.className = 'td-virtual-icon';
+        td.appendChild(icon);
+    }
+
+    td.appendChild(document.createTextNode(formatVirtualValue(value)));
     td.style.color = 'var(--muted)';
     td.style.fontStyle = 'italic';
 

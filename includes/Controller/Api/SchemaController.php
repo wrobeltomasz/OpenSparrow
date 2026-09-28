@@ -107,6 +107,11 @@ final class SchemaController
                 $publicColumn['formula'] = $columnDefinition['formula'];
             }
 
+            $iconRules = $this->iconRules($columnDefinition);
+            if ($iconRules !== []) {
+                $publicColumn['icon_rules'] = $iconRules;
+            }
+
             if (!empty($columnDefinition['options'])) {
                 $publicColumn['options'] = $columnDefinition['options'];
             }
@@ -152,6 +157,23 @@ final class SchemaController
         }
 
         return $m2mList;
+    }
+
+    private function iconRules(array $columnDefinition): array
+    {
+        $iconRules = [];
+        foreach ($columnDefinition['icon_rules'] ?? [] as $rule) {
+            if (empty($rule['op']) || empty($rule['icon']) || !isset($rule['value'])) {
+                continue;
+            }
+            $iconRules[] = [
+                'op'    => $rule['op'],
+                'value' => $rule['value'],
+                'icon'  => $rule['icon'],
+            ];
+        }
+
+        return $iconRules;
     }
 
     private function highlightRules(array $tableConfig): array

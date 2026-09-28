@@ -3,7 +3,7 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-function matchesRule(rawValue, op, ruleValue) {
+export function matchesRule(rawValue, op, ruleValue) {
     if (op === 'contains') {
         return String(rawValue ?? '').includes(String(ruleValue));
     }

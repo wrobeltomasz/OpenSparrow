@@ -217,6 +217,13 @@ export function renderPrintEditor(context) {
         });
 
         cardHdr.appendChild(chevron);
+
+        const printIcon = document.createElement('img');
+        printIcon.src = '../' + (config.icon || 'assets/icons/picture_as_pdf.png');
+        printIcon.alt = config.display_name || pName;
+        printIcon.className = 'block-type-icon';
+        cardHdr.appendChild(printIcon);
+
         cardHdr.appendChild(nameSpan);
         cardHdr.appendChild(visibleLabel);
         cardHdr.appendChild(delButton);

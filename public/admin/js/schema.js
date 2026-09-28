@@ -452,6 +452,20 @@ export function renderSchemaEditor(tableName, tableData, context) {
         { value: 'concat',   label: 'Concat (text join)' },
     ];
 
+    const columnTypeIcons = {
+        text:      'match_case.svg',
+        number:    '123.svg',
+        boolean:   'check_box.svg',
+        date:      'event.svg',
+        timestamp: 'schedule.svg',
+        enum:      'format_list_bulleted.svg',
+        virtual:   'functions.svg',
+    };
+
+    function columnTypeIcon(columnType) {
+        return 'assets/icons/material/' + (columnTypeIcons[columnType] || 'match_case.svg');
+    }
+
     function makeCollapsible(block) {
         const bodyDiv = document.createElement('div');
         bodyDiv.className = 'block-body';
@@ -467,6 +481,16 @@ export function renderSchemaEditor(tableName, tableData, context) {
         const block = document.createElement('div');
         block.className = 'column-block collapsed';
 
+        let currentType = String(columnConfig.type || 'text').toLowerCase();
+        if (!['text', 'number', 'boolean', 'date', 'timestamp', 'enum', 'virtual'].includes(currentType)) {
+            if (/int|num|float|double|real|serial|dec/i.test(currentType)) currentType = 'number';
+            else if (/bool/i.test(currentType)) currentType = 'boolean';
+            else if (/timestamp|timestamptz/i.test(currentType)) currentType = 'timestamp';
+            else if (/date|time/i.test(currentType)) currentType = 'date';
+            else currentType = 'text';
+            columnConfig.type = currentType;
+        }
+
         const headerDiv = document.createElement('div');
         headerDiv.className = 'block-header';
         headerDiv.addEventListener('click', (event) => {
@@ -477,6 +501,12 @@ export function renderSchemaEditor(tableName, tableData, context) {
         const chevron = document.createElement('span');
         chevron.className = 'block-chevron';
         chevron.textContent = '▶';
+
+        const typeIcon = document.createElement('img');
+        typeIcon.src = '../' + columnTypeIcon(currentType);
+        typeIcon.alt = currentType;
+        typeIcon.title = currentType;
+        typeIcon.className = 'block-type-icon';
 
         const h4 = document.createElement('h4');
         h4.textContent = `Column: ${columnName}`;
@@ -508,6 +538,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
         moveControls.appendChild(buttonUp);
         moveControls.appendChild(buttonDown);
         headerDiv.appendChild(chevron);
+        headerDiv.appendChild(typeIcon);
         headerDiv.appendChild(h4);
         headerDiv.appendChild(moveControls);
         block.appendChild(headerDiv);
@@ -517,16 +548,6 @@ export function renderSchemaEditor(tableName, tableData, context) {
             if (value) columnConfig.description = value;
             else delete columnConfig.description;
         }));
-
-        let currentType = String(columnConfig.type || 'text').toLowerCase();
-        if (!['text', 'number', 'boolean', 'date', 'timestamp', 'enum', 'virtual'].includes(currentType)) {
-            if (/int|num|float|double|real|serial|dec/i.test(currentType)) currentType = 'number';
-            else if (/bool/i.test(currentType)) currentType = 'boolean';
-            else if (/timestamp|timestamptz/i.test(currentType)) currentType = 'timestamp';
-            else if (/date|time/i.test(currentType)) currentType = 'date';
-            else currentType = 'text';
-            columnConfig.type = currentType;
-        }
 
         block.appendChild(createSelectInput('type', 'Data Type', dataTypeOptions, currentType, (value) => {
             columnConfig.type = value;
@@ -637,6 +658,84 @@ export function renderSchemaEditor(tableName, tableData, context) {
             });
 
             block.appendChild(vBlock);
+
+            if (!Array.isArray(columnConfig.icon_rules)) columnConfig.icon_rules = [];
+            const iconRules = columnConfig.icon_rules;
+            const touchIconRules = () => { columnConfig.icon_rules = iconRules; markDirty(); };
+
+            const iBlock = document.createElement('div');
+            iBlock.style.cssText = 'margin-left:20px;padding-left:10px;border-left:2px solid var(--muted);margin-bottom:15px;';
+
+            const iTitle = document.createElement('h5');
+            iTitle.textContent = 'Icon Rules';
+            iTitle.style.cssText = 'margin-top:0;margin-bottom:4px;color:var(--muted);';
+            iBlock.appendChild(iTitle);
+
+            const iHint = document.createElement('p');
+            iHint.style.cssText = 'margin:0 0 10px;color:var(--muted);font-size:0.9em;';
+            iHint.textContent = 'Shows an icon next to the computed value. Rules are evaluated in order against the computed value; the first match wins.';
+            iBlock.appendChild(iHint);
+
+            const iconRulesContainer = document.createElement('div');
+            iBlock.appendChild(iconRulesContainer);
+
+            const renderIconRules = () => {
+                iconRulesContainer.innerHTML = '';
+
+                iconRules.forEach((rule, ruleIndex) => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:8px;';
+
+                    const opSelectRule = document.createElement('select');
+                    opSelectRule.className = 'adm-input w-80';
+                    ['==', '!=', '>', '>=', '<', '<=', 'contains'].forEach(operator => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = operator;
+                        optionElement.textContent = operator;
+                        if (rule.op === operator) optionElement.selected = true;
+                        opSelectRule.appendChild(optionElement);
+                    });
+                    opSelectRule.addEventListener('change', () => { iconRules[ruleIndex].op = opSelectRule.value; touchIconRules(); });
+
+                    const valueInput = document.createElement('input');
+                    valueInput.type = 'text';
+                    valueInput.className = 'adm-input w-110';
+                    valueInput.value = rule.value ?? '';
+                    valueInput.placeholder = 'Value';
+                    valueInput.addEventListener('input', () => { iconRules[ruleIndex].value = valueInput.value; touchIconRules(); });
+
+                    const iconPickerWrapper = document.createElement('div');
+                    iconPickerWrapper.style.cssText = 'flex:1;min-width:220px;';
+                    iconPickerWrapper.appendChild(createIconPicker('v_icon_' + ruleIndex, 'Icon', rule.icon || '', iconPath => {
+                        iconRules[ruleIndex].icon = iconPath;
+                        touchIconRules();
+                    }));
+                    row.append(opSelectRule, valueInput, iconPickerWrapper);
+
+                    const buttonDelIcon = document.createElement('button');
+                    buttonDelIcon.type = 'button';
+                    buttonDelIcon.className = 'btn btn-danger btn-xs';
+                    buttonDelIcon.textContent = '✕ Remove';
+                    buttonDelIcon.addEventListener('click', () => { iconRules.splice(ruleIndex, 1); touchIconRules(); renderIconRules(); });
+                    row.appendChild(buttonDelIcon);
+
+                    iconRulesContainer.appendChild(row);
+                });
+
+                const buttonAddIcon = document.createElement('button');
+                buttonAddIcon.type = 'button';
+                buttonAddIcon.className = 'btn btn-success btn-sm';
+                buttonAddIcon.textContent = '+ Add Icon Rule';
+                buttonAddIcon.addEventListener('click', () => {
+                    iconRules.push({ op: '==', value: '', icon: '' });
+                    touchIconRules();
+                    renderIconRules();
+                });
+                iconRulesContainer.appendChild(buttonAddIcon);
+            };
+
+            renderIconRules();
+            block.appendChild(iBlock);
 
             block.appendChild(createCheckbox('show_in_grid', 'Show in Grid', columnConfig.show_in_grid, value => columnConfig.show_in_grid = value, true));
 
