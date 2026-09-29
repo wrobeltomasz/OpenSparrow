@@ -7,6 +7,13 @@ import { debugLog } from '../../debug.js';
 import { fetchSubtableCounts } from '../api.js';
 import { state } from '../state.js';
 import { I18n } from '../../i18n.js';
+import { pageSignature, isPageLoaded, markPageLoaded } from '../side-fetch-cache.js';
+
+const countsStore = new Map();
+
+export function clearSubtableCountsStore() {
+    countsStore.clear();
+}
 
 export async function loadSubtableCounts(pageRows, schema) {
     const subtables = schema.tables[state.currentTable]?.subtables || [];
@@ -15,23 +22,32 @@ export async function loadSubtableCounts(pageRows, schema) {
     const ids = pageRows.map(pageRow => pageRow['id']).filter(Boolean).join(',');
     if (!ids) return;
 
-    try {
-        const counts = await fetchSubtableCounts(state.currentTable, ids);
-        for (const row of pageRows) {
-            const rowId = String(row['id']);
-            const count = counts[rowId] ?? 0;
-            if (count === 0) continue;
-
-            const td = document.querySelector(`[data-expand-row-id="${CSS.escape(rowId)}"]`);
-            if (!td) continue;
-
-            const button = td.querySelector('button');
-            if (!button) continue;
-
-            button.classList.add('has-records');
-            button.title = I18n.t('grid.drilldown_count', { count: count });
+    const signature = pageSignature('subtables', state.currentTable, pageRows);
+    if (!isPageLoaded(signature)) {
+        try {
+            const counts = await fetchSubtableCounts(state.currentTable, ids);
+            for (const [rowId, count] of Object.entries(counts)) {
+                countsStore.set(`${state.currentTable}:${rowId}`, count);
+            }
+            markPageLoaded(signature);
+        } catch (error) {
+            debugLog('subtable counts failed', error);
+            return;
         }
-    } catch (error) {
-        debugLog('subtable counts failed', error);
+    }
+
+    for (const row of pageRows) {
+        const rowId = String(row['id']);
+        const count = countsStore.get(`${state.currentTable}:${rowId}`) ?? 0;
+        if (count === 0) continue;
+
+        const td = document.querySelector(`[data-expand-row-id="${CSS.escape(rowId)}"]`);
+        if (!td) continue;
+
+        const button = td.querySelector('button');
+        if (!button) continue;
+
+        button.classList.add('has-records');
+        button.title = I18n.t('grid.drilldown_count', { count: count });
     }
 }

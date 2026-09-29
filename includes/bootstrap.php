@@ -110,6 +110,13 @@ function os_page_bootstrap(array $options = []): array
 
 function os_api_bootstrap(array $options = []): ?\PgSql\Connection
 {
+    static $bootstrapped = false;
+
+    if ($bootstrapped && !empty($options['skip_when_bootstrapped'])) {
+        return ($options['connect'] ?? true) ? db_connect() : null;
+    }
+    $bootstrapped = true;
+
     ini_set('display_errors', '0');
 
     require_once __DIR__ . '/db.php';

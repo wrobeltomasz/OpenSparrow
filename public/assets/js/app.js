@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { I18n } from './i18n.js';
-import { loadTable, renderGrid, getState, setFilteredData, resetFilters, injectPagination, appendMoreRows, serverSearchRows } from './grid.js';
+import { loadTable, renderGrid, getState, setFilteredData, resetFilters, injectPagination, appendMoreRows, serverApplyView } from './grid.js';
 import { state as gridState } from './grid/state.js';
 import { exportCSV } from './export_csv.js';
 import { debugLog } from './debug.js';
@@ -132,6 +132,21 @@ function updateColumnFilterState(column, type, data) {
     } else {
         activeFilters.columns[column] = { type, ...data };
     }
+    syncColumnFiltersToGrid();
+}
+
+function syncColumnFiltersToGrid() {
+    const serverFilters = {};
+    for (const [column, filter] of Object.entries(activeFilters.columns)) {
+        if (filter.type === 'dict' || filter.type === 'bool') {
+            serverFilters[column] = filter.type === 'bool' ? { bool: filter.val } : { val: filter.val };
+        } else if (filter.type === 'date') {
+            serverFilters[column] = { from: filter.from, to: filter.to };
+        } else if (filter.type === 'number') {
+            serverFilters[column] = { min: filter.min, max: filter.max };
+        }
+    }
+    gridState.columnFilters = serverFilters;
 }
 
 function buildRangeFilter({ fromLabel, toLabel, inputType, inputClass, placeholderFrom, placeholderTo, existingFrom, existingTo, changeEvent, onUpdate }) {
@@ -380,14 +395,11 @@ async function applySearch() {
     const { fullData, displayedColumns, serverSearchMode } = getState();
     const searchTerm = activeFilters.search.toLowerCase();
 
-    if (serverSearchMode && searchTerm) {
+    if (serverSearchMode && (searchTerm || Object.keys(activeFilters.columns).length > 0)) {
         resetPagination();
-        await serverSearchRows(window.schema, activeFilters.search);
-        if (Object.keys(activeFilters.columns).length > 0) {
-            const filtered = applyColumnFiltersOnly(getState().fullData);
-            setFilteredData(filtered);
-            await renderGrid(window.schema);
-        }
+        syncColumnFiltersToGrid();
+        gridState.searchTerm = activeFilters.search;
+        await serverApplyView(window.schema, { search: activeFilters.search });
         renderFilterPills();
         updateClearFiltersVisibility();
         return;
@@ -425,6 +437,8 @@ clearFiltersButton.addEventListener('click', async () => {
     activeFilters = { search: '', columns: {} };
     searchElement.value = '';
     columnFilterElement.value = '';
+    gridState.searchTerm = '';
+    gridState.columnFilters = {};
 
     renderFilterPills();
     updateClearFiltersVisibility();
@@ -432,6 +446,9 @@ clearFiltersButton.addEventListener('click', async () => {
     const { serverSearchMode, serverSearchActive } = getState();
     if (serverSearchMode && serverSearchActive) {
         await loadTable(window.schema, gridState.currentTable, gridState.gridTitleEl, gridState.addRowBtn);
+    } else if (serverSearchMode) {
+        await serverApplyView(window.schema, { search: '' });
+        handleColumnFilterChange();
     } else {
         handleColumnFilterChange();
         await resetFilters(window.schema);
@@ -452,7 +469,7 @@ columnFilterElement.addEventListener('change', handleColumnFilterChange);
 document.addEventListener('grid:loadMore', async () => {
     await appendMoreRows(window.schema, activeFilters.search);
 
-    if (Object.keys(activeFilters.columns).length > 0) {
+    if (!getState().serverSearchMode && Object.keys(activeFilters.columns).length > 0) {
         const filtered = applyColumnFiltersOnly(getState().fullData);
         setFilteredData(filtered);
         await renderGrid(window.schema);
@@ -466,6 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.addEventListener("tableLoaded", () => {
     activeFilters = { search: '', columns: {} };
+    gridState.columnFilters = {};
     searchElement.value = '';
     const filterBar = document.getElementById('filterBar');
     if(filterBar) filterBar.innerHTML = '';

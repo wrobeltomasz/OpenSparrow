@@ -3,4 +3,4 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-export { loadTable, renderGrid, getState, setFilteredData, resetFilters, injectPagination, appendMoreRows, serverSearchRows } from './grid/index.js';
+export { loadTable, renderGrid, getState, setFilteredData, resetFilters, injectPagination, appendMoreRows, serverSearchRows, serverApplyView } from './grid/index.js';

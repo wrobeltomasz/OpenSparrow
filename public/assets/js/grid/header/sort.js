@@ -25,6 +25,11 @@ export function toggleSortState(column) {
         ];
     }
 
+    if (state.serverSearchMode) {
+        state.serverSortActive = state.sortState.length > 0;
+        return;
+    }
+
     state.filteredData = state.sortState.length > 0
         ? sortRows(state.unsortedFilteredData, state.sortState)
         : state.unsortedFilteredData.slice();

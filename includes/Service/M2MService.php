@@ -13,6 +13,8 @@ use PgSql\Connection;
 
 final class M2MService
 {
+    private const OPTIONS_LIMIT = 500;
+
     public function __construct(private readonly Connection $conn)
     {
     }
@@ -51,10 +53,11 @@ final class M2MService
         $displayColumn = (string) ($config['display_column'] ?? 'id');
 
         $sql = sprintf(
-            'SELECT "id", %s AS label FROM %s ORDER BY %s',
+            'SELECT "id", %s AS label FROM %s ORDER BY %s LIMIT %d',
             Sql::ident($displayColumn),
             Sql::qualified($schemaName, $otherTable),
-            Sql::ident($displayColumn)
+            Sql::ident($displayColumn),
+            self::OPTIONS_LIMIT
         );
 
         $result = @pg_query($this->conn, $sql);

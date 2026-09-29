@@ -37,21 +37,22 @@ function frontapi_list(FrontApiContext $context): never
         $selectColumns = array_values(array_intersect($selectColumns, $keep));
     }
     $selectSql = implode(', ', array_map(fn($column) => pg_ident($column), $selectColumns));
+    $allowedFilterColumns = array_merge([$idColumn], array_keys($tableConfig['columns'] ?? []));
+
+    if (defined('OS_FK_LABEL_COLUMNS')) {
+        $allowedFilterColumns = array_values(array_intersect($allowedFilterColumns, $selectColumns));
+    }
+
     $filterColumn  = $_GET['filter_col'] ?? '';
     $filterValue  = $_GET['filter_val'] ?? '';
     $filterFrom = $_GET['filter_from'] ?? '';
     $filterTo   = $_GET['filter_to'] ?? '';
     $whereSql = '';
     $parameters = [];
+    $rangeClauses = [];
     if ($filterColumn !== '' && ($filterValue !== '' || $filterFrom !== '' || $filterTo !== '')) {
-        $allowedFilterColumns = array_merge([$idColumn], array_keys($tableConfig['columns'] ?? []));
-
-        if (defined('OS_FK_LABEL_COLUMNS')) {
-            $allowedFilterColumns = array_values(array_intersect($allowedFilterColumns, $selectColumns));
-        }
         if (in_array($filterColumn, $allowedFilterColumns, true)) {
             if ($filterFrom !== '' || $filterTo !== '') {
-                $rangeClauses = [];
                 if ($filterFrom !== '') {
                     $rangeClauses[] = sprintf('%s >= $%d', pg_ident($filterColumn), count($parameters) + 1);
                     $parameters[] = $filterFrom;
@@ -60,12 +61,31 @@ function frontapi_list(FrontApiContext $context): never
                     $rangeClauses[] = sprintf('%s < $%d', pg_ident($filterColumn), count($parameters) + 1);
                     $parameters[] = $filterTo;
                 }
-                $whereSql = ' WHERE ' . implode(' AND ', $rangeClauses);
             } else {
-                $whereSql = sprintf(' WHERE %s = $1', pg_ident($filterColumn));
+                $rangeClauses[] = sprintf('%s = $%d', pg_ident($filterColumn), count($parameters) + 1);
                 $parameters[] = $filterValue;
             }
         }
+    }
+
+    $columnFilters = $_GET['column_filters'] ?? '';
+    if (is_string($columnFilters) && $columnFilters !== '') {
+        $decodedFilters = json_decode($columnFilters, true);
+        if (is_array($decodedFilters)) {
+            foreach ($decodedFilters as $filterName => $filterPayload) {
+                if (!in_array((string) $filterName, $allowedFilterColumns, true) || !is_array($filterPayload)) {
+                    continue;
+                }
+                $filterSql = build_column_filter_sql((string) $filterName, $filterPayload, $parameters);
+                if ($filterSql !== '') {
+                    $rangeClauses[] = $filterSql;
+                }
+            }
+        }
+    }
+
+    if ($rangeClauses !== []) {
+        $whereSql = ' WHERE ' . implode(' AND ', $rangeClauses);
     }
 
     $search = trim($_GET['search'] ?? '');
@@ -93,14 +113,28 @@ function frontapi_list(FrontApiContext $context): never
 
     $offset = max(0, (int)($_GET['offset'] ?? 0));
 
-    $defaultSort  = $tableConfig['default_sort'] ?? [];
     $orderClauses = [];
-    if (is_array($defaultSort)) {
-        foreach ($defaultSort as $rule) {
-            $columnName = $rule['column'] ?? '';
-            $directory = strtoupper($rule['dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
-            if ($columnName !== '' && (isset($tableConfig['columns'][$columnName]) || $columnName === $idColumn)) {
-                $orderClauses[] = pg_ident($columnName) . ' ' . $directory;
+    $requestedOrder = $_GET['order'] ?? '';
+    if (is_string($requestedOrder) && $requestedOrder !== '') {
+        $orderRules = explode(',', $requestedOrder);
+        foreach (array_slice($orderRules, 0, 3) as $orderRule) {
+            [$orderColumn, $orderDir] = array_pad(explode(':', trim($orderRule), 2), 2, 'asc');
+            $orderDir = strtolower($orderDir) === 'desc' ? 'DESC' : 'ASC';
+            if (in_array($orderColumn, $allowedFilterColumns, true)) {
+                $orderClauses[] = pg_ident($orderColumn) . ' ' . $orderDir;
+            }
+        }
+    }
+
+    if ($orderClauses === []) {
+        $defaultSort  = $tableConfig['default_sort'] ?? [];
+        if (is_array($defaultSort)) {
+            foreach ($defaultSort as $rule) {
+                $columnName = $rule['column'] ?? '';
+                $directory = strtoupper($rule['dir'] ?? 'ASC') === 'DESC' ? 'DESC' : 'ASC';
+                if ($columnName !== '' && (isset($tableConfig['columns'][$columnName]) || $columnName === $idColumn)) {
+                    $orderClauses[] = pg_ident($columnName) . ' ' . $directory;
+                }
             }
         }
     }
@@ -111,9 +145,18 @@ function frontapi_list(FrontApiContext $context): never
     $initialLimit = (int)($tableConfig['initial_limit'] ?? 0);
     $rowCap       = $initialLimit > 0 ? $initialLimit : MAX_LIST_ROWS;
 
+    $requestedLimit = (int)($_GET['limit'] ?? 0);
+    if ($requestedLimit > 0) {
+        $rowCap = min($rowCap, max(1, $requestedLimit));
+    }
+
+    $includeTotal = (int)($_GET['include_total'] ?? 1) === 1;
+    $totalSql = $includeTotal ? ', COUNT(1) OVER() AS __spw_total' : '';
+
     $sql = sprintf(
-        'SELECT %s, COUNT(1) OVER() AS __spw_total FROM %s.%s AS _t%s ORDER BY %s LIMIT %d OFFSET %d',
+        'SELECT %s%s FROM %s.%s AS _t%s ORDER BY %s LIMIT %d OFFSET %d',
         $selectSql,
+        $totalSql,
         pg_ident($schemaName),
         pg_ident($table),
         $whereSql,
@@ -130,8 +173,8 @@ function frontapi_list(FrontApiContext $context): never
     $rows = [];
     $dbTotal = 0;
     while ($row = pg_fetch_assoc($result)) {
-        if ($dbTotal === 0) {
-            $dbTotal = (int)($row['__spw_total'] ?? 0);
+        if ($dbTotal === 0 && isset($row['__spw_total'])) {
+            $dbTotal = (int)$row['__spw_total'];
         }
         unset($row['__spw_total']);
         $rows[] = $row;
@@ -150,6 +193,41 @@ function frontapi_list(FrontApiContext $context): never
         ],
     ]);
     throw ResponseException::sent();
+}
+
+function build_column_filter_sql(string $columnName, array $payload, array &$parameters): string
+{
+    $clauses = [];
+
+    if (array_key_exists('val', $payload) && $payload['val'] !== '' && $payload['val'] !== null) {
+        $clauses[] = sprintf('%s = $%d', pg_ident($columnName), count($parameters) + 1);
+        $parameters[] = (string) $payload['val'];
+    }
+    if (!empty($payload['bool'])) {
+        $clauses[] = sprintf('%s = $%d', pg_ident($columnName), count($parameters) + 1);
+        $parameters[] = $payload['bool'] === 'false' ? 'FALSE' : 'TRUE';
+    }
+    if (isset($payload['from']) && $payload['from'] !== '') {
+        $clauses[] = sprintf('%s >= $%d', pg_ident($columnName), count($parameters) + 1);
+        $parameters[] = (string) $payload['from'];
+    }
+    if (isset($payload['to']) && $payload['to'] !== '') {
+        $clauses[] = sprintf('%s < $%d', pg_ident($columnName), count($parameters) + 1);
+        $parameters[] = (string) $payload['to'];
+    }
+    if (isset($payload['min']) && $payload['min'] !== '') {
+        $clauses[] = sprintf('%s >= $%d', pg_ident($columnName), count($parameters) + 1);
+        $parameters[] = (string) $payload['min'];
+    }
+    if (isset($payload['max']) && $payload['max'] !== '') {
+        $clauses[] = sprintf('%s <= $%d', pg_ident($columnName), count($parameters) + 1);
+        $parameters[] = (string) $payload['max'];
+    }
+
+    if ($clauses === []) {
+        return '';
+    }
+    return '(' . implode(' AND ', $clauses) . ')';
 }
 
 function frontapi_subtable_counts(FrontApiContext $context): never

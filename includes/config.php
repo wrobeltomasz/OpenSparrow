@@ -536,7 +536,7 @@ define('AUTOMATION_EMAIL_MAX_ATTEMPTS', max(1, (int) get_env('AUTOMATION_EMAIL_M
 
 define('CONFIG_FILE_MAX_BYTES', max(1024, (int) get_env('CONFIG_FILE_MAX_BYTES', '524288')));
 
-define('MAX_LIST_ROWS', max(1, (int) get_env('MAX_LIST_ROWS', '10000')));
+define('MAX_LIST_ROWS', max(1, (int) get_env('MAX_LIST_ROWS', '1000')));
 
 define('HSTS_MAX_AGE', max(0, (int) get_env('HSTS_MAX_AGE', '31536000')));
 

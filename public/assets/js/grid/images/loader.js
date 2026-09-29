@@ -5,6 +5,7 @@
 
 import { debugLog } from '../../debug.js';
 import { state } from '../state.js';
+import { pageSignature, isPageLoaded, markPageLoaded } from '../side-fetch-cache.js';
 
 const store = new Map();
 
@@ -31,23 +32,27 @@ export async function loadImageColumn(pageRows, schema) {
     const ids = pageRows.map(pageRow => pageRow['id']).filter(Boolean).join(',');
     if (!ids) return;
 
-    try {
-        const result  = await fetch(`api.php?api=image_rows&table=${encodeURIComponent(state.currentTable)}&ids=${ids}`);
-        const json = await result.json();
-        const data = json.data || {};
-
-        for (const [rowId, entry] of Object.entries(data)) {
-            store.set(`${state.currentTable}:${rowId}`, entry);
+    const signature = pageSignature('images', state.currentTable, pageRows);
+    if (!isPageLoaded(signature)) {
+        try {
+            const result  = await fetch(`api.php?api=image_rows&table=${encodeURIComponent(state.currentTable)}&ids=${ids}`);
+            const json = await result.json();
+            const data = json.data || {};
+            for (const [rowId, entry] of Object.entries(data)) {
+                store.set(`${state.currentTable}:${rowId}`, entry);
+            }
+            markPageLoaded(signature);
+        } catch (error) {
+            debugLog('image column load failed', error);
+            return;
         }
+    }
 
-        for (const row of pageRows) {
-            const rowKey = String(row['id']);
-            const td  = document.querySelector(`[data-img-row-id="${CSS.escape(rowKey)}"]`);
-            if (!td) continue;
-            renderThumb(td, store.get(`${state.currentTable}:${rowKey}`));
-        }
-    } catch (error) {
-        debugLog('image column load failed', error);
+    for (const row of pageRows) {
+        const rowKey = String(row['id']);
+        const td  = document.querySelector(`[data-img-row-id="${CSS.escape(rowKey)}"]`);
+        if (!td) continue;
+        renderThumb(td, store.get(`${state.currentTable}:${rowKey}`));
     }
 }
 

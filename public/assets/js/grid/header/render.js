@@ -9,7 +9,7 @@ import { toggleSortState } from './sort.js';
 import { initColumnResize } from './resize.js';
 import { initColumnDnD } from './dnd.js';
 
-export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
+export function renderThead(schema, isReadOnly, onRerender, getPageRows, onSortToggle) {
     const thead = document.createElement('thead');
     const headRow = document.createElement('tr');
     const subtables = schema.tables[state.currentTable]?.subtables || [];
@@ -81,7 +81,11 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows) {
         th.addEventListener('click', event => {
             if (event.target.classList.contains('col-resizer')) return;
             toggleSortState(columnName);
-            onRerender();
+            if (onSortToggle) {
+                onSortToggle();
+            } else {
+                onRerender();
+            }
         });
 
         initColumnResize(th);

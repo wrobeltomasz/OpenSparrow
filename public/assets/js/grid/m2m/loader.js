@@ -5,6 +5,7 @@
 
 import { debugLog } from '../../debug.js';
 import { state } from '../state.js';
+import { pageSignature, isPageLoaded, markPageLoaded } from '../side-fetch-cache.js';
 
 const store = new Map();
 
@@ -31,24 +32,37 @@ export async function loadM2mColumns(pageRows, schema) {
     const ids = pageRows.map(pageRow => pageRow['id']).filter(Boolean).join(',');
     if (!ids) return;
 
-    for (let relationIndex = 0; relationIndex < m2mList.length; relationIndex++) {
-        try {
-            const result  = await fetch(`api.php?api=m2m_rows&table=${encodeURIComponent(state.currentTable)}&m2m_index=${relationIndex}&ids=${ids}`);
-            const json = await result.json();
-            const data = json.data || {};
+    const signature = pageSignature('m2m', state.currentTable, pageRows);
+    const shouldFetch = !isPageLoaded(signature);
+    if (shouldFetch) markPageLoaded(signature);
 
-            for (const [rowId, labels] of Object.entries(data)) {
-                store.set(`${state.currentTable}:${rowId}:${relationIndex}`, labels);
-            }
+    const relationIndexes = m2mList.map((relation, relationIndex) => relationIndex);
+    const fetchPromises = shouldFetch
+        ? relationIndexes.map(relationIndex =>
+            fetch(`api.php?api=m2m_rows&table=${encodeURIComponent(state.currentTable)}&m2m_index=${relationIndex}&ids=${ids}`)
+                .then(result => result.json())
+                .then(json => ({ relationIndex, data: json.data || {} }))
+                .catch(error => {
+                    debugLog('m2m load failed', error);
+                    return { relationIndex, data: {} };
+                })
+        )
+        : [];
 
-            for (const row of pageRows) {
-                const rowKey = String(row['id']);
-                const td  = document.querySelector(`[data-m2m-row-id="${CSS.escape(rowKey)}"][data-m2m-index="${relationIndex}"]`);
-                if (!td) continue;
-                renderChips(td, store.get(`${state.currentTable}:${rowKey}:${relationIndex}`) ?? []);
-            }
-        } catch (error) {
-            debugLog('m2m load failed', error);
+    await Promise.all(fetchPromises);
+
+    for (const { relationIndex, data } of fetchPromises) {
+        for (const [rowId, labels] of Object.entries(data)) {
+            store.set(`${state.currentTable}:${rowId}:${relationIndex}`, labels);
+        }
+    }
+
+    for (const relationIndex of relationIndexes) {
+        for (const row of pageRows) {
+            const rowKey = String(row['id']);
+            const td  = document.querySelector(`[data-m2m-row-id="${CSS.escape(rowKey)}"][data-m2m-index="${relationIndex}"]`);
+            if (!td) continue;
+            renderChips(td, store.get(`${state.currentTable}:${rowKey}:${relationIndex}`) ?? []);
         }
     }
 }

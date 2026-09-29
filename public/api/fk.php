@@ -7,9 +7,14 @@
 
 require_once __DIR__ . '/../../includes/bootstrap.php';
 
+use App\Exception\HttpException;
 use App\Exception\ResponseException;
 
-os_api_bootstrap(['connect' => false, 'require_ajax' => true, 'csrf' => 'none']);
+os_api_bootstrap(['connect' => false, 'require_ajax' => true, 'csrf' => 'none', 'skip_when_bootstrapped' => true]);
+
+if (os_request()->method() !== 'GET') {
+    throw HttpException::fromStatus(405, 'Method Not Allowed');
+}
 
 $table = $_GET['table'] ?? '';
 $column = $_GET['col'] ?? '';

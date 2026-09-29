@@ -15,7 +15,7 @@ require_once __DIR__ . '/../includes/autoload.php';
 require_once __DIR__ . '/../includes/config_store.php';
 require_once __DIR__ . '/../includes/frontapi/context.php';
 
-os_api_bootstrap(['connect' => false]);
+os_api_bootstrap(['connect' => false, 'skip_when_bootstrapped' => true]);
 
 $controller = new FrontApiController(new PhpSession(), os_request());
 

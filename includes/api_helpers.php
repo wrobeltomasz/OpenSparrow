@@ -87,26 +87,22 @@ function map_fk_display(array $schema, array $tableConfig, array $rows, \PgSql\C
 
         $escapedDisplayColumns = array_map(pg_ident(...), $referencedDisplayRaw);
         if (count($escapedDisplayColumns) > 1) {
-            $displaySql = "CONCAT_WS(' - ', " . implode(', ', $escapedDisplayColumns) . ")";
+            $displaySql = "CONCAT_WS(' - ', " . implode(', ', $escapedDisplayColumns) . ')';
         } else {
             $displaySql = $escapedDisplayColumns[0];
         }
 
-        $escapedValues = array_map(fn($value) => pg_escape_literal($conn, (string)$value), $fkValues);
-        $inClause = implode(', ', $escapedValues);
-
         $sql = sprintf(
-            'SELECT %s AS id, %s AS disp FROM %s.%s WHERE %s IN (%s)',
+            'SELECT %s AS id, %s AS disp FROM %s.%s WHERE %s::text = ANY($1::text[])',
             pg_ident($referencedColumnId),
             $displaySql,
             pg_ident($referencedSchema),
             pg_ident($referencedName),
-            pg_ident($referencedColumnId),
-            $inClause
+            pg_ident($referencedColumnId)
         );
 
         $map = [];
-        $queryResult = pg_query($conn, $sql);
+        $queryResult = @pg_query_params($conn, $sql, [array_map('strval', array_values($fkValues))]);
         if ($queryResult) {
             while ($row = pg_fetch_assoc($queryResult)) {
                 $map[$row['id']] = $row['disp'];

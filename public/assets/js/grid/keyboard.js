@@ -100,8 +100,9 @@ export class GridKeyboard {
         this._onTableLoaded = this._refresh.bind(this);
 
         document.addEventListener('keydown', this._onKeyDown, true);
-        document.addEventListener('keyup',   this._onKeyUp,   true);
+        document.addEventListener('keyup',   this._onKeyUp, true);
         document.addEventListener('tableLoaded', this._onTableLoaded);
+        document.addEventListener('gridRendered', this._onTableLoaded);
         containerElement.addEventListener('click',   this._onClick);
         containerElement.addEventListener('focusin', this._onFocusin);
 
@@ -616,8 +617,9 @@ export class GridKeyboard {
     destroy() {
         for (const [cell, value] of this._navModeEditable) cell.contentEditable = value;
         document.removeEventListener('keydown', this._onKeyDown, true);
-        document.removeEventListener('keyup',   this._onKeyUp,   true);
+        document.removeEventListener('keyup',   this._onKeyUp, true);
         document.removeEventListener('tableLoaded', this._onTableLoaded);
+        document.removeEventListener('gridRendered', this._onTableLoaded);
         this._container.removeEventListener('click',   this._onClick);
         this._container.removeEventListener('focusin', this._onFocusin);
         if (this._ctrlHoldTimer) clearTimeout(this._ctrlHoldTimer);

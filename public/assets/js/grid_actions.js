@@ -5,8 +5,9 @@
 
 import { debugLog } from './debug.js';
 import { showToast } from './toast.js';
-import { loadTable } from './grid.js';
+import { renderGrid } from './grid.js';
 import { state } from './grid/state.js';
+import { applyVirtualColumn } from './grid/inline-update.js';
 
 import { apiFetch } from './util/api.js';
 import { I18n } from './i18n.js';
@@ -105,16 +106,33 @@ async function performUpdate(element, table, id, column, value) {
     element._originalValue = value;
 
     if (state.currentTable && window.schema) {
-      loadTable(
-        window.schema, state.currentTable,
-        document.getElementById('gridTitle'),
-        document.getElementById('addRow')
-      );
+        updateRowInPlace(element, table, id, column, value);
     }
   } catch (error) {
     console.error("Network error during update", error);
     markCell(td, false);
   }
+}
+
+function updateRowInPlace(element, table, id, column, value) {
+    const schema = window.schema;
+    if (!schema?.tables?.[table]) return;
+
+    const rowIndex = state.fullData.findIndex(row => String(row['id']) === String(id));
+    if (rowIndex === -1) return;
+
+    const row = state.fullData[rowIndex];
+    row[column] = value;
+    if (`${column}__display` in row) {
+        const fkData = state.fkData.get(`${table}_${column}`);
+        const option = fkData?.options.find(fkOption => fkOption.realId === String(value));
+        row[`${column}__display`] = option ? option.value : value;
+    }
+    applyVirtualColumn(schema, table, row);
+
+    renderGrid(window.schema).then(() => {
+        debugLog('Row updated in place', { id, column });
+    });
 }
 
 export function onInputChange(event) {

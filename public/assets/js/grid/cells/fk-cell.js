@@ -7,45 +7,54 @@ import { attachCellEvents } from '../../grid_actions.js';
 import { state } from '../state.js';
 import { CellRenderer } from './registry.js';
 
-async function renderFkCell({ row, col: column, colCfg: columnConfig, schema, isReadOnly }) {
+function buildSharedDatalist(column, cacheKey) {
+    const datalistId = `spw_fk_${cacheKey}`;
+    let datalist = document.getElementById(datalistId);
+    if (datalist) return datalistId;
+
+    datalist = document.createElement('datalist');
+    datalist.id = datalistId;
+
+    const fkData = state.fkData.get(cacheKey);
+    if (fkData) {
+        fkData.options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value;
+            optionElement.dataset.realId = option.realId;
+            datalist.appendChild(optionElement);
+        });
+    }
+
+    document.body.appendChild(datalist);
+    return datalistId;
+}
+
+export function clearSharedFkDatalists() {
+    document.querySelectorAll('datalist[id^="spw_fk_"]').forEach(element => element.remove());
+}
+
+function renderFkCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
     const td = document.createElement('td');
     const input = document.createElement('input');
     input.type = 'search';
 
-    const dlId = `fk_${state.currentTable}_${column}_${row['id']}`;
-    input.setAttribute('list', dlId);
+    const cacheKey = `${state.currentTable}_${column}`;
+    const datalistId = buildSharedDatalist(column, cacheKey);
+    input.setAttribute('list', datalistId);
     input.dataset.column = column;
     input.dataset.id = row['id'];
 
     if (columnConfig.readonly || isReadOnly) input.disabled = true;
 
-    const datalist = document.createElement('datalist');
-    datalist.id = dlId;
-
-    const fkConfig = schema.tables[state.currentTable].foreign_keys[column];
-    const dispColumns = Array.isArray(fkConfig.display_column)
-        ? fkConfig.display_column
-        : [fkConfig.display_column || 'id'];
-    const cacheKey = `${state.currentTable}_${column}`;
-    let currentDisplay = '';
-
-    if (state.fkCache.has(cacheKey)) {
-        const referenceData = await state.fkCache.get(cacheKey);
-        referenceData.forEach(referenceRow => {
-            const option = document.createElement('option');
-            const displayValue = dispColumns.map(displayColumn => referenceRow[displayColumn + '__display'] ?? referenceRow[displayColumn] ?? '').join(' - ') || referenceRow['id'];
-            option.value = displayValue;
-            option.dataset.realId = referenceRow['id'];
-            if (String(referenceRow['id']) === String(row[column])) currentDisplay = displayValue;
-            datalist.appendChild(option);
-        });
-    }
+    const fkData = state.fkData.get(cacheKey);
+    const displayById = new Map(fkData?.options.map(option => [option.realId, option.value]) || []);
+    let currentDisplay = displayById.get(String(row[column])) ?? '';
 
     input.value = currentDisplay;
 
     input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
     input.addEventListener('blur', () => {
-        const isValid = Array.from(datalist.options).some(datalistOption => datalistOption.value === input.value);
+        const isValid = fkData ? fkData.labels.has(input.value) : input.value === '';
         if (!isValid && input.value !== '') {
             input.value = currentDisplay;
         } else if (isValid) {
@@ -55,7 +64,6 @@ async function renderFkCell({ row, col: column, colCfg: columnConfig, schema, is
 
     if (!isReadOnly) attachCellEvents(input);
     td.appendChild(input);
-    td.appendChild(datalist);
     return td;
 }
 

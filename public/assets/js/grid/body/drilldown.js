@@ -75,7 +75,7 @@ async function buildSubtableBlock(sub, row) {
 
     try {
         const result = await fetch(
-            `api.php?api=list&table=${encodeURIComponent(sub.table)}&filter_col=${encodeURIComponent(sub.foreign_key)}&filter_val=${encodeURIComponent(row.id)}`,
+            `api.php?api=list&table=${encodeURIComponent(sub.table)}&filter_col=${encodeURIComponent(sub.foreign_key)}&filter_val=${encodeURIComponent(row.id)}&limit=200`,
             { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
         );
         const data = await result.json();
@@ -98,6 +98,19 @@ async function buildSubtableBlock(sub, row) {
                 });
                 ul.appendChild(li);
             });
+            if (data.truncated) {
+                const more = document.createElement('li');
+                more.style.cssText = 'justify-content:center; color:var(--muted); cursor:pointer;';
+                more.textContent = I18n.t('grid.truncated_notice', {
+                    loaded: String(data.rows.length),
+                    total: String(data.total ?? data.rows.length),
+                    remaining: '?',
+                });
+                more.addEventListener('click', () => {
+                    window.location.href = `index.php?table=${encodeURIComponent(sub.table)}&filter_col=${encodeURIComponent(sub.foreign_key)}&filter_val=${encodeURIComponent(row.id)}`;
+                });
+                ul.appendChild(more);
+            }
         } else {
             const empty = document.createElement('li');
             empty.textContent = I18n.t('grid.drilldown_no_records');

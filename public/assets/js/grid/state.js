@@ -10,7 +10,9 @@ export const state = {
     filteredData: [],
     unsortedFilteredData: [],
     sortState: [],
+    columnFilters: {},
     fkCache: new Map(),
+    fkData: new Map(),
     searchTerm: '',
     containerEl: null,
     gridTitleEl: null,
@@ -18,6 +20,7 @@ export const state = {
     selectedIds: new Set(),
     serverSearchMode: false,
     serverSearchActive: false,
+    serverSortActive: false,
     wasTruncated: false,
     loadedOffset: 0,
     totalRows: 0,
@@ -34,6 +37,7 @@ export function getState() {
         filteredData: state.filteredData,
         displayedColumns: state.displayedColumns,
         sortState: state.sortState,
+        columnFilters: state.columnFilters,
         serverSearchMode: state.serverSearchMode,
         serverSearchActive: state.serverSearchActive,
         wasTruncated: state.wasTruncated,
@@ -45,7 +49,7 @@ export function getState() {
 export function setFilteredData(rows) {
     state.filteredData = rows.slice();
     state.unsortedFilteredData = rows.slice();
-    if (state.sortState.length > 0) {
+    if (state.sortState.length > 0 && !state.serverSortActive) {
         state.filteredData = sortRows(state.filteredData, state.sortState);
     }
 }

@@ -31,18 +31,55 @@ function resolveCellType(columnConfig, hasFk) {
     return 'text';
 }
 
-function attachRowTooltip(td, row, schema, column, type) {
-    if (type === 'fk') return;
+const tooltipState = { activeTd: null, hideTimeout: null };
+
+function cellColumnOf(td) {
+    return td.dataset.column || td.querySelector('[data-column]')?.dataset.column || null;
+}
+
+function handleTooltipOver(event, schema) {
+    const td = event.target.closest('td');
+    if (!td || td.querySelector('input[list]')) return;
+    const column = cellColumnOf(td);
+    if (!column) return;
+    if (tooltipState.activeTd === td) return;
+
+    if (tooltipState.hideTimeout) {
+        clearTimeout(tooltipState.hideTimeout);
+        tooltipState.hideTimeout = null;
+    }
+    if (tooltipState.activeTd && tooltipState.activeTd !== td) hideRecordTooltip();
+    tooltipState.activeTd = td;
+
+    const row = findRowByElement(td, schema);
+    if (!row) return;
+
     const columns = schema.tables[state.currentTable]?.columns || {};
     td.style.cursor = 'default';
+    const title = row[column + '__display'] ?? row[column] ?? '';
+    showRecordTooltip(td, { title, rows: rowsFromRecord(row, columns) });
+}
 
-    td.addEventListener('mouseenter', () => {
-        const title = column ? (row[column + '__display'] ?? row[column] ?? '') : '';
-        showRecordTooltip(td, { title, rows: rowsFromRecord(row, columns) });
-    });
+function handleTooltipOut(event) {
+    const td = event.target.closest('td');
+    if (!td || td !== tooltipState.activeTd) return;
+    tooltipState.hideTimeout = setTimeout(() => {
+        hideRecordTooltip();
+        tooltipState.activeTd = null;
+    }, 50);
+}
 
-    td.addEventListener('mouseleave', hideRecordTooltip);
-    td.addEventListener('focusin', hideRecordTooltip);
+function findRowByElement(td, schema) {
+    const tr = td.closest('tr');
+    if (!tr) return null;
+    const rowId = tr.dataset.rowId;
+    if (rowId === undefined) return null;
+    return state.fullData.find(row => String(row['id']) === rowId) ?? null;
+}
+
+function attachTableTooltip(table, schema) {
+    table.addEventListener('mouseover', event => handleTooltipOver(event, schema));
+    table.addEventListener('mouseout', handleTooltipOut);
 }
 
 export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload) {
@@ -54,6 +91,7 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
 
     for (const row of pageRows) {
         const tr = document.createElement('tr');
+        tr.dataset.rowId = String(row.id);
         const highlightColor = matchHighlightRule(row, highlightRules);
 
         if (!isReadOnly) {
@@ -83,8 +121,7 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             const columnConfig = schema.tables[state.currentTable].columns[column] || {};
             const hasFk = Boolean(schema.tables[state.currentTable].foreign_keys?.[column]);
             const type = resolveCellType(columnConfig, hasFk);
-            const td = await CellRenderer.render(type, { row, col: column, colCfg: columnConfig, schema, isReadOnly });
-            attachRowTooltip(td, row, schema, column, type);
+            const td = CellRenderer.render(type, { row, col: column, colCfg: columnConfig, schema, isReadOnly });
             tr.appendChild(td);
         }
 
@@ -180,6 +217,8 @@ function buildActionsCell(row, schema, isReadOnly, onTableReload) {
 
     return tdActions;
 }
+
+export { attachTableTooltip };
 
 function closeAllActionMenus(except) {
     document.querySelectorAll('.td-actions-menu.open').forEach(element => {

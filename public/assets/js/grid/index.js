@@ -9,9 +9,9 @@ import { I18n } from '../i18n.js';
 import { state, getState, setFilteredData, resetFiltersState } from './state.js';
 import { fetchTableData, preloadForeignKeys } from './api.js';
 import { renderThead } from './header/render.js';
-import { renderTbody } from './body/render.js';
-import { loadCommentCounts } from './comments/counts.js';
-import { loadSubtableCounts } from './body/subtable-counts.js';
+import { renderTbody, attachTableTooltip } from './body/render.js';
+import { loadCommentCounts, clearCommentCountsStore } from './comments/counts.js';
+import { loadSubtableCounts, clearSubtableCountsStore } from './body/subtable-counts.js';
 import { initPreviewPopup, clearPreviewCache } from './comments/preview-popup.js';
 import { loadM2mColumns, clearM2mStore } from './m2m/loader.js';
 import { initM2mPopup } from './m2m/popup.js';
@@ -20,6 +20,8 @@ import { loadImageColumn, clearImageStore } from './images/loader.js';
 import { initImagePopup } from './images/popup.js';
 import { computeVirtual } from './cells/virtual-cell.js';
 import { attachCrosshair } from './crosshair.js';
+import { clearLoadedPages } from './side-fetch-cache.js';
+import { clearSharedFkDatalists } from './cells/fk-cell.js';
 
 export { getState, setFilteredData };
 export { clearSelection } from './state.js';
@@ -35,9 +37,16 @@ export async function loadTable(schema, table, gridTitleElement, addRowButton) {
 
         state.currentTable = table;
         state.fkCache = new Map();
+        state.fkData = new Map();
+        state.columnFilters = {};
+        state.serverSortActive = false;
         clearPreviewCache();
         clearM2mStore();
         clearImageStore();
+        clearCommentCountsStore();
+        clearSubtableCountsStore();
+        clearLoadedPages();
+        clearSharedFkDatalists();
         state.fullData = data.rows || [];
         state.serverSearchMode = !!data.truncated;
         state.serverSearchActive = false;
@@ -137,23 +146,32 @@ export async function renderGrid(schema) {
     await preloadForeignKeys(schema);
 
     const onRerender = () => renderGrid(schema);
+    const onSortToggle = () => {
+        if (state.serverSearchMode) {
+            serverApplyView(schema, { search: state.serverSearchActive ? state.searchTerm : '' });
+            return;
+        }
+        renderGrid(schema);
+    };
     const onTableReload = () => loadTable(
         schema, state.currentTable, state.gridTitleEl, state.addRowBtn
     );
 
     const table = document.createElement('table');
-    table.appendChild(renderThead(schema, isReadOnly, onRerender, _getPageRows));
+    table.appendChild(renderThead(schema, isReadOnly, onRerender, _getPageRows, onSortToggle));
 
     const { tbody, pageRows } = await renderTbody(schema, isReadOnly, _getPageRows, onTableReload);
     table.appendChild(tbody);
 
     attachCrosshair(table);
+    attachTableTooltip(table, schema);
 
     const container = state.containerEl || document.getElementById('grid');
     container.replaceChildren(table);
 
     _setupPagination(schema);
     debugLog('Grid rendered', { rows: pageRows.length });
+    document.dispatchEvent(new CustomEvent('gridRendered', { detail: { table: state.currentTable } }));
     loadCommentCounts(pageRows);
     loadSubtableCounts(pageRows, schema);
     loadM2mColumns(pageRows, schema);
@@ -179,13 +197,15 @@ export async function appendMoreRows(schema, search = '') {
         const data = await fetchTableData(state.currentTable, urlParameters, {
             offset: state.loadedOffset,
             search,
+            includeTotal: false,
+            order: state.sortState,
+            columnFilters: state.columnFilters,
         });
         const newRows = data.rows || [];
         applyVirtualColumns(schema, newRows);
         state.fullData = [...state.fullData, ...newRows];
         state.loadedOffset = state.fullData.length;
         state.wasTruncated = !!data.truncated;
-        state.totalRows = data.total ?? state.fullData.length;
         setFilteredData(state.fullData.slice());
         await renderGrid(schema);
     } catch (error) {
@@ -194,24 +214,39 @@ export async function appendMoreRows(schema, search = '') {
     }
 }
 
-export async function serverSearchRows(schema, search) {
+export async function serverApplyView(schema, { search = '', reset = true } = {}) {
     try {
-        state.loadedOffset = 0;
+        if (reset) {
+            state.loadedOffset = 0;
+        }
         const urlParameters = new URLSearchParams(window.location.search);
-        const data = await fetchTableData(state.currentTable, urlParameters, { search });
+        const data = await fetchTableData(state.currentTable, urlParameters, {
+            search,
+            order: state.sortState,
+            columnFilters: state.columnFilters,
+            offset: reset ? 0 : state.loadedOffset,
+        });
         const rows = data.rows || [];
         applyVirtualColumns(schema, rows);
-        state.fullData = rows;
-        state.loadedOffset = rows.length;
+        if (reset) {
+            state.fullData = rows;
+        } else {
+            state.fullData = [...state.fullData, ...rows];
+        }
+        state.loadedOffset = state.fullData.length;
         state.wasTruncated = !!data.truncated;
-        state.totalRows = data.total ?? rows.length;
-        state.serverSearchActive = true;
-        setFilteredData(rows);
+        state.totalRows = data.total ?? state.fullData.length;
+        state.serverSearchActive = search !== '';
+        setFilteredData(state.fullData.slice());
         await renderGrid(schema);
     } catch (error) {
-        console.error('Server search failed:', error);
+        console.error('Server view apply failed:', error);
         showToast(I18n.t('grid.search_failed', { msg: error.message }), 'error');
     }
+}
+
+export async function serverSearchRows(schema, search) {
+    await serverApplyView(schema, { search });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

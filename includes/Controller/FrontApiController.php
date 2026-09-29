@@ -80,18 +80,13 @@ final class FrontApiController
             throw new ServerErrorException('Cannot read schema configuration');
         }
 
-        $schemaPublic = $schema;
-
-        $schemaPublic['tables'] = (object) filter_tables_for_user($schema['tables'] ?? []);
-        $schemaJson = json_encode($schemaPublic);
-
         $conn = db_connect();
         require_once __DIR__ . '/../automations.php';
 
         $apiContext = new FrontApiContext(
             $conn,
             $schema,
-            (string) $schemaJson,
+            '',
             $role,
             $this->session->userId(),
         );
@@ -100,6 +95,9 @@ final class FrontApiController
             $apiAction = $this->request->query('api');
 
             if ($method === 'GET' && $apiAction === 'schema') {
+                $schemaPublic = $schema;
+                $schemaPublic['tables'] = (object) filter_tables_for_user($schema['tables'] ?? []);
+                $schemaJson = json_encode($schemaPublic);
                 throw ResponseException::raw((string) $schemaJson);
             }
 
