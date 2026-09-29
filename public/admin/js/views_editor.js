@@ -3,8 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-import { markDirty } from './app.js';
-import { createIconPicker, createTextInput, createCheckbox, buildSectionCard } from './ui.js';
+import { markDirty, showStatusPill } from './app.js';
+import { createIconPicker, createTextInput, createTextarea, createCheckbox, createCheckboxRow, createFieldGrid, createBadgeList, buildSectionCard } from './ui.js';
 import { apiFetch } from '../../assets/js/util/api.js';
 
 export function renderViewsEditor(context) {
@@ -80,10 +80,6 @@ export function renderViewsEditor(context) {
     schemasTab.addEventListener('click', () => switchSource('schemas'));
     settingsTab.addEventListener('click', () => switchSource('settings'));
 
-    const statusElement = document.createElement('div');
-    statusElement.style.cssText = 'display:none; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px;';
-    wrap.appendChild(statusElement);
-
     const bar = document.createElement('div');
     bar.style.marginBottom = '12px';
     const syncButton = document.createElement('button');
@@ -97,13 +93,7 @@ export function renderViewsEditor(context) {
     workspaceElement.appendChild(wrap);
 
     function setStatus(message, type = 'info') {
-        const styles = {
-            info:  'background:var(--accent-light); color:var(--accent-dark);',
-            ok:    'background:var(--ok-light); color:var(--ok);',
-            error: 'background:var(--error-light); color:var(--error);',
-        };
-        statusElement.style.cssText = `display:block; padding:8px 14px; border-radius:var(--radius);  margin-bottom:16px; ${styles[type] ?? styles.info}`;
-        statusElement.textContent = message;
+        showStatusPill(syncButton, message, type === 'ok' ? 'success' : type);
     }
 
     async function syncFromDb() {
@@ -365,61 +355,33 @@ export function renderViewsEditor(context) {
     function buildCardBody(vName, config) {
         const frag = document.createDocumentFragment();
 
-        const genHdr = document.createElement('h4');
-        genHdr.textContent = 'General';
-        frag.appendChild(genHdr);
+        const { card: generalCard, body: generalBody } = buildSectionCard(
+            'General',
+            'How this view is named and shown in the application menu.'
+        );
+        generalBody.appendChild(createFieldGrid([
+            { element: createTextInput('view_display_name', 'Display name', config.display_name ?? vName, viewName => { views[vName].display_name = viewName; }) },
+            { element: createTextInput('view_menu_name', 'Menu name', config.menu_name ?? vName, viewName => { views[vName].menu_name = viewName; }) },
+            { element: createTextarea('view_description', 'Description', config.description ?? '', viewName => { views[vName].description = viewName; }), full: true },
+        ]));
+        generalBody.appendChild(createIconPicker('icon', 'Icon', config.icon ?? 'assets/icons/material/table_chart_view.svg', viewName => { views[vName].icon = viewName; markDirty(); }));
+        frag.appendChild(generalCard);
 
-        frag.appendChild(fg('Display name', 'text', config.display_name ?? vName, viewName => { views[vName].display_name = viewName; }));
-        frag.appendChild(fg('Menu name',    'text', config.menu_name    ?? vName, viewName => { views[vName].menu_name    = viewName; }));
-        frag.appendChild(fgArea('Description', config.description ?? '', viewName => { views[vName].description = viewName; }));
-        frag.appendChild(createIconPicker('icon', 'Icon', config.icon ?? 'assets/icons/material/table_chart_view.svg', viewName => { views[vName].icon = viewName; markDirty(); }));
+        const { card: columnsCard, body: columnsBody } = buildSectionCard(
+            'Columns',
+            'Display names, summaries, and color rules per column. Click a column to expand.'
+        );
+        columnsBody.appendChild(buildColumnsEditor(vName, config.columns ?? {}));
+        frag.appendChild(columnsCard);
 
-        const divider1 = document.createElement('hr');
-        divider1.style.cssText = 'border:none; border-top:1px solid var(--border-light); margin:20px 0;';
-        frag.appendChild(divider1);
-
-        const columnHdr = document.createElement('h4');
-        columnHdr.textContent = 'Columns';
-        frag.appendChild(columnHdr);
-        frag.appendChild(buildColumnsEditor(vName, config.columns ?? {}));
-
-        const divider2 = document.createElement('hr');
-        divider2.style.cssText = 'border:none; border-top:1px solid var(--border-light); margin:20px 0;';
-        frag.appendChild(divider2);
-
-        const drillHdr = document.createElement('h4');
-        drillHdr.textContent = 'Drill-down';
-        frag.appendChild(drillHdr);
-        frag.appendChild(buildDrillEditor(vName, config));
+        const { card: drillCard, body: drillBody } = buildSectionCard(
+            'Drill-down',
+            'Lets users click a summary value to see the rows behind it, level by level.'
+        );
+        drillBody.appendChild(buildDrillEditor(vName, config));
+        frag.appendChild(drillCard);
 
         return frag;
-    }
-
-    function fg(label, type, value, onChange) {
-        const group = document.createElement('div');
-        group.className = 'form-group';
-        const labelElement = document.createElement('label');
-        labelElement.textContent = label;
-        group.appendChild(labelElement);
-        const input = document.createElement('input');
-        input.type = type; input.value = value ?? '';
-        input.addEventListener('input', () => onChange(input.value));
-        group.appendChild(input);
-        return group;
-    }
-
-    function fgArea(label, value, onChange) {
-        const group = document.createElement('div');
-        group.className = 'form-group';
-        const labelElement = document.createElement('label');
-        labelElement.textContent = label;
-        group.appendChild(labelElement);
-        const textarea = document.createElement('textarea');
-        textarea.rows = 3; textarea.style.resize = 'vertical';
-        textarea.value = value ?? '';
-        textarea.addEventListener('input', () => onChange(textarea.value));
-        group.appendChild(textarea);
-        return group;
     }
 
     function buildColumnsEditor(vName, columnsConfig) {
@@ -439,63 +401,82 @@ export function renderViewsEditor(context) {
             if (!views[vName].columns[columnName]) views[vName].columns[columnName] = { display_name: columnName, color_rules: [] };
 
             const columnBlock = document.createElement('div');
-            columnBlock.className = 'subtable-block';
+            columnBlock.className = 'column-block collapsed';
 
-            const columnHdr = document.createElement('h4');
-            columnHdr.style.cssText = 'display:flex; align-items:center; gap:8px;';
+            const columnHdr = document.createElement('div');
+            columnHdr.className = 'block-header';
+            columnHdr.addEventListener('click', (event) => {
+                if (event.target.closest('button, input, label')) return;
+                columnBlock.classList.toggle('collapsed');
+            });
+
+            const chevron = document.createElement('span');
+            chevron.className = 'block-chevron';
+            chevron.textContent = '▶';
+            columnHdr.appendChild(chevron);
+
             const columnNameSpan = document.createElement('span');
+            columnNameSpan.className = 'block-title';
             columnNameSpan.textContent = columnName;
             columnHdr.appendChild(columnNameSpan);
+
+            const headerBadges = [];
             const dtype = dbColumns[vName]?.[columnName]?.data_type ?? '';
-            if (dtype) {
-                const badge = document.createElement('span');
-                badge.textContent = dtype;
-                badge.style.cssText = ' font-weight:var(--font-weight-normal);  background:var(--border-light); padding:1px 6px; border-radius:10px;';
-                columnHdr.appendChild(badge);
-            }
+            if (dtype) headerBadges.push({ label: dtype });
+            if (columnConfig.summary && columnConfig.summary !== 'none') headerBadges.push({ label: columnConfig.summary.toUpperCase(), className: 'adm-badge-accent' });
+            if ((columnConfig.color_rules ?? []).length > 0) headerBadges.push({ label: 'colors', className: 'adm-badge-accent' });
+            if (headerBadges.length > 0) columnHdr.appendChild(createBadgeList(headerBadges));
+
+            const columnBody = document.createElement('div');
+            columnBody.className = 'block-body';
             columnBlock.appendChild(columnHdr);
+            columnBlock.appendChild(columnBody);
 
-            columnBlock.appendChild(fg('Display name', 'text', columnConfig.display_name ?? columnName, viewName => {
-                views[vName].columns[columnName].display_name = viewName;
-            }));
-
-            const summaryGroup = document.createElement('div');
-            summaryGroup.className = 'form-group';
-            const summaryLabel = document.createElement('label');
-            summaryLabel.textContent = 'Summary';
-            summaryGroup.appendChild(summaryLabel);
-            const summarySelect = document.createElement('select');
-            ['none', 'sum', 'avg', 'count', 'min', 'max'].forEach(handler => {
-                const option = document.createElement('option');
-                option.value = handler;
-                option.textContent = handler === 'none' ? 'None' : handler.toUpperCase();
-                if ((columnConfig.summary ?? 'none') === handler) option.selected = true;
-                summarySelect.appendChild(option);
-            });
-            summarySelect.addEventListener('change', () => {
-                const viewName = summarySelect.value;
-                if (viewName === 'none') {
-                    delete views[vName].columns[columnName].summary;
-                    delete views[vName].columns[columnName].summary_if;
-                    syncConditionUi();
-                } else {
-                    views[vName].columns[columnName].summary = viewName;
-                }
-                conditionGroup.style.display = viewName === 'none' ? 'none' : 'block';
-                markDirty();
-            });
-            summaryGroup.appendChild(summarySelect);
-            columnBlock.appendChild(summaryGroup);
+            columnBody.appendChild(createFieldGrid([
+                { element: createTextInput('col_display_name', 'Display name', columnConfig.display_name ?? columnName, viewName => {
+                    views[vName].columns[columnName].display_name = viewName;
+                }) },
+                { element: (() => {
+                    const summaryGroup = document.createElement('div');
+                    summaryGroup.className = 'form-group';
+                    const summaryLabel = document.createElement('label');
+                    summaryLabel.textContent = 'Summary';
+                    summaryGroup.appendChild(summaryLabel);
+                    const summarySelect = document.createElement('select');
+                    ['none', 'sum', 'avg', 'count', 'min', 'max'].forEach(handler => {
+                        const option = document.createElement('option');
+                        option.value = handler;
+                        option.textContent = handler === 'none' ? 'None' : handler.toUpperCase();
+                        if ((columnConfig.summary ?? 'none') === handler) option.selected = true;
+                        summarySelect.appendChild(option);
+                    });
+                    summarySelect.addEventListener('change', () => {
+                        const viewName = summarySelect.value;
+                        if (viewName === 'none') {
+                            delete views[vName].columns[columnName].summary;
+                            delete views[vName].columns[columnName].summary_if;
+                            syncConditionUi();
+                        } else {
+                            views[vName].columns[columnName].summary = viewName;
+                        }
+                        conditionGroup.style.display = viewName === 'none' ? 'none' : 'block';
+                        markDirty();
+                    });
+                    summaryGroup.appendChild(summarySelect);
+                    return summaryGroup;
+                })() },
+            ]));
 
             const conditionGroup = document.createElement('div');
-            conditionGroup.className = 'form-group';
+            conditionGroup.className = 'schema-subsec';
             conditionGroup.style.display = (columnConfig.summary ?? 'none') === 'none' ? 'none' : 'block';
-            const conditionLabel = document.createElement('label');
-            conditionLabel.textContent = 'Summary condition (SUMIF / COUNTIF)';
-            conditionGroup.appendChild(conditionLabel);
+
+            const conditionTitle = document.createElement('h5');
+            conditionTitle.textContent = 'Summary condition (SUMIF / COUNTIF)';
+            conditionGroup.appendChild(conditionTitle);
 
             const conditionRow = document.createElement('div');
-            conditionRow.style.cssText = 'display:flex; align-items:center; gap:8px;';
+            conditionRow.className = 'schema-rule-row';
 
             const conditionColumnSelect = document.createElement('select');
             conditionColumnSelect.className = 'adm-input';
@@ -562,16 +543,17 @@ export function renderViewsEditor(context) {
             conditionRow.appendChild(conditionOpSelect);
             conditionRow.appendChild(conditionValueInput);
             conditionGroup.appendChild(conditionRow);
-            columnBlock.appendChild(conditionGroup);
+            columnBody.appendChild(conditionGroup);
 
-            const rulesLabel = document.createElement('label');
-            rulesLabel.textContent = 'Color rules';
-            rulesLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:var(--font-weight-bold);  color:var(--text);';
-            columnBlock.appendChild(rulesLabel);
+            const rulesSubsec = document.createElement('div');
+            rulesSubsec.className = 'schema-subsec';
+
+            const rulesTitle = document.createElement('h5');
+            rulesTitle.textContent = 'Color rules';
+            rulesSubsec.appendChild(rulesTitle);
 
             const rulesList = document.createElement('div');
-            rulesList.style.cssText = 'display:flex; flex-direction:column; gap:6px; margin-bottom:10px;';
-            columnBlock.appendChild(rulesList);
+            rulesSubsec.appendChild(rulesList);
 
             const rules = Array.isArray(columnConfig.color_rules) ? columnConfig.color_rules : [];
             views[vName].columns[columnName].color_rules = rules;
@@ -590,7 +572,8 @@ export function renderViewsEditor(context) {
                 renderRules();
                 markDirty();
             });
-            columnBlock.appendChild(addRuleButton);
+            rulesSubsec.appendChild(addRuleButton);
+            columnBody.appendChild(rulesSubsec);
 
             wrap.appendChild(columnBlock);
         });
@@ -600,7 +583,7 @@ export function renderViewsEditor(context) {
 
     function buildRuleRow(rule, index, rules, onUpdate) {
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex; align-items:center; gap:8px;';
+        row.className = 'schema-rule-row';
 
         const opSelect = document.createElement('select');
         opSelect.className = 'adm-input w-64';
@@ -638,26 +621,19 @@ export function renderViewsEditor(context) {
         const dd   = config.drill_down ?? { enabled: false, levels: [] };
         views[vName].drill_down = dd;
 
-        const enableGroup = document.createElement('div');
-        enableGroup.className = 'form-group';
-        const enableLabel = document.createElement('label');
-        enableLabel.textContent = 'Enable drill-down';
-        enableGroup.appendChild(enableLabel);
-        const enableCheckbox = document.createElement('input');
-        enableCheckbox.type    = 'checkbox';
-        enableCheckbox.checked = !!dd.enabled;
-        enableCheckbox.addEventListener('change', () => { views[vName].drill_down.enabled = enableCheckbox.checked; });
-        enableGroup.appendChild(enableCheckbox);
-        wrap.appendChild(enableGroup);
+        wrap.appendChild(createCheckboxRow([
+            { key: 'drill_enabled', label: 'Enable drill-down', checked: !!dd.enabled, onChange: (value) => { views[vName].drill_down.enabled = value; }, defaultValue: false },
+        ]));
 
-        const levelsLabel = document.createElement('label');
-        levelsLabel.textContent = 'Levels (ordered)';
-        levelsLabel.style.cssText = 'display:block; margin-bottom:8px; font-weight:var(--font-weight-bold);  color:var(--text);';
-        wrap.appendChild(levelsLabel);
+        const levelsSubsec = document.createElement('div');
+        levelsSubsec.className = 'schema-subsec';
+
+        const levelsTitle = document.createElement('h5');
+        levelsTitle.textContent = 'Levels (ordered)';
+        levelsSubsec.appendChild(levelsTitle);
 
         const levelsList = document.createElement('div');
-        levelsList.style.cssText = 'display:flex; flex-direction:column; gap:8px; margin-bottom:12px;';
-        wrap.appendChild(levelsList);
+        levelsSubsec.appendChild(levelsList);
 
         const dbCols  = Object.keys(dbColumns[vName] ?? {});
         const allColumns = dbCols.length > 0 ? dbCols : Object.keys(views[vName].columns ?? {});
@@ -666,10 +642,10 @@ export function renderViewsEditor(context) {
             levelsList.innerHTML = '';
             (dd.levels ?? []).forEach((lvl, index) => {
                 const levelRow = document.createElement('div');
-                levelRow.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg); border:1px solid var(--border-light); border-radius:var(--radius);';
+                levelRow.className = 'schema-rule-row';
 
                 const indexSpan = document.createElement('span');
-                indexSpan.style.cssText = '  min-width:52px;';
+                indexSpan.style.minWidth = '52px';
                 indexSpan.textContent = `Level ${index}:`;
 
                 const gbSelect = document.createElement('select');
@@ -711,7 +687,8 @@ export function renderViewsEditor(context) {
             renderLevels();
             markDirty();
         });
-        wrap.appendChild(addLevelButton);
+        levelsSubsec.appendChild(addLevelButton);
+        wrap.appendChild(levelsSubsec);
         return wrap;
     }
 

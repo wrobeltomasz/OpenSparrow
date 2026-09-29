@@ -4,10 +4,8 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { apiFetch } from '../../assets/js/util/api.js';
-import { createTextInput, createNumberInput, createSelectInput, createCheckbox, createColorInput, createIconPicker, moveObjectKey, createMenuPreview, buildSectionCard } from './ui.js';
+import { createTextInput, createNumberInput, createSelectInput, createCheckbox, createCheckboxRow, createFieldGrid, createBadgeList, createColorInput, createIconPicker, moveObjectKey, buildSectionCard } from './ui.js';
 import { showStatusPill, markDirty } from './app.js';
-
-import { escHtml } from '../../assets/js/util/esc.js';
 
 export function renderSchemaGlobalSettings(config, context) {
     const { workspaceEl: workspaceElement } = context;
@@ -25,22 +23,15 @@ export function renderSchemaGlobalSettings(config, context) {
     wrap.appendChild(card);
     workspaceElement.appendChild(wrap);
 
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex; align-items:center; gap:16px; padding:16px; background:white; border:1px solid var(--border); border-radius:6px;';
+    const fieldGroup = document.createElement('div');
+    fieldGroup.className = 'form-group';
 
-    const labelWrap = document.createElement('div');
-    labelWrap.style.flex = '1';
     const labelElement = document.createElement('label');
-    labelElement.style.cssText = 'display:block; font-weight:var(--font-weight-bold);  margin-bottom:4px;';
     labelElement.textContent = 'Default Page Size';
-    const hint = document.createElement('span');
-    hint.style.cssText = ' ';
-    hint.textContent = 'Records shown per page. Users can override this per-session from the grid pagination bar.';
-    labelWrap.append(labelElement, hint);
+    fieldGroup.appendChild(labelElement);
 
     const selectElement = document.createElement('select');
     selectElement.className = 'adm-input';
-    selectElement.style.minWidth = '80px';
     PAGE_SIZES.forEach(pageSize => {
         const option = document.createElement('option');
         option.value = pageSize;
@@ -52,14 +43,14 @@ export function renderSchemaGlobalSettings(config, context) {
         config.default_page_size = Number(selectElement.value);
         markDirty();
     });
+    fieldGroup.appendChild(selectElement);
 
-    row.append(labelWrap, selectElement);
-    body.appendChild(row);
+    const hint = document.createElement('span');
+    hint.className = 'help-text';
+    hint.textContent = 'Records shown per page. Users can override this per-session from the grid pagination bar. Stored in the schema configuration as "default_page_size".';
+    fieldGroup.appendChild(hint);
 
-    const note = document.createElement('p');
-    note.style.cssText = '  margin-top:12px;';
-    note.textContent = 'Stored in the schema configuration as "default_page_size".';
-    body.appendChild(note);
+    body.appendChild(fieldGroup);
 }
 
 export function createAddTableButton(currentConfig, defaultSchema, onSuccess, onError) {
@@ -152,11 +143,11 @@ function buildDefaultSortUI(tableData) {
     const rules = tableData.default_sort;
 
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'margin-bottom:15px;';
+    wrapper.className = 'schema-subsec';
 
     const label = document.createElement('label');
-    label.style.cssText = 'display:block;   margin-bottom:6px; font-weight:var(--font-weight-bold);';
     label.textContent = 'Default Sort Order';
+    label.style.cssText = 'display:block; margin-bottom:6px; font-weight:var(--font-weight-bold);';
     wrapper.appendChild(label);
 
     const listElement = document.createElement('div');
@@ -167,7 +158,7 @@ function buildDefaultSortUI(tableData) {
         listElement.replaceChildren();
         rules.forEach((rule, formulaIndex) => {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex; align-items:center; gap:8px;';
+            row.className = 'schema-rule-row';
 
             const columnInput = document.createElement('select');
             columnInput.className = 'adm-input w-160';
@@ -226,19 +217,17 @@ export function renderSchemaEditor(tableName, tableData, context) {
 
     workspaceElement.innerHTML = '';
 
-    const titleElement = document.createElement('h3');
-    titleElement.innerHTML = `Table Properties: ${escHtml(tableName)}`;
-    titleElement.style.margin = '0 0 20px';
-    workspaceElement.appendChild(titleElement);
-
     if (!tableData.columns || Array.isArray(tableData.columns)) tableData.columns = {};
     if (!tableData.foreign_keys || Array.isArray(tableData.foreign_keys)) tableData.foreign_keys = {};
     if (!tableData.subtables || !Array.isArray(tableData.subtables)) tableData.subtables = [];
 
+    const toolbar = document.createElement('div');
+    toolbar.className = 'schema-card-toolbar';
+
     const buttonSyncColumns = document.createElement('button');
     buttonSyncColumns.type = 'button';
     buttonSyncColumns.className = 'btn btn-sm';
-    buttonSyncColumns.innerHTML = 'Sync Columns from DB';
+    buttonSyncColumns.textContent = 'Sync Columns from DB';
 
     buttonSyncColumns.onclick = async () => {
         try {
@@ -318,13 +307,12 @@ export function renderSchemaEditor(tableName, tableData, context) {
             showStatusPill(buttonSyncColumns, 'Communication error. Check console.', 'error');
         }
     };
-    workspaceElement.appendChild(buttonSyncColumns);
+    toolbar.appendChild(buttonSyncColumns);
 
     const buttonAddColumn = document.createElement('button');
     buttonAddColumn.type = 'button';
     buttonAddColumn.className = 'btn btn-sm';
     buttonAddColumn.textContent = '+ Add Column';
-    buttonAddColumn.style.marginLeft = '10px';
 
     buttonAddColumn.onclick = async (event) => {
         event.preventDefault();
@@ -365,13 +353,12 @@ export function renderSchemaEditor(tableName, tableData, context) {
             showStatusPill(buttonAddColumn, 'Network error occurred.', 'error');
         }
     };
-    workspaceElement.appendChild(buttonAddColumn);
+    toolbar.appendChild(buttonAddColumn);
 
     const buttonAddVirtual = document.createElement('button');
     buttonAddVirtual.type = 'button';
     buttonAddVirtual.className = 'btn btn-primary btn-sm';
     buttonAddVirtual.textContent = '+ Add Virtual Column';
-    buttonAddVirtual.style.marginLeft = '10px';
     buttonAddVirtual.onclick = () => {
         const columnName = prompt('Enter virtual column name (lowercase, no spaces):');
         if (!columnName) return;
@@ -390,48 +377,57 @@ export function renderSchemaEditor(tableName, tableData, context) {
         markDirty();
         renderEditor(tableName, tableData, false);
     };
-    workspaceElement.appendChild(buttonAddVirtual);
+    toolbar.appendChild(buttonAddVirtual);
 
-    workspaceElement.appendChild(createTextInput('display_name', 'Display Name', tableData.display_name, (value) => {
-        tableData.display_name = value;
-    }));
-    workspaceElement.appendChild(createTextInput('schema', 'Database Schema', tableData.schema || 'app', (value) => tableData.schema = value));
+    const { card: propertiesCard, body: propertiesBody } = buildSectionCard(
+        'Table Properties',
+        `Basic identity of "${tableName}": how it is named, where it lives, and how it behaves in the frontend.`
+    );
+    propertiesCard.prepend(toolbar);
 
-    workspaceElement.appendChild(createIconPicker('icon', 'Icon Path', tableData.icon, (value) => {
-        if (value) tableData.icon = value;
-        else delete tableData.icon;
-    }));
+    propertiesBody.appendChild(createFieldGrid([
+        { element: createTextInput('display_name', 'Display Name', tableData.display_name, (value) => {
+            tableData.display_name = value;
+        }) },
+        { element: createTextInput('schema', 'Database Schema', tableData.schema || 'app', (value) => tableData.schema = value) },
+        { element: createIconPicker('icon', 'Icon Path', tableData.icon, (value) => {
+            if (value) tableData.icon = value;
+            else delete tableData.icon;
+        }), full: true },
+        { element: createTextInput(
+            'initial_limit',
+            'Initial Load Limit (rows, 0 = unlimited)',
+            String(tableData.initial_limit ?? 0),
+            (value) => {
+                const pageSize = parseInt(value, 10);
+                if (pageSize > 0) tableData.initial_limit = pageSize;
+                else delete tableData.initial_limit;
+                markDirty();
+            }
+        ) },
+    ]));
 
-    workspaceElement.appendChild(createCheckbox('hidden', 'Hide from Sidebar Menu', tableData.hidden, (value) => {
-        tableData.hidden = value;
-    }, false));
+    propertiesBody.appendChild(createCheckboxRow([
+        { key: 'hidden', label: 'Hide from Sidebar Menu', checked: tableData.hidden, onChange: (value) => { tableData.hidden = value; }, defaultValue: false },
+    ]));
 
-    workspaceElement.appendChild(buildDefaultSortUI(tableData));
+    propertiesBody.appendChild(buildDefaultSortUI(tableData));
 
-    workspaceElement.appendChild(createTextInput(
-        'initial_limit',
-        'Initial Load Limit (rows, 0 = unlimited)',
-        String(tableData.initial_limit ?? 0),
-        (value) => {
-            const pageSize = parseInt(value, 10);
-            if (pageSize > 0) tableData.initial_limit = pageSize;
-            else delete tableData.initial_limit;
-            markDirty();
-        }
-    ));
+    workspaceElement.appendChild(propertiesCard);
 
-    const columnsTitle = document.createElement('h3');
-    columnsTitle.textContent = 'Columns Configuration';
-    columnsTitle.style.marginTop = '30px';
-    workspaceElement.appendChild(columnsTitle);
+    const { card: columnsCard, body: columnsBody } = buildSectionCard(
+        'Columns',
+        'Click a column to expand. Order defines grid and form field order — use ▲▼ to reorder.'
+    );
 
-    if (!tableData.columns || !tableData.columns['id']) {
+    if (!tableData.columns['id']) {
         const idWarn = document.createElement('div');
-        idWarn.className = 'status-pill error';
-        idWarn.style.cssText = 'display:block; margin-bottom:16px; padding:10px 14px; line-height:1.5;';
+        idWarn.className = 'schema-warn';
         idWarn.innerHTML = '<strong>Missing required <code>id</code> column.</strong> OpenSparrow requires a column named <code>id</code> of type <code>serial4</code> (auto-increment integer primary key). Without it the grid, edit forms, and relations will not work. Add it via your database tool or by running: <code>ALTER TABLE &lt;table&gt; ADD COLUMN id serial4 PRIMARY KEY;</code> then click <em>Sync Columns from DB</em>.';
-        workspaceElement.appendChild(idWarn);
+        columnsBody.appendChild(idWarn);
     }
+
+    workspaceElement.appendChild(columnsCard);
 
     const dataTypeOptions = [
         { value: 'text',      label: 'Text' },
@@ -511,6 +507,14 @@ export function renderSchemaEditor(tableName, tableData, context) {
         const h4 = document.createElement('h4');
         h4.textContent = `Column: ${columnName}`;
 
+        const headerBadges = [];
+        if (currentType === 'enum') headerBadges.push({ label: 'enum', className: 'adm-badge-accent' });
+        if (tableData.foreign_keys[columnName] && tableData.foreign_keys[columnName].reference_table) headerBadges.push({ label: 'fk', className: 'adm-badge-accent' });
+        if (currentType === 'virtual') headerBadges.push({ label: 'virtual', className: 'adm-badge-accent' });
+        if (columnConfig.show_in_grid !== false && currentType !== 'virtual') headerBadges.push({ label: 'grid' });
+        if (columnConfig.show_in_edit !== false && currentType !== 'virtual') headerBadges.push({ label: 'form' });
+        if (columnConfig.readonly) headerBadges.push({ label: 'readonly' });
+
         const moveControls = document.createElement('div');
 
         const buttonUp = document.createElement('button');
@@ -540,22 +544,24 @@ export function renderSchemaEditor(tableName, tableData, context) {
         headerDiv.appendChild(chevron);
         headerDiv.appendChild(typeIcon);
         headerDiv.appendChild(h4);
+        if (headerBadges.length > 0) headerDiv.appendChild(createBadgeList(headerBadges));
         headerDiv.appendChild(moveControls);
         block.appendChild(headerDiv);
 
-        block.appendChild(createTextInput('display_name', 'Display Name', columnConfig.display_name, (value) => columnConfig.display_name = value));
-        block.appendChild(createTextInput('description', 'Column Description (tooltip)', columnConfig.description || '', (value) => {
-            if (value) columnConfig.description = value;
-            else delete columnConfig.description;
-        }));
-
-        block.appendChild(createSelectInput('type', 'Data Type', dataTypeOptions, currentType, (value) => {
-            columnConfig.type = value;
-            if (value === 'virtual' && !columnConfig.formula) {
-                columnConfig.formula = { op: 'sum', cols: [] };
-            }
-            renderEditor(tableName, tableData, false);
-        }));
+        block.appendChild(createFieldGrid([
+            { element: createTextInput('display_name', 'Display Name', columnConfig.display_name, (value) => columnConfig.display_name = value) },
+            { element: createSelectInput('type', 'Data Type', dataTypeOptions, currentType, (value) => {
+                columnConfig.type = value;
+                if (value === 'virtual' && !columnConfig.formula) {
+                    columnConfig.formula = { op: 'sum', cols: [] };
+                }
+                renderEditor(tableName, tableData, false);
+            }) },
+            { element: createTextInput('description', 'Column Description (tooltip)', columnConfig.description || '', (value) => {
+                if (value) columnConfig.description = value;
+                else delete columnConfig.description;
+            }), full: true },
+        ]));
 
         if (currentType === 'virtual') {
             if (!columnConfig.formula || typeof columnConfig.formula !== 'object') {
@@ -564,11 +570,10 @@ export function renderSchemaEditor(tableName, tableData, context) {
             const formula = columnConfig.formula;
 
             const vBlock = document.createElement('div');
-            vBlock.style.cssText = 'margin-left:20px;padding-left:10px;border-left:2px solid var(--muted);margin-bottom:15px;';
+            vBlock.className = 'schema-subsec';
 
             const vTitle = document.createElement('h5');
             vTitle.textContent = 'Formula Configuration';
-            vTitle.style.cssText = 'margin-top:0;margin-bottom:10px;color:var(--muted);';
             vBlock.appendChild(vTitle);
 
             vBlock.appendChild(createSelectInput('v_op', 'Operation', virtualOpsNumeric, formula.op || 'sum', value => {
@@ -580,7 +585,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
                 .map(([pageSize, formulaColumn]) => ({ value: pageSize, label: formulaColumn.display_name || pageSize }));
 
             const columnsContainer = document.createElement('div');
-            columnsContainer.style.cssText = 'margin-top:4px;';
+            columnsContainer.style.marginTop = '4px';
 
             const columnsLabel = document.createElement('label');
             columnsLabel.style.cssText = 'font-weight:var(--font-weight-bold);display:block;margin-bottom:6px;';
@@ -594,10 +599,10 @@ export function renderSchemaEditor(tableName, tableData, context) {
                 selectedList.innerHTML = '';
                 (formula.cols || []).forEach((formulaColumn, formulaIndex) => {
                     const row = document.createElement('div');
-                    row.style.cssText = 'display:flex;gap:6px;align-items:center;';
+                    row.className = 'schema-rule-row';
 
                     const labelElement = document.createElement('span');
-                    labelElement.style.cssText = 'flex:1;background:var(--bg);padding:3px 8px;border-radius:4px;border:1px solid var(--border-light);';
+                    labelElement.className = 'schema-rule-tag';
                     labelElement.textContent = nonVirtualColumns.find(candidate => candidate.value === formulaColumn)?.label ?? formulaColumn;
 
                     const rmButton = document.createElement('button');
@@ -619,7 +624,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
             columnsContainer.appendChild(selectedList);
 
             const addRow = document.createElement('div');
-            addRow.style.cssText = 'display:flex;gap:6px;align-items:center;';
+            addRow.className = 'schema-rule-row';
 
             const columnPicker = document.createElement('select');
             columnPicker.className = 'adm-input flex-1';
@@ -664,11 +669,10 @@ export function renderSchemaEditor(tableName, tableData, context) {
             const touchIconRules = () => { columnConfig.icon_rules = iconRules; markDirty(); };
 
             const iBlock = document.createElement('div');
-            iBlock.style.cssText = 'margin-left:20px;padding-left:10px;border-left:2px solid var(--muted);margin-bottom:15px;';
+            iBlock.className = 'schema-subsec';
 
             const iTitle = document.createElement('h5');
             iTitle.textContent = 'Icon Rules';
-            iTitle.style.cssText = 'margin-top:0;margin-bottom:4px;color:var(--muted);';
             iBlock.appendChild(iTitle);
 
             const iHint = document.createElement('p');
@@ -684,7 +688,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
 
                 iconRules.forEach((rule, ruleIndex) => {
                     const row = document.createElement('div');
-                    row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:8px;';
+                    row.className = 'schema-rule-row';
 
                     const opSelectRule = document.createElement('select');
                     opSelectRule.className = 'adm-input w-80';
@@ -704,20 +708,19 @@ export function renderSchemaEditor(tableName, tableData, context) {
                     valueInput.placeholder = 'Value';
                     valueInput.addEventListener('input', () => { iconRules[ruleIndex].value = valueInput.value; touchIconRules(); });
 
+                    const buttonDelIcon = document.createElement('button');
+                    buttonDelIcon.type = 'button';
+                    buttonDelIcon.className = 'btn btn-danger btn-xs';
+                    buttonDelIcon.textContent = '✕ Remove';
+                    buttonDelIcon.addEventListener('click', () => { iconRules.splice(ruleIndex, 1); touchIconRules(); renderIconRules(); });
+
                     const iconPickerWrapper = document.createElement('div');
                     iconPickerWrapper.style.cssText = 'flex:1;min-width:220px;';
                     iconPickerWrapper.appendChild(createIconPicker('v_icon_' + ruleIndex, 'Icon', rule.icon || '', iconPath => {
                         iconRules[ruleIndex].icon = iconPath;
                         touchIconRules();
                     }));
-                    row.append(opSelectRule, valueInput, iconPickerWrapper);
-
-                    const buttonDelIcon = document.createElement('button');
-                    buttonDelIcon.type = 'button';
-                    buttonDelIcon.className = 'btn btn-danger btn-xs';
-                    buttonDelIcon.textContent = '✕ Remove';
-                    buttonDelIcon.addEventListener('click', () => { iconRules.splice(ruleIndex, 1); touchIconRules(); renderIconRules(); });
-                    row.appendChild(buttonDelIcon);
+                    row.append(opSelectRule, valueInput, iconPickerWrapper, buttonDelIcon);
 
                     iconRulesContainer.appendChild(row);
                 });
@@ -737,13 +740,14 @@ export function renderSchemaEditor(tableName, tableData, context) {
             renderIconRules();
             block.appendChild(iBlock);
 
-            block.appendChild(createCheckbox('show_in_grid', 'Show in Grid', columnConfig.show_in_grid, value => columnConfig.show_in_grid = value, true));
+            block.appendChild(createCheckboxRow([
+                { key: 'show_in_grid', label: 'Show in Grid', checked: columnConfig.show_in_grid, onChange: value => columnConfig.show_in_grid = value, defaultValue: true },
+            ]));
 
             const buttonDelVirtual = document.createElement('button');
             buttonDelVirtual.type = 'button';
             buttonDelVirtual.textContent = 'Delete Virtual Column';
             buttonDelVirtual.className = 'btn btn-danger btn-sm';
-            buttonDelVirtual.style.marginTop = '8px';
             buttonDelVirtual.addEventListener('click', () => {
                 if (confirm(`Delete virtual column "${columnName}"?`)) {
                     delete tableData.columns[columnName];
@@ -754,7 +758,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
             block.appendChild(buttonDelVirtual);
 
             makeCollapsible(block);
-            workspaceElement.appendChild(block);
+            columnsBody.appendChild(block);
             return;
         }
 
@@ -793,15 +797,10 @@ export function renderSchemaEditor(tableName, tableData, context) {
 
         if (isTypeEnum && columnConfig.options && columnConfig.options.length > 0) {
             const colorsContainer = document.createElement('div');
-            colorsContainer.style.marginLeft = '20px';
-            colorsContainer.style.paddingLeft = '10px';
-            colorsContainer.style.borderLeft = '2px solid var(--muted)';
-            colorsContainer.style.marginBottom = '15px';
+            colorsContainer.className = 'schema-subsec';
 
             const colorsTitle = document.createElement('h5');
             colorsTitle.textContent = 'Enum Colors (Optional)';
-            colorsTitle.style.marginTop = '0';
-            colorsTitle.style.marginBottom = '10px';
             colorsContainer.appendChild(colorsTitle);
 
             if (!columnConfig.enum_colors || Array.isArray(columnConfig.enum_colors)) columnConfig.enum_colors = {};
@@ -826,7 +825,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
 
         if (tableData.foreign_keys[columnName] && tableData.foreign_keys[columnName].reference_table) {
             const fkContainer = document.createElement('div');
-            fkContainer.style.marginLeft = '20px'; fkContainer.style.paddingLeft = '10px'; fkContainer.style.borderLeft = '2px solid var(--accent)'; fkContainer.style.marginBottom = '15px';
+            fkContainer.className = 'schema-subsec';
             fkContainer.appendChild(createTextInput('fk_ref_col', 'Reference Column (e.g., id)', tableData.foreign_keys[columnName].reference_column, (value) => tableData.foreign_keys[columnName].reference_column = value));
 
             const fkDispData = tableData.foreign_keys[columnName].display_column;
@@ -844,15 +843,10 @@ export function renderSchemaEditor(tableName, tableData, context) {
         }
 
         const regexContainer = document.createElement('div');
-        regexContainer.style.marginLeft = '20px';
-        regexContainer.style.paddingLeft = '10px';
-        regexContainer.style.borderLeft = '2px solid var(--muted)';
-        regexContainer.style.marginBottom = '15px';
+        regexContainer.className = 'schema-subsec';
 
         const regexTitle = document.createElement('h5');
         regexTitle.textContent = 'Validation Rules (Optional)';
-        regexTitle.style.marginTop = '0';
-        regexTitle.style.marginBottom = '10px';
         regexContainer.appendChild(regexTitle);
 
         regexContainer.appendChild(createTextInput(
@@ -877,25 +871,28 @@ export function renderSchemaEditor(tableName, tableData, context) {
 
         block.appendChild(regexContainer);
 
-        block.appendChild(createCheckbox('show_in_grid', 'Show in Grid', columnConfig.show_in_grid, (value) => columnConfig.show_in_grid = value, true));
-        block.appendChild(createCheckbox('show_in_edit', 'Show in Edit Form', columnConfig.show_in_edit, (value) => columnConfig.show_in_edit = value, true));
-        block.appendChild(createCheckbox('not_null', 'Is Required (Not Null)', columnConfig.not_null, (value) => columnConfig.not_null = value, false));
-        block.appendChild(createCheckbox('readonly', 'Read Only', columnConfig.readonly, (value) => columnConfig.readonly = value, false));
+        block.appendChild(createCheckboxRow([
+            { key: 'show_in_grid', label: 'Show in Grid', checked: columnConfig.show_in_grid, onChange: (value) => columnConfig.show_in_grid = value, defaultValue: true },
+            { key: 'show_in_edit', label: 'Show in Edit Form', checked: columnConfig.show_in_edit, onChange: (value) => columnConfig.show_in_edit = value, defaultValue: true },
+            { key: 'not_null', label: 'Is Required (Not Null)', checked: columnConfig.not_null, onChange: (value) => columnConfig.not_null = value, defaultValue: false },
+            { key: 'readonly', label: 'Read Only', checked: columnConfig.readonly, onChange: (value) => columnConfig.readonly = value, defaultValue: false },
+        ]));
 
         makeCollapsible(block);
-        workspaceElement.appendChild(block);
+        columnsBody.appendChild(block);
     });
 
-    const subTitle = document.createElement('h3');
-    subTitle.textContent = 'Subtables Configuration (Has Many Relationships)';
-    subTitle.style.marginTop = '40px';
-    workspaceElement.appendChild(subTitle);
+    const { card: subtablesCard, body: subtablesBody } = buildSectionCard(
+        'Subtables (Has Many Relationships)',
+        'Child records shown below the form when editing a row of this table.'
+    );
+    workspaceElement.appendChild(subtablesCard);
 
-    const subContainer = document.createElement('div');
-    workspaceElement.appendChild(subContainer);
+    const subtablesContainer = document.createElement('div');
+    subtablesBody.appendChild(subtablesContainer);
 
     const renderSubtables = () => {
-        subContainer.innerHTML = '';
+        subtablesContainer.replaceChildren();
         tableData.subtables.forEach((subConfig, index) => {
             const block = document.createElement('div');
             block.className = 'column-block collapsed';
@@ -929,21 +926,24 @@ export function renderSchemaEditor(tableName, tableData, context) {
             headerDiv.appendChild(buttonDel);
             block.appendChild(headerDiv);
 
-            block.appendChild(createSelectInput('sub_table', 'Child Table (Target)', getTableOptions(), subConfig.table || '', (value) => subConfig.table = value));
-            block.appendChild(createTextInput('sub_fk', 'Foreign Key Column in Child Table', subConfig.foreign_key, (value) => subConfig.foreign_key = value));
-            block.appendChild(createTextInput('sub_label', 'Display Label', subConfig.label, (value) => subConfig.label = value));
-
-            const columnsString = subConfig.columns_to_show ? subConfig.columns_to_show.join(', ') : '';
-            block.appendChild(createTextInput('sub_cols', 'Columns to Show (Comma separated)', columnsString, (value) => {
-                if(value) {
-                    subConfig.columns_to_show = value.split(',').map(entry => entry.trim()).filter(entry => entry !== '');
-                } else {
-                    subConfig.columns_to_show = [];
-                }
-            }));
+            block.appendChild(createFieldGrid([
+                { element: createSelectInput('sub_table', 'Child Table (Target)', getTableOptions(), subConfig.table || '', (value) => subConfig.table = value) },
+                { element: createTextInput('sub_fk', 'Foreign Key Column in Child Table', subConfig.foreign_key, (value) => subConfig.foreign_key = value) },
+                { element: createTextInput('sub_label', 'Display Label', subConfig.label, (value) => subConfig.label = value) },
+                { element: (() => {
+                    const columnsString = subConfig.columns_to_show ? subConfig.columns_to_show.join(', ') : '';
+                    return createTextInput('sub_cols', 'Columns to Show (Comma separated)', columnsString, (value) => {
+                        if(value) {
+                            subConfig.columns_to_show = value.split(',').map(entry => entry.trim()).filter(entry => entry !== '');
+                        } else {
+                            subConfig.columns_to_show = [];
+                        }
+                    });
+                })() },
+            ]));
 
             makeCollapsible(block);
-            subContainer.appendChild(block);
+            subtablesContainer.appendChild(block);
         });
 
         const buttonAddSub = document.createElement('button');
@@ -954,25 +954,21 @@ export function renderSchemaEditor(tableName, tableData, context) {
             tableData.subtables.push({ table: '', foreign_key: '', label: '', columns_to_show: ['id'] });
             renderSubtables();
         };
-        subContainer.appendChild(buttonAddSub);
+        subtablesContainer.appendChild(buttonAddSub);
     };
 
     renderSubtables();
 
     if (!Array.isArray(tableData.many_to_many)) tableData.many_to_many = [];
 
-    const m2mTitle = document.createElement('h3');
-    m2mTitle.textContent = 'Many-to-Many Relationships';
-    m2mTitle.style.marginTop = '40px';
-    workspaceElement.appendChild(m2mTitle);
-
-    const m2mHint = document.createElement('p');
-    m2mHint.style.cssText = '  margin:-8px 0 14px;';
-    m2mHint.textContent = 'Checkbox panels shown in edit/create forms. Each entry links this table to another via a junction table.';
-    workspaceElement.appendChild(m2mHint);
+    const { card: m2mCard, body: m2mBody } = buildSectionCard(
+        'Many-to-Many Relationships',
+        'Checkbox panels shown in edit/create forms. Each entry links this table to another via a junction table.'
+    );
+    workspaceElement.appendChild(m2mCard);
 
     const m2mContainer = document.createElement('div');
-    workspaceElement.appendChild(m2mContainer);
+    m2mBody.appendChild(m2mContainer);
 
     const renderM2m = () => {
         m2mContainer.replaceChildren();
@@ -1005,36 +1001,38 @@ export function renderSchemaEditor(tableName, tableData, context) {
             headerDiv.append(chevron, h4, buttonDel);
             block.appendChild(headerDiv);
 
-            block.appendChild(createTextInput(
-                `m2m_label_${index}`, 'Display Label',
-                columnConfigEntry.label || '',
-                (value) => { columnConfigEntry.label = value; h4.textContent = value || `M2M #${index + 1}`; markDirty(); }
-            ));
-            block.appendChild(createSelectInput(
-                `m2m_jt_${index}`, 'Junction Table',
-                getTableOptions(), columnConfigEntry.junction_table || '',
-                (value) => { columnConfigEntry.junction_table = value; markDirty(); }
-            ));
-            block.appendChild(createTextInput(
-                `m2m_sfk_${index}`, 'Self FK — this table\'s ID column in junction',
-                columnConfigEntry.self_fk || '',
-                (value) => { columnConfigEntry.self_fk = value; markDirty(); }
-            ));
-            block.appendChild(createTextInput(
-                `m2m_ofk_${index}`, 'Other FK — related table\'s ID column in junction',
-                columnConfigEntry.other_fk || '',
-                (value) => { columnConfigEntry.other_fk = value; markDirty(); }
-            ));
-            block.appendChild(createSelectInput(
-                `m2m_ot_${index}`, 'Other Table (the related entity)',
-                getTableOptions(), columnConfigEntry.other_table || '',
-                (value) => { columnConfigEntry.other_table = value; markDirty(); }
-            ));
-            block.appendChild(createTextInput(
-                `m2m_dc_${index}`, 'Display Column (from Other Table)',
-                columnConfigEntry.display_column || '',
-                (value) => { columnConfigEntry.display_column = value; markDirty(); }
-            ));
+            block.appendChild(createFieldGrid([
+                { element: createTextInput(
+                    `m2m_label_${index}`, 'Display Label',
+                    columnConfigEntry.label || '',
+                    (value) => { columnConfigEntry.label = value; h4.textContent = value || `M2M #${index + 1}`; markDirty(); }
+                ) },
+                { element: createSelectInput(
+                    `m2m_jt_${index}`, 'Junction Table',
+                    getTableOptions(), columnConfigEntry.junction_table || '',
+                    (value) => { columnConfigEntry.junction_table = value; markDirty(); }
+                ) },
+                { element: createTextInput(
+                    `m2m_sfk_${index}`, 'Self FK — this table\'s ID column in junction',
+                    columnConfigEntry.self_fk || '',
+                    (value) => { columnConfigEntry.self_fk = value; markDirty(); }
+                ) },
+                { element: createTextInput(
+                    `m2m_ofk_${index}`, 'Other FK — related table\'s ID column in junction',
+                    columnConfigEntry.other_fk || '',
+                    (value) => { columnConfigEntry.other_fk = value; markDirty(); }
+                ) },
+                { element: createSelectInput(
+                    `m2m_ot_${index}`, 'Other Table (the related entity)',
+                    getTableOptions(), columnConfigEntry.other_table || '',
+                    (value) => { columnConfigEntry.other_table = value; markDirty(); }
+                ) },
+                { element: createTextInput(
+                    `m2m_dc_${index}`, 'Display Column (from Other Table)',
+                    columnConfigEntry.display_column || '',
+                    (value) => { columnConfigEntry.display_column = value; markDirty(); }
+                ) },
+            ]));
 
             makeCollapsible(block);
             m2mContainer.appendChild(block);
@@ -1068,63 +1066,56 @@ export function renderSchemaEditor(tableName, tableData, context) {
         markDirty();
     };
 
-    const imageTitle = document.createElement('h3');
-    imageTitle.textContent = 'Images';
-    imageTitle.style.marginTop = '40px';
-    workspaceElement.appendChild(imageTitle);
+    const { card: imagesCard, body: imagesBody } = buildSectionCard(
+        'Images',
+        'Lets users attach images to each record of this table from the edit form, with a thumbnail column in the grid.'
+    );
+    workspaceElement.appendChild(imagesCard);
 
-    const imageHint = document.createElement('p');
-    imageHint.style.cssText = '  margin:-8px 0 14px;';
-    imageHint.textContent = 'Lets users attach images to each record of this table from the edit form, with a thumbnail column in the grid.';
-    workspaceElement.appendChild(imageHint);
-
-    const imageBlock = document.createElement('div');
-    imageBlock.className = 'column-block';
-    imageBlock.appendChild(createCheckbox('images_enabled', 'Enable Images For This Table', imagesConfig.enabled, (value) => {
-        imagesConfig.enabled = value;
-        touchImages();
-    }, false));
-    imageBlock.appendChild(createTextInput(
-        'images_label', 'Display Label',
-        imagesConfig.label || '',
-        (value) => { imagesConfig.label = value; touchImages(); }
-    ));
-    imageBlock.appendChild(createNumberInput(
-        'images_max', 'Max Images Per Record (1-50)',
-        imagesConfig.max_per_record ?? 10,
-        (value) => { imagesConfig.max_per_record = Math.min(50, Math.max(1, parseInt(value, 10) || 1)); touchImages(); }
-    ));
-    imageBlock.appendChild(createCheckbox('images_grid', 'Show Thumbnail Column In Grid', imagesConfig.show_in_grid, (value) => {
-        imagesConfig.show_in_grid = value;
-        touchImages();
-    }, true));
-    workspaceElement.appendChild(imageBlock);
+    imagesBody.appendChild(createCheckboxRow([
+        { key: 'images_enabled', label: 'Enable Images For This Table', checked: imagesConfig.enabled, onChange: (value) => {
+            imagesConfig.enabled = value;
+            touchImages();
+        }, defaultValue: false },
+        { key: 'images_grid', label: 'Show Thumbnail Column In Grid', checked: imagesConfig.show_in_grid, onChange: (value) => {
+            imagesConfig.show_in_grid = value;
+            touchImages();
+        }, defaultValue: true },
+    ]));
+    imagesBody.appendChild(createFieldGrid([
+        { element: createTextInput(
+            'images_label', 'Display Label',
+            imagesConfig.label || '',
+            (value) => { imagesConfig.label = value; touchImages(); }
+        ) },
+        { element: createNumberInput(
+            'images_max', 'Max Images Per Record (1-50)',
+            imagesConfig.max_per_record ?? 10,
+            (value) => { imagesConfig.max_per_record = Math.min(50, Math.max(1, parseInt(value, 10) || 1)); touchImages(); }
+        ) },
+    ]));
     imagesReady = true;
 
     const hlRules = Array.isArray(tableData.highlight_rules) ? tableData.highlight_rules : [];
     const touchHighlights = () => { tableData.highlight_rules = hlRules; markDirty(); };
 
-    const hlTitle = document.createElement('h3');
-    hlTitle.textContent = 'Highlight Rules';
-    hlTitle.style.marginTop = '40px';
-    workspaceElement.appendChild(hlTitle);
-
-    const hlHint = document.createElement('p');
-    hlHint.style.cssText = '  margin:-8px 0 14px;';
-    hlHint.textContent = 'Colors an entire grid row when the chosen column matches the condition. Rules are evaluated in order; the first match wins.';
-    workspaceElement.appendChild(hlHint);
+    const { card: hlCard, body: hlBody } = buildSectionCard(
+        'Highlight Rules',
+        'Colors an entire grid row when the chosen column matches the condition. Rules are evaluated in order; the first match wins.'
+    );
+    workspaceElement.appendChild(hlCard);
 
     const hlContainer = document.createElement('div');
-    workspaceElement.appendChild(hlContainer);
+    hlBody.appendChild(hlContainer);
 
     const renderHighlightRules = () => {
-        hlContainer.innerHTML = '';
+        hlContainer.replaceChildren();
         const columnNames = Object.keys(tableData.columns);
         const rules = hlRules;
 
         rules.forEach((rule, ruleIndex) => {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:8px;';
+            row.className = 'schema-rule-row';
 
             const columnSelect = document.createElement('select');
             columnSelect.className = 'adm-input w-160';

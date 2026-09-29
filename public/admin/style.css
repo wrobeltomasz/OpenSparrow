@@ -1779,3 +1779,85 @@ textarea.adm-input {
 .auto-bar   { margin-bottom: 12px; }
 .auto-meta  { flex-shrink: 0; }
 .auto-shrink { flex-shrink: 0; }
+
+.schema-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0 24px;
+}
+.schema-field-grid .form-group { margin-bottom: 16px; }
+.schema-field-grid .form-group--full { grid-column: 1 / -1; }
+@media (max-width: 720px) {
+    .schema-field-grid { grid-template-columns: 1fr; }
+}
+
+.schema-check-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    margin-bottom: 16px;
+}
+.schema-check-row .field-checkbox-wrap { margin-bottom: 0; }
+.schema-check-row label {
+    font-weight: var(--font-weight-normal);
+    cursor: pointer;
+}
+
+.schema-rule-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.schema-rule-row .adm-input { width: auto; }
+.schema-rule-tag {
+    flex: 1;
+    min-width: 140px;
+    background: var(--panel);
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-light);
+}
+
+.schema-card-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 18px;
+    background: var(--accent-light);
+    border-bottom: 1px solid var(--border);
+}
+
+.schema-subsec {
+    border-left: 3px solid var(--accent-mid);
+    background: var(--accent-light);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+}
+.schema-subsec h5 {
+    margin: 0 0 10px;
+    color: var(--accent);
+}
+.schema-subsec .form-group { margin-bottom: 12px; }
+
+.adm-badge-accent { background: var(--accent-light); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-mid); }
+
+.schema-warn {
+    background: var(--error-light);
+    border: 1px solid var(--error);
+    color: var(--error);
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.schema-block-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}

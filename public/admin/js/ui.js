@@ -115,6 +115,38 @@ export function createDatalistInput(key, labelText, listId, value, onChange) {
     return wrapper;
 }
 
+export function createCheckboxRow(entries, className = 'schema-check-row') {
+    const row = document.createElement('div');
+    row.className = className;
+    entries.forEach(entry => {
+        row.appendChild(createCheckbox(entry.key, entry.label, entry.checked, entry.onChange, entry.defaultValue));
+    });
+    return row;
+}
+
+export function createFieldGrid(entries) {
+    const grid = document.createElement('div');
+    grid.className = 'schema-field-grid';
+    entries.forEach(entry => {
+        const element = entry.element;
+        if (entry.full) element.classList.add('form-group--full');
+        grid.appendChild(element);
+    });
+    return grid;
+}
+
+export function createBadgeList(entries) {
+    const wrapper = document.createElement('span');
+    wrapper.className = 'schema-block-badges';
+    entries.forEach(entry => {
+        const badge = document.createElement('span');
+        badge.className = 'adm-badge ' + (entry.className || 'adm-badge-muted');
+        badge.textContent = entry.label;
+        wrapper.appendChild(badge);
+    });
+    return wrapper;
+}
+
 const MATERIAL_ICON_INDEX_URL = '../assets/icons/material/index.json';
 const MATERIAL_ICON_TAGS_URL = '../assets/icons/material/tags.json';
 const MATERIAL_ICON_PREFIX = 'assets/icons/material/';
@@ -582,56 +614,6 @@ export function createCheckbox(key, labelText, value, onChange, defaultValue = t
     container.className = 'field-checkbox-wrap';
     container.appendChild(wrapper);
     return container;
-}
-
-export function createMenuPreview() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'form-group menu-preview';
-
-    const label = document.createElement('label');
-    label.textContent = 'Live sidebar preview';
-    wrapper.appendChild(label);
-
-    const item = document.createElement('div');
-    item.className = 'menu-preview-item';
-    item.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--accent-dark); color:var(--accent-light); border-radius:6px;  min-width:220px; max-width:320px; transition:opacity .15s;';
-
-    const iconElement = document.createElement('span');
-    iconElement.style.cssText = 'width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;';
-
-    const nameElement = document.createElement('span');
-    nameElement.style.cssText = 'flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
-
-    const badgeElement = document.createElement('span');
-    badgeElement.textContent = 'HIDDEN';
-    badgeElement.style.cssText = ' background:var(--error); color:#fff; padding:2px 6px; border-radius:3px; display:none; ';
-
-    item.appendChild(iconElement);
-    item.appendChild(nameElement);
-    item.appendChild(badgeElement);
-    wrapper.appendChild(item);
-
-    const update = ({ name, icon, hidden }) => {
-        nameElement.textContent = name || '';
-        iconElement.innerHTML = '';
-        if (icon) {
-            const looksLikePath = icon.includes('/') || icon.includes('.');
-            if (looksLikePath) {
-                const image = document.createElement('img');
-                image.src = '../' + icon;
-                image.alt = '';
-                image.style.cssText = 'max-width:20px; max-height:20px; filter:brightness(0) invert(1);';
-                image.onerror = () => { iconElement.innerHTML = ''; iconElement.textContent = '?'; };
-                iconElement.appendChild(image);
-            } else {
-                iconElement.textContent = icon;
-            }
-        }
-        item.style.opacity = hidden ? '0.4' : '1';
-        badgeElement.style.display = hidden ? 'inline-block' : 'none';
-    };
-
-    return { el: wrapper, update };
 }
 
 export function renderGlobalSettings(context, options = {}) {
