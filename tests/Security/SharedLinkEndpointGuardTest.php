@@ -168,4 +168,32 @@ final class SharedLinkEndpointGuardTest extends TestCase
             'A disabled link must 404 — revoking a link takes effect on the next request.'
         );
     }
+
+    public function testShareJsDoesNotImportSessionGatedLoaders(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../../public/assets/js/share.js');
+
+        $this->assertFalse(
+            str_contains($source, "'./grid.js'"),
+            'public/assets/js/share.js must not import grid.js (grid/index.js): loadTable/renderGrid fire '
+            . 'the session-gated side-loaders (comment counts, subtable counts, m2m rows, image rows), '
+            . 'all of which 401 for a link holder. The guest grid is a separate entry point on purpose.'
+        );
+
+        foreach (
+            [
+                'grid/comments/counts.js',
+                'grid/body/subtable-counts.js',
+                'grid/m2m/loader.js',
+                'grid/images/loader.js',
+            ] as $loader
+        ) {
+            $this->assertFalse(
+                str_contains($source, $loader),
+                "public/assets/js/share.js must not import {$loader} directly — the side-loaders are "
+                . 'session-gated and must stay unreachable from the guest view even if someone skips '
+                . 'the grid.js indirection.'
+            );
+        }
+    }
 }

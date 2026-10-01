@@ -11,6 +11,41 @@ use App\Exception\BadRequestException;
 use App\Exception\ResponseException;
 use App\Exception\ServerErrorException;
 
+function column_type_matches_value(string $columnType, string $value): bool
+{
+    $normalized = strtolower(trim($columnType));
+    if (
+        $normalized === 'number'
+        || str_contains($normalized, 'int')
+        || str_contains($normalized, 'numeric')
+        || str_contains($normalized, 'float')
+    ) {
+        return preg_match('/^-?\d+(\.\d+)?$/', trim($value)) === 1;
+    }
+    if (str_contains($normalized, 'bool')) {
+        return in_array(strtolower(trim($value)), ['true', 'false', '1', '0', 't', 'f'], true);
+    }
+    if (str_contains($normalized, 'timestamp') || str_contains($normalized, 'datetime')) {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/', trim($value), $matches) !== 1) {
+            return false;
+        }
+        if (!checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1])) {
+            return false;
+        }
+        if (isset($matches[4]) && ((int) $matches[4] > 23 || (int) $matches[5] > 59)) {
+            return false;
+        }
+        return !isset($matches[6]) || (int) $matches[6] <= 59;
+    }
+    if (str_contains($normalized, 'date')) {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', trim($value), $matches) !== 1) {
+            return false;
+        }
+        return checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1]);
+    }
+    return true;
+}
+
 function frontapi_list(FrontApiContext $context): never
 {
     $conn   = $context->conn;
@@ -52,6 +87,21 @@ function frontapi_list(FrontApiContext $context): never
     $rangeClauses = [];
     if ($filterColumn !== '' && ($filterValue !== '' || $filterFrom !== '' || $filterTo !== '')) {
         if (in_array($filterColumn, $allowedFilterColumns, true)) {
+            $filterColumnType = $filterColumn === $idColumn
+                ? 'number'
+                : (string) ($tableConfig['columns'][$filterColumn]['type'] ?? 'text');
+            if ($filterFrom !== '' && !column_type_matches_value($filterColumnType, $filterFrom)) {
+                throw new BadRequestException('Invalid filter value for column "' . $filterColumn . '".');
+            }
+            if ($filterTo !== '' && !column_type_matches_value($filterColumnType, $filterTo)) {
+                throw new BadRequestException('Invalid filter value for column "' . $filterColumn . '".');
+            }
+            if (
+                $filterValue !== '' && $filterFrom === '' && $filterTo === ''
+                && !column_type_matches_value($filterColumnType, $filterValue)
+            ) {
+                throw new BadRequestException('Invalid filter value for column "' . $filterColumn . '".');
+            }
             if ($filterFrom !== '' || $filterTo !== '') {
                 if ($filterFrom !== '') {
                     $rangeClauses[] = sprintf('%s >= $%d', pg_ident($filterColumn), count($parameters) + 1);
@@ -76,7 +126,11 @@ function frontapi_list(FrontApiContext $context): never
                 if (!in_array((string) $filterName, $allowedFilterColumns, true) || !is_array($filterPayload)) {
                     continue;
                 }
-                $filterSql = build_column_filter_sql((string) $filterName, $filterPayload, $parameters);
+                $filterName = (string) $filterName;
+                $filterColumnType = $filterName === $idColumn
+                    ? 'number'
+                    : (string) ($tableConfig['columns'][$filterName]['type'] ?? 'text');
+                $filterSql = build_column_filter_sql($filterName, $filterColumnType, $filterPayload, $parameters);
                 if ($filterSql !== '') {
                     $rangeClauses[] = $filterSql;
                 }
@@ -195,33 +249,34 @@ function frontapi_list(FrontApiContext $context): never
     throw ResponseException::sent();
 }
 
-function build_column_filter_sql(string $columnName, array $payload, array &$parameters): string
+function build_column_filter_sql(string $columnName, string $columnType, array $payload, array &$parameters): string
 {
     $clauses = [];
 
     if (array_key_exists('val', $payload) && $payload['val'] !== '' && $payload['val'] !== null) {
+        $filterValue = (string) $payload['val'];
+        if (!column_type_matches_value($columnType, $filterValue)) {
+            throw new BadRequestException('Invalid filter value for column "' . $columnName . '".');
+        }
         $clauses[] = sprintf('%s = $%d', pg_ident($columnName), count($parameters) + 1);
-        $parameters[] = (string) $payload['val'];
+        $parameters[] = $filterValue;
     }
     if (!empty($payload['bool'])) {
+        if (!str_contains(strtolower($columnType), 'bool')) {
+            throw new BadRequestException('Invalid filter value for column "' . $columnName . '".');
+        }
         $clauses[] = sprintf('%s = $%d', pg_ident($columnName), count($parameters) + 1);
         $parameters[] = $payload['bool'] === 'false' ? 'FALSE' : 'TRUE';
     }
-    if (isset($payload['from']) && $payload['from'] !== '') {
-        $clauses[] = sprintf('%s >= $%d', pg_ident($columnName), count($parameters) + 1);
-        $parameters[] = (string) $payload['from'];
-    }
-    if (isset($payload['to']) && $payload['to'] !== '') {
-        $clauses[] = sprintf('%s < $%d', pg_ident($columnName), count($parameters) + 1);
-        $parameters[] = (string) $payload['to'];
-    }
-    if (isset($payload['min']) && $payload['min'] !== '') {
-        $clauses[] = sprintf('%s >= $%d', pg_ident($columnName), count($parameters) + 1);
-        $parameters[] = (string) $payload['min'];
-    }
-    if (isset($payload['max']) && $payload['max'] !== '') {
-        $clauses[] = sprintf('%s <= $%d', pg_ident($columnName), count($parameters) + 1);
-        $parameters[] = (string) $payload['max'];
+    foreach (['from' => '>=', 'to' => '<', 'min' => '>=', 'max' => '<='] as $boundKey => $boundOperator) {
+        if (isset($payload[$boundKey]) && $payload[$boundKey] !== '') {
+            $boundValue = (string) $payload[$boundKey];
+            if (!column_type_matches_value($columnType, $boundValue)) {
+                throw new BadRequestException('Invalid filter value for column "' . $columnName . '".');
+            }
+            $clauses[] = sprintf('%s %s $%d', pg_ident($columnName), $boundOperator, count($parameters) + 1);
+            $parameters[] = $boundValue;
+        }
     }
 
     if ($clauses === []) {
