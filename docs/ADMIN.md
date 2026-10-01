@@ -23,7 +23,7 @@ The admin panel uses a collapsible left sidebar with five sections (Overview, Da
 - **Data Management:** Board, Calendar, Roadmap, CSV Import, Dashboard, ETL, Files, Printouts, Schema, User Records, Views. Add Table, Menu Preview, Schema Map and M2M Builder are inner tabs of Schema, not separate sidebar items.
 - **Workflows:** Automations, Workflow Manager.
 - **AI:** Centrum AI.
-- **System:** Anonymization, API (External API), Backup Tables, Click Statistics, Cron Notifications, Demo Systems, Health Check, Migrations, Performance, Settings, Users. Database and Audit & Snapshots are inner tabs of Settings.
+- **System:** Anonymization, API (External API), Backup Tables, Click Statistics, Cron Notifications, Demo Systems, Health Check, Migrations, Performance, Settings, Sharing, Users. Database and Audit & Snapshots are inner tabs of Settings.
 - **Automatic saving:** Config-editing tabs (Schema, Dashboard, Calendar, Board, Roadmap, Workflows, Views, User Records, Files, Printouts) save automatically — about a second after your last edit, when switching tabs and when the page is hidden. Each save is versioned: a concurrent edit by another admin is rejected with a conflict pill instead of silently overwriting their changes. A validation error (e.g. an unfinished workflow) blocks the save and shows an error pill — the edit stays in the form until fixed. `database` and `security` stay files on disk with their own Save button (edited from **System → Settings → Database**).
 - **Unsaved-changes guard:** Shows a confirmation prompt only when a change could not be saved (validation error, conflict or network failure) or when a save is still in flight while switching tabs. Tabs that save immediately via API (Users, Database, Health, Backup) never trigger this warning.
 - **Debug FE mode:** Toggle in the header. When enabled, the frontend exposes a `#debug` panel with raw payloads for schema/API responses — useful when building new tables or troubleshooting grids.
@@ -424,6 +424,16 @@ Two bulk tools available to the **editor** role directly from the data grid. Bot
 - **Error codes:** `401` missing or invalid key, `403` API disabled, `404` the configured table or columns no longer exist, `429` rate limit — 60 requests per minute per key plus a global 300 per minute per IP enforced before the key is even resolved, `500` database error.
 - **Usage tab:** Aggregated metrics from `spw_external_api_log`: total requests, average and slowest duration, per-API request counts with timings and returned rows, plus a paginated request log filterable by API name. *Clear Log* deletes every recorded request (or only entries older than N days when a retention window is given).
 - **Scope warning:** A key is a full read of the configured columns of its table — grant keys only to services that should see that data. Per-user access scoping does not apply to this endpoint.
+
+### 9s. Sharing
+
+**System → Sharing** exposes a single table through a public read-only link — anyone with the link can view the table grid without logging in, like sharing a spreadsheet on OneDrive. Config lives in `spw_config.shared_tables`; the page is `public/share.php`, the data endpoint `public/api/share.php`.
+
+- **What a shared link is:** Each shareable table can have one link. The URL carries only a token (`share.php?t=…`) — the table name never appears in it, and the client cannot choose which table is served. Opening the link shows the table grid read-only: sorting, filtering, search and CSV export of the loaded rows work; adding, editing, deleting, comments, files and related tables do not.
+- **Link tokens:** Tokens are generated server-side (64 hex characters) and stored only as an HMAC hash — shown exactly once, in a modal after generating or regenerating, with a copy button; they cannot be retrieved later. Regenerating a link immediately invalidates the previous token. A disabled link keeps its token, so re-enabling restores the same URL.
+- **What cannot be shared:** Hidden tables, owner-restricted tables and system tables are excluded — on save and re-checked on every request (defense in depth for hand-edited config).
+- **Rate limits:** The endpoint is sessionless and GET-only. 300 requests per minute per IP (before the token is resolved) and 60 per minute per token; exceeding either answers `429`.
+- **Treat a link like a password:** Anyone who obtains the link can read the table until it is revoked or regenerated. The page sends `noindex` headers so the URL is not indexed, but it is still a secret — share it only with people who should see that data.
 
 ### 10. Files Module
 

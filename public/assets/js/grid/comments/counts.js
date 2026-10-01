@@ -42,6 +42,7 @@ export async function loadCommentCounts(pageRows) {
 
         const panel = td.querySelector('.td-actions-panel');
         if (!panel) continue;
+        if (panel.querySelector('.c-count-badge, .btn-icon-comment-add')) continue;
 
         const count = countsStore.get(`${state.currentTable}:${rowId}`) ?? 0;
 

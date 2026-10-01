@@ -598,5 +598,9 @@
         "limit_reached": "Image limit reached for this record.",
         "select_first": "Please select an image to upload.",
         "confirm_delete": "Delete this image?"
+    },
+    "share": {
+        "readonly_note": "Tabel partajat — doar citire, fără autentificare",
+        "footer_note": "Partajat prin OpenSparrow — datele afișate sunt o vizualizare live, doar în citire, a tabelului."
     }
 }

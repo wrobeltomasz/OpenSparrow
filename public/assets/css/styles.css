@@ -4307,3 +4307,77 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
 @media only screen and (max-width: 768px) {
     .roadmap-grid { grid-template-columns: 140px repeat(12, 72px); }
 }
+.share-body { background: var(--bg); color: var(--text); }
+
+.share-topbar {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.share-app-name { font-weight: 700; font-size: 15px; }
+
+.share-note {
+  margin-left: auto;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.share-page {
+  max-width: 1100px;
+  margin: 22px auto;
+  padding: 0 16px;
+}
+
+.share-grid-section { display: flex; flex-direction: column; }
+
+.share-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.share-toolbar h2 { margin: 0; font-size: 18px; flex: 1; }
+
+.share-toolbar input[type="search"],
+.share-toolbar select {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 4px);
+  background: var(--panel, #fff);
+  color: var(--text);
+}
+
+.share-toolbar input[type="search"] { width: 220px; }
+
+.share-toolbar button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 4px);
+  background: var(--panel, #fff);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.share-toolbar button:hover { background: var(--accent-light); }
+
+.share-pagination { margin-top: 12px; }
+
+.share-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin: 18px 0 30px;
+}
+
+.share-body .share-grid-section #gridTitle { display: block; }

@@ -594,5 +594,9 @@
         "limit_reached": "Image limit reached for this record.",
         "select_first": "Please select an image to upload.",
         "confirm_delete": "Delete this image?"
+    },
+    "share": {
+        "readonly_note": "Shared table — read-only, no login required",
+        "footer_note": "Shared via OpenSparrow — the data shown is a live read-only view of the table."
     }
 }

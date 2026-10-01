@@ -594,5 +594,9 @@
         "limit_reached": "Image limit reached for this record.",
         "select_first": "Please select an image to upload.",
         "confirm_delete": "Delete this image?"
+    },
+    "share": {
+        "readonly_note": "Megosztott tábla — csak olvasható, bejelentkezés nélkül",
+        "footer_note": "Megosztva az OpenSparrowon keresztül — a megjelenített adatok a tábla élő, csak olvasható nézete."
     }
 }

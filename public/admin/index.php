@@ -131,6 +131,7 @@ $navSections = [
             ['file' => 'migrations', 'label' => 'Migrations', 'icon' => $navIcon('material/upgrade.svg')],
             ['file' => 'performance', 'label' => 'Performance', 'icon' => $navIcon('material/speed.svg')],
             ['file' => 'settings', 'label' => 'Settings', 'icon' => $navIcon('material/settings.svg')],
+            ['file' => 'sharing', 'label' => 'Sharing', 'icon' => $navIcon('material/share.svg')],
             ['file' => 'users', 'label' => 'Users', 'icon' => $navIcon('material/user_attributes.svg')],
         ],
     ],
@@ -159,6 +160,7 @@ $breadcrumbLabels  = [
     'print'         => 'Printouts',
     'roadmap'       => 'Roadmap',
     'api'           => 'API',
+    'sharing'       => 'Sharing',
 ];
 
 require __DIR__ . '/templates/header.php';

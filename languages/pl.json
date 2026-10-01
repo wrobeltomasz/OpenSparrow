@@ -598,5 +598,9 @@
         "limit_reached": "Osiągnięto limit obrazków dla tego rekordu.",
         "select_first": "Wybierz obrazek do wgrania.",
         "confirm_delete": "Usunąć ten obrazek?"
+    },
+    "share": {
+        "readonly_note": "Tabela udostępniona — tylko do odczytu, bez logowania",
+        "footer_note": "Udostępnione przez OpenSparrow — wyświetlane dane to aktualny widok tabeli tylko do odczytu."
     }
 }

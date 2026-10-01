@@ -57,7 +57,7 @@ export async function preloadForeignKeys(schema) {
         fetches.push(state.fkCache.get(key));
     }
     await Promise.all(fetches);
-    buildFkData(schema, foreignKeys);
+    await buildFkData(schema, foreignKeys);
 }
 
 export async function buildFkData(schema, foreignKeys) {

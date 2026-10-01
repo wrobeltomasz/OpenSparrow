@@ -602,5 +602,9 @@
         "limit_reached": "Image limit reached for this record.",
         "select_first": "Please select an image to upload.",
         "confirm_delete": "Delete this image?"
+    },
+    "share": {
+        "readonly_note": "Deljena tabela — samo za branje, brez prijave",
+        "footer_note": "Deljeno prek OpenSparrow — prikazani podatki so živ prikaz tabele samo za branje."
     }
 }

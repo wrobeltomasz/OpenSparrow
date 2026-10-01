@@ -2295,6 +2295,79 @@ trust them.
   empty filter row by default. Do not "fix" this by making empty values match
   anything: an empty filter means "no filter".
 
+## Shared table links (2026-10-01)
+
+OneDrive-style public read-only links to a single table:
+`share.php?t=<64-char-token>`. Off by default, enabled per table from
+**System → Sharing**.
+
+### Storage and admin wiring
+
+- All state lives in the `shared_tables` key of `spw_config`, shaped as
+  `{"tables": {"<table>": {"enabled", "token_hash", "generated_by",
+  "generated_at"}}}`. No new table, no migration; an unknown key is ignored,
+  so the document upgrades itself.
+- Tokens are generated server-side (`bin2hex(random_bytes(32))`, 64 hex
+  chars) and stored **only as an HMAC** (`secret_hash()`), exactly like
+  external API keys. The plain token is returned **once** in the
+  `sharing_save` response (`generated_tokens`); the admin modal shows it with
+  a copy button and it can never be retrieved again. Regenerating produces a
+  new token and the old link 404s immediately.
+- Services under `includes/Service/` (autoloaded as `App\Service\*`):
+  `SharedTokenManager` (generate/hash/match with `hash_equals`),
+  `SharedLinkValidator` (shareability: table must exist, not be hidden, not
+  owner-restricted, not a system table — enforced on save **and** re-checked
+  on every serve, like `ExternalApiController`), `SharedLinkRepository`
+  (load/entryByToken/save). The admin module is
+  `includes/admin/sharing.php` (`sharing_load` / `sharing_save`), registered
+  in `$adminModules`; `sharing_save` also sits in `$postActions`. The tab is a
+  full-page module (`public/admin/js/sharing.js`) — NON_CONFIG_TABS,
+  `loadConfigFile`'s full-page branch and `fullPageTabs` in `admin/js/app.js`,
+  plus the nav entry in `public/admin/index.php`. Four lists, all four must
+  carry `sharing` or the tab breaks silently.
+
+### The endpoints — sessionless by design
+
+- `public/api/share.php` is the **only** data endpoint. It never calls
+  `os_api_bootstrap()` (that requires a session); it boots with the
+  `external.php` prologue (JSON handler, security headers,
+  `Cache-Control: no-store`), answers **GET-only** (405 otherwise), and
+  throttles per-IP (300/min, before the token is resolved) and per-token
+  (60/min) via `os_rate_limit_ok`.
+- **The token decides the table, never the client.** The request supplies
+  only `?t=`; the resolved table name is written into `$_GET` by the endpoint
+  itself before it requires `includes/frontapi/list.php` and calls
+  `frontapi_list()` with `OS_TABLE_ACCESS_DELEGATED` — the same delegation
+  pattern `api/fk.php` uses, which is why the inventory entry for
+  `public/api/share.php → _GET.table` is `none`. A guest naming any table in
+  the URL cannot change what is served.
+- Order of operations is pinned by
+  `tests/Security/SharedLinkEndpointGuardTest.php`: resolve token →
+  reject disabled/unknown (404) → re-check shareability (404) →
+  **then** delegate. Removing a re-check or moving it after the delegation
+  is a silent hole for hand-edited config.
+- Everything `frontapi_list` offers is inherited: schema-validated columns,
+  `order`, `column_filters`, search, `MAX_LIST_ROWS` caps, `pg_ident()` +
+  `pg_query_params`. Write routes, comments, m2m, subtable counts, images and
+  files are simply not reachable — no other frontapi module is loaded.
+- `public/share.php` is the guest page: `os_page_bootstrap(['guest' => true])`
+  (no login redirect — this is the one guest page besides `login.php`),
+  `X-Robots-Tag: noindex` + `<meta name="robots">` (a link is a secret URL),
+  its own minimal template (`templates/share_layout.php`, no session header,
+  no menu), and an inline schema reduced to the one shared table with
+  `subtables` stripped so no drilldown can even render. i18n strings are
+  passed server-side via `SHARE_I18N` (the JS i18n bundle endpoint requires a
+  session — the JS `I18n` module is not used by `share.js`).
+- `public/assets/js/share.js` reuses the grid renderers
+  (`renderThead`/`renderTbody` in read-only mode, cell registry, pagination,
+  `export_csv`) but is a **separate entry point** — `loadTable`/`renderGrid`
+  from `grid/index.js` are deliberately not imported because they fire the
+  session-gated side-loaders (comment counts, subtable counts, m2m, images).
+  FK labels still display because `map_fk_display` delivers `__display` in
+  the list payload (the documented fallback); FK dropdowns are not fetched.
+- Known scope: side columns of referenced tables leak labels (same as the
+  FK-label exemption for logged-in users) — documented, accepted for v1.
+
 ## Where binding rules live
 
 This document is the authoritative, version-controlled home for binding UI and

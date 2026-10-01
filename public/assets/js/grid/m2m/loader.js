@@ -49,9 +49,9 @@ export async function loadM2mColumns(pageRows, schema) {
         )
         : [];
 
-    await Promise.all(fetchPromises);
+    const fetchResults = await Promise.all(fetchPromises);
 
-    for (const { relationIndex, data } of fetchPromises) {
+    for (const { relationIndex, data } of fetchResults) {
         for (const [rowId, labels] of Object.entries(data)) {
             store.set(`${state.currentTable}:${rowId}:${relationIndex}`, labels);
         }

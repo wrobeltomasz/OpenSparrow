@@ -598,5 +598,9 @@
         "limit_reached": "Image limit reached for this record.",
         "select_first": "Please select an image to upload.",
         "confirm_delete": "Delete this image?"
+    },
+    "share": {
+        "readonly_note": "Zdieľaná tabuľka — iba na čítanie, bez prihlásenia",
+        "footer_note": "Zdieľané cez OpenSparrow — zobrazené údaje sú živý pohľad na tabuľku iba na čítanie."
     }
 }

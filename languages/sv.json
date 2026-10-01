@@ -594,5 +594,9 @@
         "limit_reached": "Image limit reached for this record.",
         "select_first": "Please select an image to upload.",
         "confirm_delete": "Delete this image?"
+    },
+    "share": {
+        "readonly_note": "Delad tabell — skrivskyddad, ingen inloggning",
+        "footer_note": "Delad via OpenSparrow — visade data är en levande skrivskyddad vy av tabellen."
     }
 }

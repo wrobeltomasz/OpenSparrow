@@ -43,6 +43,9 @@ return [
     'public/api/fk.php' => [
         '_GET.table' => ['gated', 'The request-supplied SOURCE table is gated. The reference table it resolves to is schema-supplied and deliberately exempt, or FK dropdowns inside permitted tables would break; the projection is narrowed to the key and label columns to keep that exemption to labels.'],
     ],
+    'public/api/share.php' => [
+        '_GET.table' => ['none', 'The share endpoint never reads a table name from the client. The assignment is server-side only: the request-supplied token is resolved against the shared_tables config (token_hash matched with hash_equals), and the resulting table name is written into $_GET before delegating to frontapi_list with OS_TABLE_ACCESS_DELEGATED — the same delegation pattern public/api/fk.php uses. A guest naming any table in the URL cannot change which table is served; the endpoint additionally re-checks that the resolved table still exists, is not hidden, not owner-restricted and not a system table before the delegation.'],
+    ],
     'includes/Controller/Api/MassEditController.php' => [
         'body.table' => ['gated', 'All four actions (preview, mass edit, mass duplicate, mass delete) call require_table_access() after the unknown-table check: preview and apply through validateTableColumn(), duplicate and delete through validatedTable(). public/api/mass_edit.php is now only the entry point: it boots the request and hands it to this controller.'],
     ],

@@ -33,6 +33,7 @@ const PAGE_MODULES = {
     user_records:  () => import('./user_records_editor.js').then(imported => imported.renderUserRecordsEditor),
     clickstats:    () => import('./clickstats.js').then(imported => imported.renderClickstatsPage),
     api:           () => import('./api.js').then(imported => imported.renderApiPage),
+    sharing:       () => import('./sharing.js').then(imported => imported.renderSharingPage),
 };
 
 let currentConfig = null;
@@ -57,7 +58,7 @@ const itemPanelElement = document.getElementById('itemPanel');
 const workspaceElement = document.getElementById('editorForm');
 const tabs = document.querySelectorAll('.admin-tab');
 
-const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization', 'clickstats', 'api']);
+const NON_CONFIG_TABS = new Set(['overview', 'users', 'security', 'health', 'backup', 'migrations', 'performance', 'cron', 'demo', 'settings', 'csv_import', 'rag', 'etl', 'anonymization', 'clickstats', 'api', 'sharing']);
 
 const NON_CONFIG_SCHEMA_KEYS = new Set(['MENU_PREVIEW', 'ADD_TABLE', 'M2M_BUILDER', 'SCHEMA_MAP']);
 
@@ -381,7 +382,7 @@ function getColumnMeta(tableName, columnName) {
 
 async function loadConfigFile(fileName) {
     activeSaveHandler = null;
-    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print' || fileName === 'clickstats' || fileName === 'api') {
+    if (fileName === 'overview' || fileName === 'health' || fileName === 'docs' || fileName === 'users' || fileName === 'backup' || fileName === 'migrations' || fileName === 'performance' || fileName === 'cron' || fileName === 'demo' || fileName === 'settings' || fileName === 'csv_import' || fileName === 'rag' || fileName === 'etl' || fileName === 'anonymization' || fileName === 'print' || fileName === 'clickstats' || fileName === 'api' || fileName === 'sharing') {
         currentConfig = null;
         renderSidebar();
         renderEditor(fileName.toUpperCase(), null, false);
@@ -587,7 +588,7 @@ function renderSidebar() {
         'overview', 'security', 'health', 'docs', 'users', 'backup',
         'migrations', 'performance', 'cron',
         'demo', 'settings', 'csv_import', 'rag', 'views', 'etl', 'anonymization', 'print',
-        'user_records', 'clickstats', 'api',
+        'user_records', 'clickstats', 'api', 'sharing',
     ]);
 
     if (fullPageTabs.has(currentFile)) {

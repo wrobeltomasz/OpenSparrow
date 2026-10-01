@@ -48,7 +48,7 @@ function renderFkCell({ row, col: column, colCfg: columnConfig, isReadOnly }) {
 
     const fkData = state.fkData.get(cacheKey);
     const displayById = new Map(fkData?.options.map(option => [option.realId, option.value]) || []);
-    let currentDisplay = displayById.get(String(row[column])) ?? '';
+    let currentDisplay = displayById.get(String(row[column])) ?? row[column + '__display'] ?? '';
 
     input.value = currentDisplay;
 

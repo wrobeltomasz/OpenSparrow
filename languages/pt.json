@@ -594,5 +594,9 @@
         "limit_reached": "Image limit reached for this record.",
         "select_first": "Please select an image to upload.",
         "confirm_delete": "Delete this image?"
+    },
+    "share": {
+        "readonly_note": "Tabela partilhada — apenas leitura, sem início de sessão",
+        "footer_note": "Partilhado através do OpenSparrow — os dados apresentados são uma visualização apenas de leitura em tempo real da tabela."
     }
 }

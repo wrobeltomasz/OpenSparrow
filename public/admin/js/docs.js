@@ -455,6 +455,16 @@ ${_ul([
     `<strong>${strings.s9r_scope_label}:</strong> ${strings.s9r_scope}`
 ])}
 
+${_h3('doc-9s', strings.s9s_head)}
+${paragraphHtml(strings.s9s_desc)}
+${_ul([
+    `<strong>${strings.s9s_what_label}:</strong> ${strings.s9s_what}`,
+    `<strong>${strings.s9s_token_label}:</strong> ${strings.s9s_token}`,
+    `<strong>${strings.s9s_limits_label}:</strong> ${strings.s9s_limits}`,
+    `<strong>${strings.s9s_rate_label}:</strong> ${strings.s9s_rate}`,
+    `<strong>${strings.s9s_warn_label}:</strong> ${strings.s9s_warn}`
+])}
+
 ${_h3('doc-10', strings.s10_head)}
 ${paragraphHtml(strings.s10_desc)}
 ${_ul([

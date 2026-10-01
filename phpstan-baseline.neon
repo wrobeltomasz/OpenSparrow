@@ -136,6 +136,12 @@ parameters:
 			message: '#^Variable \$action might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
+			path: includes/admin/sharing.php
+
+		-
+			message: '#^Variable \$action might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
 			path: includes/admin/users.php
 
 		-

@@ -102,7 +102,8 @@ function map_fk_display(array $schema, array $tableConfig, array $rows, \PgSql\C
         );
 
         $map = [];
-        $queryResult = @pg_query_params($conn, $sql, [array_map('strval', array_values($fkValues))]);
+        $fkValueList = '{' . implode(',', array_map('strval', array_values($fkValues))) . '}';
+        $queryResult = @pg_query_params($conn, $sql, [$fkValueList]);
         if ($queryResult) {
             while ($row = pg_fetch_assoc($queryResult)) {
                 $map[$row['id']] = $row['disp'];

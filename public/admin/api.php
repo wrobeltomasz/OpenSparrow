@@ -77,6 +77,7 @@ $postActions = [
     'clickstats_save', 'clickstats_purge_log',
     'api_save',
     'api_purge_log',
+    'sharing_save',
     'demo_install', 'demo_uninstall',
 ];
 if (in_array($action, $postActions, true) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -121,6 +122,8 @@ $adminModules = [
     'api_stats' => 'api',
     'api_log' => 'api',
     'api_purge_log' => 'api',
+    'sharing_load' => 'sharing',
+    'sharing_save' => 'sharing',
     'init_db' => 'migrations',
     'migrations_list' => 'migrations',
     'users_list' => 'users',

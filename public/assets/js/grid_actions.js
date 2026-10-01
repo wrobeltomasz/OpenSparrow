@@ -102,11 +102,10 @@ async function performUpdate(element, table, id, column, value) {
     }
 
     debugLog("Update success", payload || { ok: true });
-    markCell(td, true);
     element._originalValue = value;
 
     if (state.currentTable && window.schema) {
-        updateRowInPlace(element, table, id, column, value);
+        await updateRowInPlace(table, id, column, value);
     }
   } catch (error) {
     console.error("Network error during update", error);
@@ -114,7 +113,7 @@ async function performUpdate(element, table, id, column, value) {
   }
 }
 
-function updateRowInPlace(element, table, id, column, value) {
+async function updateRowInPlace(table, id, column, value) {
     const schema = window.schema;
     if (!schema?.tables?.[table]) return;
 
@@ -130,9 +129,13 @@ function updateRowInPlace(element, table, id, column, value) {
     }
     applyVirtualColumn(schema, table, row);
 
-    renderGrid(window.schema).then(() => {
-        debugLog('Row updated in place', { id, column });
-    });
+    await renderGrid(window.schema);
+
+    const tr = document.querySelector(`tr[data-row-id="${CSS.escape(String(id))}"]`);
+    const control = tr?.querySelector(`[data-column="${CSS.escape(column)}"]`);
+    const freshTd = control?.closest('td');
+    markCell(freshTd, true);
+    debugLog('Row updated in place', { id, column });
 }
 
 export function onInputChange(event) {

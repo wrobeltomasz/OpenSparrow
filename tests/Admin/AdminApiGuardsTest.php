@@ -41,6 +41,7 @@ final class AdminApiGuardsTest extends TestCase
         'clickstats_save', 'clickstats_purge_log',
         'api_save',
         'api_purge_log',
+        'sharing_save',
     ];
 
     private const DEMO_ALLOWED = [

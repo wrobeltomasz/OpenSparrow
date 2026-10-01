@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<!--
+  This file is part of OpenSparrow - https://opensparrow.org
+  SPDX-License-Identifier: LGPL-3.0-or-later
+  Copyright (C) 2024-2026 OpenSparrow Contributors
+  Licensed under LGPL v3. See COPYING.LESSER file for details.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock — Shared table links (admin panel + public view)</title>
+<style>
+:root {
+  --bg: #F5F6F7; --panel: #FFFFFF; --text: #1F2A37; --muted: #6E767F;
+  --accent: #003366; --accent-dark: #002245; --accent-light: #F1F4F8; --accent-mid: #D0DAE6;
+  --error: #AB0000; --error-light: #FBEDED; --ok: #0E7E4F; --ok-light: #EAF5F0;
+  --warn: #8A6D1F; --warn-light: #FBF6E7;
+  --border: #D8DBDF; --border-light: #E9EBED;
+  --radius: 4px; --radius-lg: 6px;
+  --shadow-sm: 0 1px 2px rgba(31,42,55,.08);
+  --shadow-md: 0 4px 6px -1px rgba(31,42,55,.12), 0 2px 4px -1px rgba(31,42,55,.06);
+  --font-weight-bold: 700;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: var(--accent); }
+
+.mock-banner {
+  background: var(--accent-dark); color: #fff; text-align: center;
+  padding: 6px 12px; font-size: 12px; letter-spacing: .04em;
+}
+.screen-switch {
+  display: flex; gap: 8px; justify-content: center; padding: 12px; flex-wrap: wrap;
+}
+.screen-switch .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.workspace { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+.workspace.wide { max-width: 1100px; }
+
+.page-hdr { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.page-hdr h2 { margin: 0; font-size: 20px; flex: 1; }
+.page-hdr .sub { color: var(--muted); font-size: 13px; }
+
+.adm-sec-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm); margin-bottom: 20px;
+}
+.adm-sec-hdr { padding: 14px 18px; border-bottom: 1px solid var(--border-light); }
+.adm-sec-hdr h3 { margin: 0; font-size: 15px; }
+.adm-sec-hdr p { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; }
+.adm-sec-body { padding: 16px 18px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--panel); color: var(--text);
+  padding: 6px 12px; border-radius: var(--radius); font: inherit; font-size: 13px;
+  box-shadow: var(--shadow-sm);
+}
+.btn:hover { background: var(--accent-light); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-dark); }
+.btn-success { background: var(--ok); border-color: var(--ok); color: #fff; }
+.btn-danger { background: var(--error); border-color: var(--error); color: #fff; }
+.btn-sm { padding: 4px 10px; font-size: 12.5px; }
+.btn-xs { padding: 2px 8px; font-size: 12px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+.badge {
+  font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--panel); color: var(--muted);
+}
+.badge-ok { background: var(--ok-light); border-color: var(--ok); color: var(--ok); }
+.badge-off { background: var(--bg); color: var(--muted); }
+
+/* Admin: table of shared links */
+.share-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.share-table th, .share-table td {
+  text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+.share-table th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.share-table tr:last-child td { border-bottom: none; }
+.share-table td.actions { white-space: nowrap; }
+.share-table td.actions .btn { margin-right: 6px; }
+.table-scroll { overflow-x: auto; }
+.mono { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+
+/* toggle switch */
+.switch {
+  position: relative; width: 36px; height: 20px; display: inline-block; cursor: pointer;
+}
+.switch input { display: none; }
+.switch .track {
+  position: absolute; inset: 0; background: var(--border); border-radius: 999px; transition: background 150ms;
+}
+.switch .thumb {
+  position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: var(--shadow-sm); transition: left 150ms;
+}
+.switch input:checked + .track { background: var(--ok); }
+.switch input:checked + .track .thumb { left: 18px; }
+
+.warn-box {
+  background: var(--warn-light); border: 1px solid var(--warn); color: var(--warn);
+  padding: 10px 14px; border-radius: var(--radius); margin-bottom: 14px; line-height: 1.5;
+}
+.warn-box code, .hint code { background: #fff; padding: 1px 5px; border-radius: 3px; }
+.hint { color: var(--muted); font-size: 12.5px; }
+
+/* modal (static preview) */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(31,42,55,.45); display: none;
+  align-items: center; justify-content: center; padding: 16px; z-index: 50;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--panel); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
+  width: 100%; max-width: 560px;
+}
+.modal-hdr { padding: 14px 18px; border-bottom: 1px solid var(--border-light); }
+.modal-hdr h3 { margin: 0; font-size: 15px; }
+.modal-body { padding: 18px; }
+.modal-body .url-box {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
+}
+.modal-body .url-box input { flex: 1; }
+.modal-body .hint { margin: 0 0 14px; }
+.modal-ftr { padding: 12px 18px; border-top: 1px solid var(--border-light); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ===== public guest view (share.php) ===== */
+.pub-topbar {
+  background: var(--accent); color: #fff; padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.pub-topbar .app-name { font-weight: var(--font-weight-bold); font-size: 15px; }
+.pub-topbar .shared-note {
+  margin-left: auto; font-size: 12px; background: rgba(255,255,255,.14);
+  padding: 3px 10px; border-radius: 999px;
+}
+.pub-wrap { max-width: 1100px; margin: 22px auto; padding: 0 16px; }
+.pub-hdr {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.pub-hdr h2 { margin: 0; font-size: 18px; flex: 1; }
+.pub-hdr .search {
+  font: inherit; padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--panel); width: 220px;
+}
+.pub-hdr select {
+  font: inherit; padding: 6px 8px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--panel);
+}
+.readonly-note {
+  color: var(--muted); font-size: 12.5px; display: flex; align-items: center; gap: 6px;
+}
+.readonly-note .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block;
+}
+
+.grid-card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.grid-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.grid-table th, .grid-table td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border-light); text-align: left;
+}
+.grid-table thead th {
+  background: var(--accent-light); color: var(--accent); font-size: 12px;
+  text-transform: uppercase; letter-spacing: .04em; cursor: pointer; user-select: none;
+  white-space: nowrap;
+}
+.grid-table thead th .arr { color: var(--muted); font-size: 10px; margin-left: 3px; }
+.grid-table tbody tr:hover { background: var(--accent-light); }
+.grid-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.grid-table .bool-yes { color: var(--ok); font-weight: var(--font-weight-bold); }
+.grid-table .bool-no { color: var(--muted); }
+.grid-table .tag {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px;
+  background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-mid);
+}
+
+.grid-ftr {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px; flex-wrap: wrap;
+  background: var(--accent-light); border-top: 1px solid var(--border-light);
+}
+.grid-ftr .count { color: var(--muted); font-size: 12.5px; flex: 1; }
+.grid-ftr .btn-sm { margin: 0 2px; }
+.page-cur { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.footer-note {
+  text-align: center; color: var(--muted); font-size: 12px; margin: 18px 0 30px;
+}
+</style>
+</head>
+<body>
+
+<div class="mock-banner">MOCK — proposed layout for "shared table links" (no backend, static preview)</div>
+
+<div class="screen-switch">
+  <button class="btn active" id="sw-admin" onclick="show('admin', this)">1. Admin → System → Sharing</button>
+  <button class="btn" id="sw-public" onclick="show('public', this)">2. Guest view — share.php</button>
+  <button class="btn" onclick="document.getElementById('link-modal').classList.add('open')">Show "link generated" modal</button>
+</div>
+
+<script>
+function show(which, button) {
+  document.getElementById('screen-admin').style.display = which === 'admin' ? '' : 'none';
+  document.getElementById('screen-public').style.display = which === 'public' ? '' : 'none';
+  document.querySelectorAll('.screen-switch .btn').forEach(function (element) { element.classList.remove('active'); });
+  button.classList.add('active');
+}
+</script>
+
+<!-- ============================================================ -->
+<!-- SCREEN 1: admin panel — System → Sharing                     -->
+<!-- ============================================================ -->
+<div class="workspace" id="screen-admin">
+
+  <div class="page-hdr">
+    <h2>System → Sharing</h2>
+    <span class="sub">Public read-only table links — anyone with the link, no login required.</span>
+  </div>
+
+  <div class="adm-sec-card">
+    <div class="adm-sec-hdr adm-sec-hdr--block">
+      <h3>Shared Tables</h3>
+      <p>Tables exposed through a public read-only link. A link never grants access to other
+         tables, comments, files or attachments — only the grid of the table itself.</p>
+    </div>
+    <div class="adm-sec-body">
+      <div class="warn-box">
+        <strong>Security notes:</strong> hidden tables, owner-restricted tables and system
+        tables cannot be shared. The token is stored only as an HMAC hash — it is shown
+        <strong>once</strong> on generation and cannot be retrieved later. Regenerating a
+        link immediately invalidates the previous one.
+      </div>
+
+      <div class="table-scroll">
+        <table class="share-table">
+          <thead>
+            <tr>
+              <th style="width:40px">Shared</th>
+              <th>Table</th>
+              <th>Display name</th>
+              <th>Link status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><label class="switch"><input type="checkbox" checked><span class="track"><span class="thumb"></span></span></label></td>
+              <td><code>customers</code></td>
+              <td>Customers</td>
+              <td><span class="badge badge-ok">Active — generated 2026-09-28 by admin</span></td>
+              <td class="actions">
+                <button class="btn btn-xs">Copy link</button>
+                <button class="btn btn-xs">Regenerate</button>
+                <button class="btn btn-xs btn-danger">Revoke</button>
+              </td>
+            </tr>
+            <tr>
+              <td><label class="switch"><input type="checkbox"><span class="track"><span class="thumb"></span></span></label></td>
+              <td><code>orders</code></td>
+              <td>Orders</td>
+              <td><span class="badge badge-off">Not shared</span></td>
+              <td class="actions">
+                <button class="btn btn-xs btn-primary">Generate link</button>
+              </td>
+            </tr>
+            <tr>
+              <td><label class="switch"><input type="checkbox"><span class="track"><span class="thumb"></span></span></label></td>
+              <td><code>products</code></td>
+              <td>Products</td>
+              <td><span class="badge badge-off">Not shared</span></td>
+              <td class="actions">
+                <button class="btn btn-xs btn-primary">Generate link</button>
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td><code>checklisty</code> <span class="badge">hidden</span></td>
+              <td>Checklists</td>
+              <td><span class="badge">cannot be shared</span></td>
+              <td class="actions">
+                <button class="btn btn-xs" disabled>Generate link</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="hint" style="margin-top:12px">
+        "Copy link" works only while the admin session knows a link it just generated or regenerated
+        in this browser session; otherwise it prompts to regenerate — the token is never stored in
+        a retrievable form.
+      </p>
+    </div>
+  </div>
+
+  <div class="adm-sec-card">
+    <div class="adm-sec-hdr adm-sec-hdr--block">
+      <h3>How a public link works</h3>
+      <p>Short reference for the administrator.</p>
+    </div>
+    <div class="adm-sec-body">
+      <p style="margin-top:0">
+        A shared link looks like <code>https://your-host/share.php?t=&lt;64-char-token&gt;</code>.
+        Opening it shows the table grid read-only: sorting, filtering, search and CSV export of the
+        loaded rows are available; adding, editing, deleting, comments and record details are not.
+      </p>
+      <p style="margin-bottom:0">
+        The name of the table never appears in the URL — the token alone decides which table is
+        served. Treat a link like a password: anyone who obtains it can read the table until it is
+        revoked or regenerated.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 2: public guest view — share.php?t=<token>           -->
+<!-- ============================================================ -->
+<div id="screen-public" style="display:none">
+
+  <div class="pub-topbar">
+    <span class="app-name">OpenSparrow</span>
+    <span class="shared-note">Shared table — read-only, no login required</span>
+  </div>
+
+  <div class="pub-wrap">
+    <div class="pub-hdr">
+      <h2>Customers</h2>
+      <input class="search" type="search" placeholder="Search…">
+      <select>
+        <option>All columns</option>
+        <option>Name</option>
+        <option>City</option>
+      </select>
+      <span class="readonly-note"><span class="dot"></span> read-only view</span>
+    </div>
+
+    <div class="grid-card">
+      <table class="grid-table">
+        <thead>
+          <tr>
+            <th>Name <span class="arr">▲</span></th>
+            <th>City</th>
+            <th>Segment <span class="arr">▼</span></th>
+            <th>Since</th>
+            <th class="num">Orders</th>
+            <th>Active</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Acme Corp.</td>
+            <td>Warsaw</td>
+            <td><span class="tag">enterprise</span></td>
+            <td>2024-03-11</td>
+            <td class="num">128</td>
+            <td class="bool-yes">yes</td>
+          </tr>
+          <tr>
+            <td>Beta Sp. z o.o.</td>
+            <td>Kraków</td>
+            <td><span class="tag">smb</span></td>
+            <td>2024-09-02</td>
+            <td class="num">17</td>
+            <td class="bool-yes">yes</td>
+          </tr>
+          <tr>
+            <td>Gamma Logistics</td>
+            <td>Gdańsk</td>
+            <td><span class="tag">smb</span></td>
+            <td>2023-11-27</td>
+            <td class="num">54</td>
+            <td class="bool-no">no</td>
+          </tr>
+          <tr>
+            <td>Delta Foods</td>
+            <td>Poznań</td>
+            <td><span class="tag">retail</span></td>
+            <td>2025-01-15</td>
+            <td class="num">9</td>
+            <td class="bool-yes">yes</td>
+          </tr>
+          <tr>
+            <td>Epsilon Tech</td>
+            <td>Wrocław</td>
+            <td><span class="tag">enterprise</span></td>
+            <td>2025-06-30</td>
+            <td class="num">73</td>
+            <td class="bool-yes">yes</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="grid-ftr">
+        <span class="count">Showing 1–5 of 1,204 rows (first 1,000 loaded)</span>
+        <button class="btn btn-sm btn-primary">Load more</button>
+        <button class="btn btn-sm">Export CSV</button>
+        <button class="btn btn-sm" disabled>‹</button>
+        <button class="btn btn-sm page-cur">1</button>
+        <button class="btn btn-sm">2</button>
+        <button class="btn btn-sm">3</button>
+        <button class="btn btn-sm">›</button>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Shared via OpenSparrow — the data shown is a live read-only view of the table.
+    </div>
+  </div>
+
+</div>
+
+<!-- modal: shown once after generating / regenerating a link -->
+<div class="modal-backdrop" id="link-modal" onclick="if (event.target === this) this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-hdr"><h3>Public link for "Customers"</h3></div>
+    <div class="modal-body">
+      <div class="url-box">
+        <input type="text" class="mono" id="gen-url"
+               value="https://your-host/share.php?t=9f2b6c4e8a1d3f70b5c2e94a6d801f3c5b7a2e6d9408f1a3c5e7b9d2f6a0c4e8"
+               readonly>
+        <button class="btn btn-sm" onclick="document.getElementById('gen-url').select();document.execCommand('copy')">Copy</button>
+      </div>
+      <p class="hint">
+        <strong>Shown only once.</strong> The token is stored as a hash — it cannot be displayed
+        again. Copy it now; if you lose it, regenerate the link (the old one stops working
+        immediately).
+      </p>
+      <p class="hint" style="margin:0">
+        Anyone with this link can <strong>read</strong> the Customers table without logging in.
+        Nothing else. Sort, filter, search and CSV export of loaded rows included; editing,
+        comments, files and related tables are not.
+      </p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-primary" onclick="document.getElementById('link-modal').classList.remove('open')">Done</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
