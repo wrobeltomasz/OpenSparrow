@@ -3,13 +3,15 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-export function createHoverPopup({ className, width, verticalThreshold, hideDelay = 150 }) {
+export function createHoverPopup({ className, width, verticalThreshold, hideDelay = 150, showDelay = 0 }) {
     const element = document.createElement('div');
     element.className = className;
     element.hidden = true;
     document.body.appendChild(element);
 
     let hideTimer = null;
+    let showTimer = null;
+    let pendingAnchor = null;
     element.addEventListener('mouseenter', () => clearTimeout(hideTimer));
     element.addEventListener('mouseleave', () => { element.hidden = true; });
 
@@ -26,15 +28,36 @@ export function createHoverPopup({ className, width, verticalThreshold, hideDela
         }
     }
 
-    function show(anchor) {
-        clearTimeout(hideTimer);
+    function renderNow(anchor) {
         position(anchor);
         element.hidden = false;
     }
 
+    function show(anchor) {
+        if (pendingAnchor === anchor && showTimer !== null) return;
+        clearTimeout(showTimer);
+        pendingAnchor = anchor;
+        if (showDelay > 0) {
+            showTimer = setTimeout(() => {
+                showTimer = null;
+                renderNow(anchor);
+            }, showDelay);
+        } else {
+            renderNow(anchor);
+        }
+    }
+
+    function cancelShow() {
+        clearTimeout(showTimer);
+        showTimer = null;
+        pendingAnchor = null;
+    }
+
     function scheduleHide() {
+        cancelShow();
+        clearTimeout(hideTimer);
         hideTimer = setTimeout(() => { element.hidden = true; }, hideDelay);
     }
 
-    return { el: element, show, scheduleHide };
+    return { el: element, show, scheduleHide, cancelShow };
 }

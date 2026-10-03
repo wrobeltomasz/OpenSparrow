@@ -11,6 +11,7 @@ let suppressed = false;
 
 export function suppressM2mPopup() {
     suppressed = true;
+    popup.cancelShow();
     popup.el.hidden = true;
 }
 
@@ -19,7 +20,7 @@ export function resumeM2mPopup() {
 }
 
 export function initM2mPopup() {
-    popup = createHoverPopup({ className: 'm2m-popup', width: 260, verticalThreshold: 160 });
+    popup = createHoverPopup({ className: 'm2m-popup', width: 260, verticalThreshold: 160, showDelay: 1000 });
 
     document.addEventListener('mouseover', event => {
         if (suppressed) return;
@@ -37,6 +38,7 @@ export function initM2mPopup() {
 
     document.addEventListener('mouseout', event => {
         if (!event.target.closest('[data-m2m-row-id]')) return;
+        popup.cancelShow();
         popup.scheduleHide();
     });
 }

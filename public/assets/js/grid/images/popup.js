@@ -9,7 +9,7 @@ import { createHoverPopup } from '../hover-popup.js';
 let popup = null;
 
 export function initImagePopup() {
-    popup = createHoverPopup({ className: 'img-popup', width: 280, verticalThreshold: 220 });
+    popup = createHoverPopup({ className: 'img-popup', width: 280, verticalThreshold: 220, showDelay: 1000 });
 
     document.addEventListener('mouseover', event => {
         const td = event.target.closest('[data-img-row-id]');
