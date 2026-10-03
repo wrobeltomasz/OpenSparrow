@@ -501,7 +501,7 @@ Renders the frontend sidebar and lets you rearrange or nest items by dragging. E
 
 #### Demo 1: CRM
 
-Companies, contacts, deals, quotes, invoices, assets, activities. FK subtables, deal stage color coding, revenue drill-down by year → month, Kanban deals board, automations (incl. welcome email), GDPR anonymization rules for stale leads.
+Companies, contacts, deals, quotes, invoices, assets, activities. FK subtables, deal stage color coding, computed columns with conditional icons (deal size, activity kind), revenue drill-down by year → month, Kanban deals board, automations (incl. welcome email), GDPR anonymization rules for stale leads.
 
 ### 11c. CSV Import
 

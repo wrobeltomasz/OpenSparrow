@@ -45,6 +45,7 @@ const DEMOS = {
             'Record ownership',
             'Audit history + record snapshots',
             'Highlight rules + colored enums',
+            'Icon rules on computed columns',
         ],
     },
 };

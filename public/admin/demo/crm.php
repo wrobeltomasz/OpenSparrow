@@ -459,6 +459,10 @@ function demo_def_crm($conn): array
                 'value'          => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Value', 'description' => 'Estimated deal value in currency units'],
                 'stage'          => ['type' => 'enum',   'show_in_grid' => true, 'options' => ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'], 'enum_colors' => ['Lead' => '#d1d5db', 'Qualified' => '#93c5fd', 'Proposal' => '#fcd34d', 'Negotiation' => '#fcd34d', 'Won' => '#6ee7b7', 'Lost' => '#f87171'], 'display_name' => 'Stage', 'description' => 'Current stage in sales pipeline'],
                 'expected_close' => ['type' => 'date',   'show_in_grid' => true, 'display_name' => 'Expected Close', 'description' => 'Projected closing date'],
+                'deal_size'      => ['type' => 'virtual', 'show_in_grid' => true, 'show_in_edit' => false, 'display_name' => 'Size', 'description' => 'Computed deal size with conditional icons', 'formula' => ['op' => 'sum', 'cols' => ['value']], 'icon_rules' => [
+                    ['op' => '>=', 'value' => '150000', 'icon' => 'assets/icons/material/trending_up.svg'],
+                    ['op' => '<',  'value' => '40000',  'icon' => 'assets/icons/material/trending_down.svg'],
+                ]],
                 'created_at'     => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when deal record was created'],
             ], 'foreign_keys' => [
 
@@ -482,6 +486,13 @@ function demo_def_crm($conn): array
                 'notes'        => ['type' => 'text',    'show_in_grid' => false, 'display_name' => 'Notes', 'description' => 'Detailed notes or comments about the activity'],
                 'scheduled_at' => ['type' => 'timestamp', 'show_in_grid' => true, 'display_name' => 'Scheduled At', 'description' => 'Date and time activity is scheduled or occurred'],
                 'done'         => ['type' => 'boolean', 'show_in_grid' => true, 'enum_colors' => ['true' => '#6ee7b7', 'false' => '#f87171'], 'display_name' => 'Done', 'description' => 'Whether activity is completed'],
+                'activity_kind' => ['type' => 'virtual', 'show_in_grid' => true, 'show_in_edit' => false, 'display_name' => 'Kind', 'description' => 'Activity type with a matching icon', 'formula' => ['op' => 'concat', 'cols' => ['type']], 'icon_rules' => [
+                    ['op' => 'contains', 'value' => 'Call',    'icon' => 'assets/icons/material/call.svg'],
+                    ['op' => 'contains', 'value' => 'Email',   'icon' => 'assets/icons/material/mail.svg'],
+                    ['op' => 'contains', 'value' => 'Meeting', 'icon' => 'assets/icons/material/groups.svg'],
+                    ['op' => 'contains', 'value' => 'Task',    'icon' => 'assets/icons/material/task_alt.svg'],
+                    ['op' => 'contains', 'value' => 'Note',    'icon' => 'assets/icons/material/sticky_note_2.svg'],
+                ]],
                 'created_at'   => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when activity record was created'],
             ], 'foreign_keys' => [
                 'deal_id'    => ['reference_table' => 'deals',    'reference_column' => 'id', 'display_column' => 'title'],
