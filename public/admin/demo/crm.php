@@ -101,7 +101,7 @@ function demo_def_crm($conn): array
                 . 'END IF; '
                 . 'v_digits := regexp_replace(COALESCE(p_phone, \'\'), \'[-. ()]\', \'\', \'g\'); '
                 . 'IF v_digits <> \'\' AND v_digits !~ \'^\\+?[0-9]{6,15}$\' THEN '
-                . 'RAISE EXCEPTION \'Invalid phone: % â€” digits only, separators - . ( ) and spaces are allowed\', p_phone; '
+                . 'RAISE EXCEPTION \'Invalid phone: % - digits only, separators - . ( ) and spaces are allowed\', p_phone; '
                 . 'END IF; '
                 . 'END $proc$',
         ],
@@ -349,7 +349,7 @@ function demo_def_crm($conn): array
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Event', 'Sofia', 'Kowalski', 'sofia.k@brightsoft.eu', '+44-20-555-0103', 'BrightSoft EU', 'Qualified', 1)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Cold Call', 'Ethan', 'Park', 'ethan.p@nextstride.io', '+1-555-3004', 'NextStride', 'New', NULL)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Ads', 'Aisha', 'Khan', 'aisha.k@summitcloud.com', '+1-555-3005', 'Summit Cloud', 'Contacted', NULL)",
-            "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Web', 'Lucas', 'MĂĽller', 'lucas.m@helixdata.de', '+49-30-555-0106', 'Helix Data GmbH', 'Lost', NULL)",
+            "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Web', 'Lucas', 'Müller', 'lucas.m@helixdata.de', '+49-30-555-0106', 'Helix Data GmbH', 'Lost', NULL)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Referral', 'Maya', 'Patel', 'maya.p@kinetic-labs.com', '+1-555-3007', 'Kinetic Labs', 'Qualified', 2)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Event', 'Noah', 'Andersson', 'noah.a@fjordtech.no', '+47-22-555-0108', 'Fjord Tech', 'New', NULL)",
             "INSERT INTO spw_crm.leads (source, first_name, last_name, email, phone, company_name, status, converted_contact_id) VALUES ('Other', 'Chloe', 'Dubois', 'chloe.d@parisretail.fr', '+33-1-5555-0109', 'Paris Retail SA', 'Contacted', NULL)",
@@ -521,7 +521,7 @@ function demo_def_crm($conn): array
                 'progress'   => ['type' => 'number', 'show_in_grid' => true, 'display_name' => 'Progress', 'description' => 'Completion percentage (0-100)'],
                 'created_at' => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when project record was created'],
             ]],
-            'deal_contacts' => ['display_name' => 'Dealâ€“Contacts', 'schema' => 'spw_crm', 'hidden' => true, 'columns' => [
+            'deal_contacts' => ['display_name' => 'Deal-Contacts', 'schema' => 'spw_crm', 'hidden' => true, 'columns' => [
                 'id'         => ['display_name' => 'ID',      'type' => 'number', 'not_null' => true, 'readonly' => true,  'show_in_grid' => true, 'show_in_edit' => true],
                 'deal_id'    => ['display_name' => 'Deal',    'type' => 'number', 'not_null' => true, 'readonly' => false, 'show_in_grid' => true, 'show_in_edit' => true],
                 'contact_id' => ['display_name' => 'Contact', 'type' => 'number', 'not_null' => true, 'readonly' => false, 'show_in_grid' => true, 'show_in_edit' => true],
@@ -580,13 +580,13 @@ function demo_def_crm($conn): array
             ],
         ],
         'workflows' => [
-            ['id' => 'wf_demo_crm_001', 'title' => 'New CRM Deal', 'icon' => 'assets/icons/material/apartment.svg', 'description' => 'CRM: add company â†’ contact â†’ deal â†’ activity.', 'steps' => [
+            ['id' => 'wf_demo_crm_001', 'title' => 'New CRM Deal', 'icon' => 'assets/icons/material/apartment.svg', 'description' => 'CRM: add company → contact → deal → activity.', 'steps' => [
                 ['title' => 'Add Company',  'table' => 'companies',  'foreign_key' => '',           'link_to_step' => 0, 'allow_multiple' => false],
                 ['title' => 'Add Contact',  'table' => 'contacts',   'foreign_key' => 'company_id', 'link_to_step' => 0, 'allow_multiple' => true],
                 ['title' => 'Create Deal',  'table' => 'deals',      'foreign_key' => 'company_id', 'link_to_step' => 0, 'allow_multiple' => false],
                 ['title' => 'Log Activity', 'table' => 'activities', 'foreign_key' => 'deal_id',    'link_to_step' => 2, 'allow_multiple' => true],
             ]],
-            ['id' => 'wf_demo_crm_002', 'title' => 'Convert Lead', 'icon' => 'assets/icons/material/person_text.svg', 'description' => 'CRM: lead â†’ company â†’ contact â†’ deal.', 'steps' => [
+            ['id' => 'wf_demo_crm_002', 'title' => 'Convert Lead', 'icon' => 'assets/icons/material/person_text.svg', 'description' => 'CRM: lead → company → contact → deal.', 'steps' => [
                 ['title' => 'Capture Lead',  'table' => 'leads',     'foreign_key' => '',           'link_to_step' => 0, 'allow_multiple' => false],
                 ['title' => 'Add Company',   'table' => 'companies', 'foreign_key' => '',           'link_to_step' => 0, 'allow_multiple' => false],
                 ['title' => 'Add Contact',   'table' => 'contacts',  'foreign_key' => 'company_id', 'link_to_step' => 1, 'allow_multiple' => false],
@@ -722,35 +722,35 @@ function demo_def_crm($conn): array
 
         'demo_comments' => [
             ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'body' => "Talked to John Smith today, he's leaning towards the annual plan. Sending updated pricing tomorrow."],
-            ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'body' => 'Good â€” flag me before you send it, I want to double check the discount tier.'],
+            ['related_table' => 'deals', 'related_id' => 1, 'author' => 1, 'body' => 'Good - flag me before you send it, I want to double check the discount tier.'],
             ['related_table' => 'deals', 'related_id' => 1, 'author' => 0, 'body' => 'Will do. Also added the renewal clause they asked for.'],
-            ['related_table' => 'deals', 'related_id' => 2, 'author' => 1, 'body' => "Negotiation is dragging â€” legal on their side wants another round of redlines."],
+            ['related_table' => 'deals', 'related_id' => 2, 'author' => 1, 'body' => "Negotiation is dragging - legal on their side wants another round of redlines."],
             ['related_table' => 'deals', 'related_id' => 2, 'author' => 2, 'body' => 'Noted, I will hold off scheduling the kickoff call until this closes.'],
-            ['related_table' => 'deals', 'related_id' => 4, 'author' => 0, 'body' => 'Marked as Won â€” kickoff scheduled with the client.'],
+            ['related_table' => 'deals', 'related_id' => 4, 'author' => 0, 'body' => 'Marked as Won - kickoff scheduled with the client.'],
             ['related_table' => 'companies', 'related_id' => 1, 'author' => 1, 'body' => 'Acme is a strategic account this quarter, prioritize their support tickets.'],
             ['related_table' => 'companies', 'related_id' => 1, 'author' => 2, 'body' => 'Got it, tagging their tickets as high priority.'],
-            ['related_table' => 'contacts', 'related_id' => 1, 'author' => 0, 'body' => 'John prefers email over calls â€” keep that in mind for follow-ups.'],
+            ['related_table' => 'contacts', 'related_id' => 1, 'author' => 0, 'body' => 'John prefers email over calls - keep that in mind for follow-ups.'],
             ['related_table' => 'deals', 'related_id' => 7, 'author' => 2, 'body' => 'Infrastructure buildout timeline looks tight, worth a check-in call this week.'],
-            ['related_table' => 'deals', 'related_id' => 3, 'author' => 1, 'body' => 'Emma Wilson confirmed the migration window â€” first weekend of June works for their ops team.'],
+            ['related_table' => 'deals', 'related_id' => 3, 'author' => 1, 'body' => 'Emma Wilson confirmed the migration window - first weekend of June works for their ops team.'],
             ['related_table' => 'deals', 'related_id' => 3, 'author' => 0, 'body' => 'That only leaves two weeks for the dry run. Can we move the qualification call up?'],
             ['related_table' => 'deals', 'related_id' => 3, 'author' => 1, 'body' => 'Moved it to Thursday. Emma is fine with it, invite is out.'],
             ['related_table' => 'deals', 'related_id' => 8, 'author' => 2, 'body' => 'DataStream asked for a reference customer of similar size before they sign off.'],
-            ['related_table' => 'deals', 'related_id' => 8, 'author' => 0, 'body' => 'I can ask Enterprise Systems â€” they went live last quarter and were happy with the rollout.'],
+            ['related_table' => 'deals', 'related_id' => 8, 'author' => 0, 'body' => 'I can ask Enterprise Systems - they went live last quarter and were happy with the rollout.'],
             ['related_table' => 'deals', 'related_id' => 8, 'author' => 2, 'body' => 'Perfect, that should unblock the last approval step on their side.'],
             ['related_table' => 'deals', 'related_id' => 14, 'author' => 1, 'body' => 'Round A terms sheet received. Valuation is lower than we modelled, but the tranche schedule is favourable.'],
             ['related_table' => 'deals', 'related_id' => 14, 'author' => 0, 'body' => 'Do we push back on valuation or take the faster close? My vote is the faster close.'],
-            ['related_table' => 'deals', 'related_id' => 14, 'author' => 1, 'body' => 'Agreed â€” closing speed matters more here. Drafting the counter now.'],
+            ['related_table' => 'deals', 'related_id' => 14, 'author' => 1, 'body' => 'Agreed - closing speed matters more here. Drafting the counter now.'],
             ['related_table' => 'deals', 'related_id' => 20, 'author' => 0, 'body' => 'Closed Won. Integration scope signed off, handing over to delivery on Monday.'],
             ['related_table' => 'deals', 'related_id' => 20, 'author' => 2, 'body' => 'Handover received, kickoff scheduled. Nice one.'],
-            ['related_table' => 'deals', 'related_id' => 26, 'author' => 1, 'body' => 'Phase 2 depends on Phase 1 sign-off â€” do not send the proposal until the migration deal is Won.'],
+            ['related_table' => 'deals', 'related_id' => 26, 'author' => 1, 'body' => 'Phase 2 depends on Phase 1 sign-off - do not send the proposal until the migration deal is Won.'],
             ['related_table' => 'deals', 'related_id' => 26, 'author' => 0, 'body' => 'Understood, holding the proposal until then.'],
-            ['related_table' => 'companies', 'related_id' => 7, 'author' => 2, 'body' => 'DataStream reorganised their procurement team â€” new contact is coming through next week.'],
+            ['related_table' => 'companies', 'related_id' => 7, 'author' => 2, 'body' => 'DataStream reorganised their procurement team - new contact is coming through next week.'],
             ['related_table' => 'companies', 'related_id' => 7, 'author' => 0, 'body' => 'Thanks, I will update the contact list once we have the name.'],
-            ['related_table' => 'companies', 'related_id' => 2, 'author' => 1, 'body' => 'Global Solutions is up for renewal in Q4 â€” start the account review early this time.'],
+            ['related_table' => 'companies', 'related_id' => 2, 'author' => 1, 'body' => 'Global Solutions is up for renewal in Q4 - start the account review early this time.'],
             ['related_table' => 'contacts', 'related_id' => 4, 'author' => 1, 'body' => 'Emma is our main sponsor at TechVision, loop her in on anything touching the migration.'],
-            ['related_table' => 'contacts', 'related_id' => 3, 'author' => 0, 'body' => 'Michael is only reachable on Tuesdays and Thursdays â€” avoid Monday calls.'],
+            ['related_table' => 'contacts', 'related_id' => 3, 'author' => 0, 'body' => 'Michael is only reachable on Tuesdays and Thursdays - avoid Monday calls.'],
             ['related_table' => 'leads', 'related_id' => 2, 'author' => 2, 'body' => 'Marcus from Apex Logistics asked for pricing on the mid-tier package. Passing to sales.'],
-            ['related_table' => 'leads', 'related_id' => 6, 'author' => 0, 'body' => 'Marked as Lost â€” they went with an in-house solution. Worth re-approaching in six months.'],
+            ['related_table' => 'leads', 'related_id' => 6, 'author' => 0, 'body' => 'Marked as Lost - they went with an in-house solution. Worth re-approaching in six months.'],
         ],
 
         'demo_notes' => [
@@ -758,9 +758,9 @@ function demo_def_crm($conn): array
             ['author' => 0, 'related_table' => 'deals', 'related_id' => 4, 'body' => 'Send the Support & Maintenance renewal confirmation.', 'reminder_date' => null],
             ['author' => 0, 'related_table' => null, 'related_id' => null, 'body' => 'Prepare Q3 pipeline summary for the team meeting.', 'reminder_date' => null],
             ['author' => 1, 'related_table' => 'deals', 'related_id' => 2, 'body' => 'Check discount tier before Anna sends updated pricing.', 'reminder_date' => date('Y-m-d')],
-            ['author' => 1, 'related_table' => 'companies', 'related_id' => 1, 'body' => 'Acme renewal is coming up â€” review their support history first.', 'reminder_date' => null],
+            ['author' => 1, 'related_table' => 'companies', 'related_id' => 1, 'body' => 'Acme renewal is coming up - review their support history first.', 'reminder_date' => null],
             ['author' => 1, 'related_table' => null, 'related_id' => null, 'body' => "Review this month's Won deals for commission calculation.", 'reminder_date' => null],
-            ['author' => 2, 'related_table' => 'companies', 'related_id' => 1, 'body' => 'Acme tickets are high priority â€” check queue every morning.', 'reminder_date' => null],
+            ['author' => 2, 'related_table' => 'companies', 'related_id' => 1, 'body' => 'Acme tickets are high priority - check queue every morning.', 'reminder_date' => null],
             ['author' => 2, 'related_table' => 'deals', 'related_id' => 7, 'body' => 'Schedule a check-in call about the infrastructure buildout timeline.', 'reminder_date' => null],
         ],
 
@@ -828,7 +828,7 @@ function demo_def_crm($conn): array
             ['author' => 2, 'title' => 'New comment on contact: Emma Wilson', 'related_table' => 'contacts', 'related_id' => 4, 'is_read' => false],
             ['author' => 1, 'title' => 'New comment on contact: Michael Brown', 'related_table' => 'contacts', 'related_id' => 3, 'is_read' => true],
             ['author' => 0, 'title' => 'New comment on lead: Marcus Bennett', 'related_table' => 'leads', 'related_id' => 2, 'is_read' => false],
-            ['author' => 2, 'title' => 'New comment on lead: Lucas MĂĽller', 'related_table' => 'leads', 'related_id' => 6, 'is_read' => true],
+            ['author' => 2, 'title' => 'New comment on lead: Lucas Müller', 'related_table' => 'leads', 'related_id' => 6, 'is_read' => true],
         ],
 
         'demo_audit' => [
@@ -882,7 +882,7 @@ function demo_def_crm($conn): array
         'automations' => [
             [
                 'id'            => 'auto_demo_crm_001',
-                'name'          => 'Deal Won â€” Close Notification',
+                'name'          => 'Deal Won - Close Notification',
                 'enabled'       => true,
                 'trigger_table' => 'deals',
                 'trigger_event' => 'update',
@@ -903,7 +903,7 @@ function demo_def_crm($conn): array
             ],
             [
                 'id'            => 'auto_demo_crm_002',
-                'name'          => 'New Web Lead â€” Auto Contact',
+                'name'          => 'New Web Lead - Auto Contact',
                 'enabled'       => true,
                 'trigger_table' => 'leads',
                 'trigger_event' => 'create',
@@ -922,7 +922,7 @@ function demo_def_crm($conn): array
             ],
             [
                 'id'            => 'auto_demo_crm_004',
-                'name'          => 'New Lead â€” Welcome Email',
+                'name'          => 'New Lead - Welcome Email',
                 'enabled'       => true,
                 'trigger_table' => 'leads',
                 'trigger_event' => 'create',
