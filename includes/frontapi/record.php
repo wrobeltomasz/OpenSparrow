@@ -97,12 +97,19 @@ function frontapi_record_patch(FrontApiWriteContext $context): never
     if (str_contains($columnType, 'bool')) {
         $value = normalize_boolean($value);
         $cast = '::boolean';
+    } elseif ($columnType === 'jsonb') {
+        $jsonError = validate_jsonb_column($tableConfig['columns'][$column], $value);
+        if ($jsonError !== null) {
+            http_response_code(422);
+            throw ResponseException::encoded(['error' => $jsonError, 'column' => $column]);
+        }
+        $cast = '::jsonb';
     } elseif ($value === '') {
         $value = null;
     }
 
     $regexpError = validate_column_regexp($tableConfig['columns'][$column], $value);
-    if (!str_contains($columnType, 'bool') && $regexpError !== null) {
+    if (!str_contains($columnType, 'bool') && $columnType !== 'jsonb' && $regexpError !== null) {
         http_response_code(422);
         throw ResponseException::encoded(['error' => $regexpError]);
     }
@@ -154,6 +161,12 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
         $value = $body['data'][$columnName] ?? null;
         if (str_contains($type, 'bool')) {
             $value = normalize_boolean($value);
+        } elseif ($type === 'jsonb') {
+            $jsonError = validate_jsonb_column($columnConfig, $value);
+            if ($jsonError !== null) {
+                http_response_code(422);
+                throw ResponseException::encoded(['error' => $jsonError, 'column' => $columnName]);
+            }
         } elseif ($value === '') {
             $value = null;
         }
@@ -163,7 +176,7 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
             $value = type_min_value($type);
         }
 
-        if (!str_contains($type, 'bool') && ($regexpError = validate_column_regexp($columnConfig, $value)) !== null) {
+        if (!str_contains($type, 'bool') && $type !== 'jsonb' && ($regexpError = validate_column_regexp($columnConfig, $value)) !== null) {
             http_response_code(422);
             throw ResponseException::encoded(['error' => $regexpError, 'column' => $columnName]);
         }
@@ -173,7 +186,9 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
             $values[] = $value;
             $placeholders[]   = str_contains($type, 'bool')
                 ? '$' . $placeholderIndex . '::boolean'
-                : '$' . $placeholderIndex;
+                : ($type === 'jsonb'
+                    ? '$' . $placeholderIndex . '::jsonb'
+                    : '$' . $placeholderIndex);
             $placeholderIndex++;
         }
     }

@@ -74,7 +74,7 @@ if ($action === 'add_column') {
         $safeTable  = pg_escape_identifier($conn, $tableName);
         $safeColumn    = pg_escape_identifier($conn, $columnName);
 
-        $allowedTypes = ['varchar(255)', 'int4', 'int8', 'boolean', 'text', 'date', 'timestamp', 'timestamptz'];
+        $allowedTypes = ['varchar(255)', 'int4', 'int8', 'boolean', 'text', 'date', 'timestamp', 'timestamptz', 'jsonb'];
         if (!in_array($columnType, $allowedTypes, true)) {
             throw new AdminApiMessage('Invalid data type provided.');
         }

@@ -266,6 +266,15 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
         form.querySelectorAll('[name]').forEach((element) => {
             snap[element.name] = element.type === 'checkbox' ? element.checked : element.value;
         });
+        form.querySelectorAll('.wf-jsonb-fields').forEach((wrapper) => {
+            const object = {};
+            wrapper.querySelectorAll('[data-jsonb-field]').forEach((fieldInput) => {
+                if (fieldInput.type === 'checkbox') object[fieldInput.dataset.jsonbField] = fieldInput.checked;
+                else if (fieldInput.type === 'number' && fieldInput.value !== '') object[fieldInput.dataset.jsonbField] = Number(fieldInput.value);
+                else object[fieldInput.dataset.jsonbField] = fieldInput.value;
+            });
+            snap[wrapper.dataset.jsonbColumn] = JSON.stringify(object);
+        });
         return snap;
     }
 
@@ -273,9 +282,24 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
         if (!snap) return;
         Object.entries(snap).forEach(([name, value]) => {
             const element = form.querySelector(`[name="${CSS.escape(name)}"]`);
-            if (!element) return;
-            if (element.type === 'checkbox') element.checked = !!value;
-            else element.value = value ?? '';
+            if (element) {
+                if (element.type === 'checkbox') element.checked = !!value;
+                else element.value = value ?? '';
+            }
+        });
+        form.querySelectorAll('.wf-jsonb-fields').forEach((wrapper) => {
+            let object = {};
+            const raw = snap[wrapper.dataset.jsonbColumn];
+            if (typeof raw === 'string' && raw !== '') {
+                try { object = JSON.parse(raw) || {}; } catch { object = {}; }
+            } else if (raw && typeof raw === 'object') {
+                object = raw;
+            }
+            wrapper.querySelectorAll('[data-jsonb-field]').forEach((fieldInput) => {
+                const fieldValue = object[fieldInput.dataset.jsonbField];
+                if (fieldInput.type === 'checkbox') fieldInput.checked = !!fieldValue;
+                else fieldInput.value = fieldValue === undefined || fieldValue === null ? '' : String(fieldValue);
+            });
         });
     }
 
@@ -615,6 +639,34 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
             } else if (type.includes('date')) {
                 input = document.createElement('input');
                 input.type = 'date';
+            } else if (type === 'jsonb' && Array.isArray(columnDef.jsonb_fields) && columnDef.jsonb_fields.length > 0) {
+                const fieldColumn = document.createElement('div');
+                fieldColumn.className = 'wf-jsonb-fields';
+                fieldColumn.dataset.jsonbColumn = columnName;
+                columnDef.jsonb_fields.forEach(field => {
+                    if (!field.name) return;
+                    const fieldGroup = document.createElement('div');
+                    fieldGroup.className = 'form-group';
+                    const fieldLabel = document.createElement('label');
+                    fieldLabel.textContent = field.display_name || field.name;
+                    const fieldInput = document.createElement('input');
+                    fieldInput.type = field.type === 'number' ? 'number'
+                        : field.type === 'boolean' ? 'checkbox'
+                        : 'text';
+                    fieldInput.dataset.jsonbField = field.name;
+                    if (field.type === 'boolean') fieldInput.classList.add('wf-checkbox');
+                    fieldGroup.appendChild(fieldLabel);
+                    fieldGroup.appendChild(fieldInput);
+                    fieldColumn.appendChild(fieldGroup);
+                });
+                formGroup.appendChild(fieldColumn);
+                grid.appendChild(formGroup);
+                continue;
+            } else if (type === 'jsonb') {
+                input = document.createElement('textarea');
+                input.rows = 6;
+                input.spellcheck = false;
+                input.placeholder = '{ "key": "value" }';
             } else {
                 input = document.createElement('input');
                 input.type = 'text';
@@ -737,7 +789,7 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
             const parts = [];
             for (const [columnName, columnDef] of Object.entries(tableSchema.columns)) {
                 const columnType = (columnDef.type || '').toLowerCase();
-                if (columnName === 'id' || columnType === 'virtual' || columnType.includes('bool')) continue;
+                if (columnName === 'id' || columnType === 'virtual' || columnType === 'jsonb' || columnType.includes('bool')) continue;
                 const snapshotValue = snap[columnName];
                 if (snapshotValue !== undefined && String(snapshotValue).trim() !== '') parts.push(String(snapshotValue));
                 if (parts.length >= 2) break;
@@ -915,6 +967,9 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
         form.addEventListener('submit', async (error) => {
             error.preventDefault();
 
+            let appendedRecord = null;
+            let appendedIndex = -1;
+
             if (step.allow_multiple) {
                 const hasAnyValue = Array.from(form.querySelectorAll('[name]')).some((element) =>
                     element.type === 'checkbox' ? element.checked : String(element.value ?? '').trim() !== '');
@@ -923,7 +978,9 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                     if (editingIndex !== null) {
                         stepData[currentStepIndex][editingIndex] = snapshotWithImages();
                     } else {
-                        stepData[currentStepIndex].push(snapshotWithImages());
+                        appendedRecord = snapshotWithImages();
+                        appendedIndex = stepData[currentStepIndex].length;
+                        stepData[currentStepIndex].push(appendedRecord);
                     }
                 }
             } else {
@@ -939,6 +996,10 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
                     await callStepProcedure();
                 } catch (schemaError) {
                     console.error(schemaError);
+                    if (appendedRecord !== null
+                        && (stepData[currentStepIndex] || [])[appendedIndex] === appendedRecord) {
+                        stepData[currentStepIndex].splice(appendedIndex, 1);
+                    }
                     showToast(I18n.t('workflow.procedure_error', { msg: schemaError.message }), 'error');
                     nextButton.disabled = false;
                     nextButton.textContent = previousLabel;

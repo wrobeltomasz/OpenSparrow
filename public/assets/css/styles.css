@@ -4161,6 +4161,15 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
 }
 .wf-form-msg { margin-top: 15px; font-weight: 500; }
 
+.wf-jsonb-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 36px;
+}
+.form-grid .form-group:has(> .wf-jsonb-fields) { grid-column: 1 / -1; }
+.wf-jsonb-fields .form-group { width: 100%; }
+.wf-jsonb-fields .form-group > .wf-checkbox { align-self: flex-start; width: auto; }
+
 .wf-buffered-list { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 4px; }
 .wf-buffered-row {
   display: flex;

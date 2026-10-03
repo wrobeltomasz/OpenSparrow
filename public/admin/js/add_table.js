@@ -14,6 +14,7 @@ const COLUMN_TYPES = [
     { value: 'boolean',      label: 'boolean' },
     { value: 'date',         label: 'date' },
     { value: 'timestamp',    label: 'timestamp' },
+    { value: 'jsonb',        label: 'jsonb — JSON document' },
 ];
 
 const PRESET_TIMESTAMPS = [

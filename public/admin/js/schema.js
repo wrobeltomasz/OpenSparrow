@@ -267,6 +267,8 @@ export function renderSchemaEditor(tableName, tableData, context) {
 
                         if (isEnum || rawType === 'user-defined' || rawType.includes('enum')) {
                             mappedType = 'enum';
+                        } else if (rawType === 'json' || rawType === 'jsonb') {
+                            mappedType = 'jsonb';
                         } else if (/int|num|float|double|real|serial|dec/i.test(rawType)) {
                             mappedType = 'number';
                         } else if (/bool/i.test(rawType)) {
@@ -436,6 +438,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
         { value: 'date',      label: 'Date' },
         { value: 'timestamp', label: 'Timestamp (Date + Time)' },
         { value: 'enum',      label: 'Enum' },
+        { value: 'jsonb',     label: 'JSONB (JSON document)' },
         { value: 'virtual',   label: 'Virtual (Computed)' },
     ];
 
@@ -455,6 +458,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
         date:      'event.svg',
         timestamp: 'schedule.svg',
         enum:      'format_list_bulleted.svg',
+        jsonb:     'data_object.svg',
         virtual:   'functions.svg',
     };
 
@@ -478,10 +482,11 @@ export function renderSchemaEditor(tableName, tableData, context) {
         block.className = 'column-block collapsed';
 
         let currentType = String(columnConfig.type || 'text').toLowerCase();
-        if (!['text', 'number', 'boolean', 'date', 'timestamp', 'enum', 'virtual'].includes(currentType)) {
+        if (!['text', 'number', 'boolean', 'date', 'timestamp', 'enum', 'jsonb', 'virtual'].includes(currentType)) {
             if (/int|num|float|double|real|serial|dec/i.test(currentType)) currentType = 'number';
             else if (/bool/i.test(currentType)) currentType = 'boolean';
             else if (/timestamp|timestamptz/i.test(currentType)) currentType = 'timestamp';
+            else if (/^jsonb?$/i.test(currentType)) currentType = 'jsonb';
             else if (/date|time/i.test(currentType)) currentType = 'date';
             else currentType = 'text';
             columnConfig.type = currentType;
@@ -794,6 +799,85 @@ export function renderSchemaEditor(tableName, tableData, context) {
         block.appendChild(enumWrapper);
 
         const isTypeEnum = String(columnConfig.type || '').toLowerCase() === 'enum';
+
+        if (currentType === 'jsonb') {
+            if (!Array.isArray(columnConfig.jsonb_fields)) columnConfig.jsonb_fields = [];
+
+            const jsonbContainer = document.createElement('div');
+            jsonbContainer.className = 'schema-subsec';
+
+            const jsonbTitle = document.createElement('h5');
+            jsonbTitle.textContent = 'JSONB Fields Template (Optional)';
+            jsonbContainer.appendChild(jsonbTitle);
+
+            const jsonbNote = document.createElement('p');
+            jsonbNote.style.cssText = 'color:var(--muted);margin:0 0 8px;font-size:12px;';
+            jsonbNote.textContent = 'Workflow steps render one form field per entry; values are stored as a JSON object in this column. Empty template = raw JSON textarea.';
+            jsonbContainer.appendChild(jsonbNote);
+
+            const jsonbRows = document.createElement('div');
+            jsonbContainer.appendChild(jsonbRows);
+
+            const renderJsonbFields = () => {
+                jsonbRows.replaceChildren();
+                columnConfig.jsonb_fields.forEach((field, fieldIndex) => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:8px;';
+
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.placeholder = 'key';
+                    nameInput.value = field.name || '';
+                    nameInput.style.cssText = 'flex:1; min-width:80px;';
+                    nameInput.addEventListener('input', () => { field.name = nameInput.value.trim(); });
+
+                    const displayInput = document.createElement('input');
+                    displayInput.type = 'text';
+                    displayInput.placeholder = 'Display name';
+                    displayInput.value = field.display_name || '';
+                    displayInput.style.cssText = 'flex:1.4; min-width:100px;';
+                    displayInput.addEventListener('input', () => { field.display_name = displayInput.value; });
+
+                    const typeSelect = document.createElement('select');
+                    [['text', 'Text'], ['number', 'Number'], ['boolean', 'Boolean']].forEach(([value, label]) => {
+                        const option = document.createElement('option');
+                        option.value = value;
+                        option.textContent = label;
+                        typeSelect.appendChild(option);
+                    });
+                    typeSelect.value = field.type || 'text';
+                    typeSelect.addEventListener('change', () => { field.type = typeSelect.value; });
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.type = 'button';
+                    deleteButton.textContent = '✕';
+                    deleteButton.className = 'icon-btn icon-btn-danger';
+                    deleteButton.onclick = () => {
+                        columnConfig.jsonb_fields.splice(fieldIndex, 1);
+                        renderJsonbFields();
+                    };
+
+                    row.appendChild(nameInput);
+                    row.appendChild(displayInput);
+                    row.appendChild(typeSelect);
+                    row.appendChild(deleteButton);
+                    jsonbRows.appendChild(row);
+                });
+            };
+
+            const addFieldButton = document.createElement('button');
+            addFieldButton.type = 'button';
+            addFieldButton.textContent = '+ Add Field';
+            addFieldButton.className = 'btn btn-sm';
+            addFieldButton.onclick = () => {
+                columnConfig.jsonb_fields.push({ name: '', display_name: '', type: 'text' });
+                renderJsonbFields();
+            };
+            jsonbContainer.appendChild(addFieldButton);
+
+            renderJsonbFields();
+            block.appendChild(jsonbContainer);
+        }
 
         if (isTypeEnum && columnConfig.options && columnConfig.options.length > 0) {
             const colorsContainer = document.createElement('div');

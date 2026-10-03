@@ -134,6 +134,9 @@ function type_min_value(string $type): string|int
     if (str_contains($normalizedType, 'bool')) {
         return 'FALSE';
     }
+    if (trim($normalizedType) === 'jsonb') {
+        return '{}';
+    }
     if (
         str_contains($normalizedType, 'int')
         || str_contains($normalizedType, 'numeric')
@@ -295,6 +298,21 @@ function require_not_demo(string $message = 'Action disabled in Demo Mode.', int
         return;
     }
     throw HttpException::fromStatus($code, $message, ['status' => 'error', 'error' => $message]);
+}
+
+function validate_jsonb_column(array $columnConfig, mixed $inputValue): ?string
+{
+    if ($inputValue === null || $inputValue === '') {
+        return null;
+    }
+    if (!is_string($inputValue)) {
+        return null;
+    }
+    json_decode($inputValue, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return (string) ($columnConfig['validation_message'] ?? 'Invalid JSON string');
+    }
+    return null;
 }
 
 function validate_column_regexp(array $columnConfig, mixed $inputValue): ?string

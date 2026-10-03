@@ -112,6 +112,17 @@ final class SchemaController
                 $publicColumn['icon_rules'] = $iconRules;
             }
 
+            if (
+                $columnDefinition['type'] === 'jsonb'
+                && is_array($columnDefinition['jsonb_fields'] ?? null)
+                && $columnDefinition['jsonb_fields'] !== []
+            ) {
+                $publicColumn['jsonb_fields'] = array_values(array_filter(
+                    $columnDefinition['jsonb_fields'],
+                    fn ($field): bool => is_array($field) && is_string($field['name'] ?? null) && $field['name'] !== ''
+                ));
+            }
+
             if (!empty($columnDefinition['options'])) {
                 $publicColumn['options'] = $columnDefinition['options'];
             }
