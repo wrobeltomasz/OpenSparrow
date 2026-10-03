@@ -19,7 +19,7 @@ let activeCell = null;
 let suppressUntil = 0;
 
 export function initM2mEditor() {
-    if ((window.USER_ROLE || 'viewer') !== 'editor') return;
+    if ((window.USER_ROLE || 'viewer') === 'viewer') return;
 
     popover = document.createElement('div');
     popover.className = 'm2m-editor';

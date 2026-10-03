@@ -38,10 +38,39 @@ function frontapi_m2m_options(FrontApiContext $context): never
         throw ResponseException::encoded(['options' => [], 'selected' => []]);
     }
 
+    $config = $m2mList[$m2mIndex];
+    $otherTable = M2MService::resolveOtherTable($config, $schema);
+    if (
+        $otherTable === ''
+        || !isset($schema['tables'][$otherTable])
+        || !isset($schema['tables'][$config['junction_table'] ?? ''])
+    ) {
+        throw ResponseException::encoded(['options' => [], 'selected' => []]);
+    }
+    if (!user_can_access_table($otherTable)) {
+        throw ResponseException::encoded(['options' => [], 'selected' => []]);
+    }
+
+    $otherConfig = $schema['tables'][$otherTable];
+    $otherRestricted = !empty($otherConfig['owner_restricted']);
+
     $m2mService = new M2MService($context->conn);
-    $config   = $m2mList[$m2mIndex];
     $options  = $m2mService->options($config, $schema);
     $selected = $m2mService->selected($config, $rowId, $schema);
+
+    if ($otherRestricted) {
+        $optionIds = array_column($options, 'id');
+        $visibleOptionIds = array_flip(filter_visible_ids($context->conn, $otherConfig, $otherTable, $optionIds, $context->userId));
+        $visibleSelected = array_flip(filter_visible_ids($context->conn, $otherConfig, $otherTable, $selected, $context->userId));
+        $options = array_values(array_filter(
+            $options,
+            static fn(array $option): bool => isset($visibleOptionIds[(string) $option['id']])
+        ));
+        $selected = array_values(array_filter(
+            $selected,
+            static fn(string $selectedId): bool => isset($visibleSelected[$selectedId])
+        ));
+    }
 
     throw ResponseException::encoded(['options' => $options, 'selected' => $selected]);
 }

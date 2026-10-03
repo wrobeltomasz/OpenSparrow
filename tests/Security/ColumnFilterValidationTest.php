@@ -112,7 +112,7 @@ final class ColumnFilterValidationTest extends TestCase
         $this->assertSame(['10', '20'], $parameters);
     }
 
-    public function testBuildColumnFilterSqlKeepsBooleanPayloadUnvalidated(): void
+    public function testBuildColumnFilterSqlNormalizesBooleanPayload(): void
     {
         $parameters = [];
 
@@ -122,11 +122,69 @@ final class ColumnFilterValidationTest extends TestCase
         $this->assertSame(['TRUE'], $parameters);
     }
 
+    public function testBuildColumnFilterSqlAcceptsNativeFalseAsFalse(): void
+    {
+        $parameters = [];
+
+        $sql = build_column_filter_sql('active', 'boolean', ['bool' => false], $parameters);
+
+        $this->assertSame('("active" = $1)', $sql);
+        $this->assertSame(['FALSE'], $parameters);
+    }
+
+    public function testBuildColumnFilterSqlAcceptsStringFalseAsFalse(): void
+    {
+        $parameters = [];
+
+        $sql = build_column_filter_sql('active', 'boolean', ['bool' => 'false'], $parameters);
+
+        $this->assertSame('("active" = $1)', $sql);
+        $this->assertSame(['FALSE'], $parameters);
+    }
+
+    public function testBuildColumnFilterSqlSkipsEmptyBoolPayload(): void
+    {
+        $parameters = [];
+
+        $sql = build_column_filter_sql('active', 'boolean', ['bool' => ''], $parameters);
+        $nullSql = build_column_filter_sql('active', 'boolean', ['bool' => null], $parameters);
+
+        $this->assertSame('', $sql);
+        $this->assertSame('', $nullSql);
+        $this->assertSame([], $parameters);
+    }
+
+    public function testBuildColumnFilterSqlRejectsGarbageBoolPayload(): void
+    {
+        $parameters = [];
+
+        $this->expectException(\App\Exception\BadRequestException::class);
+        build_column_filter_sql('active', 'boolean', ['bool' => 'garbage'], $parameters);
+    }
+
     public function testBuildColumnFilterSqlRejectsBoolPayloadOnNonBooleanColumn(): void
     {
         $parameters = [];
 
         $this->expectException(\App\Exception\BadRequestException::class);
         build_column_filter_sql('id', 'number', ['bool' => 'true'], $parameters);
+    }
+
+    public function testColumnFilterLoopRejectsUnknownColumnNames(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../../includes/frontapi/list.php');
+
+        $loop = strpos($source, "\$decodedFilters = json_decode(\$columnFilters, true);");
+        $skip = strpos($source, 'continue;', $loop);
+        $throw = strpos($source, 'Unknown filter column', $loop);
+
+        $this->assertIsInt($loop, 'The column_filters decode block is gone from includes/frontapi/list.php.');
+        $this->assertIsInt(
+            $throw,
+            'The column_filters loop must reject unknown column names with BadRequestException '
+            . '— a silent continue breaks the "every request-supplied column is validated" invariant.'
+        );
+        $this->assertIsInt($skip, 'A continue statement must exist after the unknown-column throw.');
+        $this->assertLessThan($skip, $throw, 'The unknown-column throw must precede the malformed-payload continue.');
     }
 }

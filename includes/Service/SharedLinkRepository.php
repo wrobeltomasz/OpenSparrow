@@ -57,6 +57,8 @@ final class SharedLinkRepository
             throw new \AdminApiMessage('Missing "tables" object.');
         }
 
+        $existingTables = self::pruneEntries($existingTables, $schema);
+
         $tables = [];
         $generatedTokens = [];
         foreach ($data['tables'] as $table => $tableData) {
@@ -112,5 +114,11 @@ final class SharedLinkRepository
             'version'         => $result['version'],
             'generated_tokens' => $generatedTokens,
         ];
+    }
+
+    public static function pruneEntries(array $existingTables, array $schema): array
+    {
+        $schemaTables = is_array($schema['tables'] ?? null) ? $schema['tables'] : [];
+        return array_intersect_key($existingTables, $schemaTables);
     }
 }

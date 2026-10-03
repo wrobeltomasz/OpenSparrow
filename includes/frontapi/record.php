@@ -41,10 +41,17 @@ function frontapi_record_m2m_sync(FrontApiWriteContext $context): never
         }
     }
 
+    $m2mConfig = $m2mList[$m2mIndex];
+    $otherTable = M2MService::resolveOtherTable($m2mConfig, $context->schema);
+    $otherConfig = $context->schema['tables'][$otherTable] ?? [];
+    if ($otherTable !== '' && $otherConfig !== [] && !empty($otherConfig['owner_restricted'])) {
+        $selectedIds = filter_visible_ids($conn, $otherConfig, $otherTable, $selectedIds, $userId);
+    }
+
     $oldRecord = auto_capture_old_record($conn, $schemaName, $table, $recordId);
 
     $m2mService = new M2MService($conn);
-    $synced = $m2mService->sync($m2mList[$m2mIndex], $recordId, $selectedIds, $context->schema);
+    $synced = $m2mService->sync($m2mConfig, $recordId, $selectedIds, $context->schema);
     if (!$synced) {
         error_log('[api][m2m_sync] sync failed');
         http_response_code(422);

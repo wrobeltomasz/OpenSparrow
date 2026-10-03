@@ -123,10 +123,13 @@ function frontapi_list(FrontApiContext $context): never
         $decodedFilters = json_decode($columnFilters, true);
         if (is_array($decodedFilters)) {
             foreach ($decodedFilters as $filterName => $filterPayload) {
-                if (!in_array((string) $filterName, $allowedFilterColumns, true) || !is_array($filterPayload)) {
+                $filterName = (string) $filterName;
+                if (!in_array($filterName, $allowedFilterColumns, true)) {
+                    throw new BadRequestException('Unknown filter column "' . $filterName . '".');
+                }
+                if (!is_array($filterPayload)) {
                     continue;
                 }
-                $filterName = (string) $filterName;
                 $filterColumnType = $filterName === $idColumn
                     ? 'number'
                     : (string) ($tableConfig['columns'][$filterName]['type'] ?? 'text');
@@ -261,12 +264,30 @@ function build_column_filter_sql(string $columnName, string $columnType, array $
         $clauses[] = sprintf('%s = $%d', pg_ident($columnName), count($parameters) + 1);
         $parameters[] = $filterValue;
     }
-    if (!empty($payload['bool'])) {
+    if (array_key_exists('bool', $payload) && $payload['bool'] !== '' && $payload['bool'] !== null) {
         if (!str_contains(strtolower($columnType), 'bool')) {
             throw new BadRequestException('Invalid filter value for column "' . $columnName . '".');
         }
+        $boolFilter = $payload['bool'];
+        if (is_bool($boolFilter)) {
+            $clauseValue = $boolFilter ? 'TRUE' : 'FALSE';
+        } elseif (is_int($boolFilter) || is_float($boolFilter)) {
+            if (!in_array($boolFilter, [0, 1], true)) {
+                throw new BadRequestException('Invalid filter value for column "' . $columnName . '".');
+            }
+            $clauseValue = ((int) $boolFilter) === 1 ? 'TRUE' : 'FALSE';
+        } elseif (is_string($boolFilter)) {
+            $normalizedBool = strtolower(trim($boolFilter));
+            $clauseValue = match (true) {
+                in_array($normalizedBool, ['true', 't', '1'], true) => 'TRUE',
+                in_array($normalizedBool, ['false', 'f', '0'], true) => 'FALSE',
+                default => throw new BadRequestException('Invalid filter value for column "' . $columnName . '".'),
+            };
+        } else {
+            throw new BadRequestException('Invalid filter value for column "' . $columnName . '".');
+        }
         $clauses[] = sprintf('%s = $%d', pg_ident($columnName), count($parameters) + 1);
-        $parameters[] = $payload['bool'] === 'false' ? 'FALSE' : 'TRUE';
+        $parameters[] = $clauseValue;
     }
     foreach (['from' => '>=', 'to' => '<', 'min' => '>=', 'max' => '<='] as $boundKey => $boundOperator) {
         if (isset($payload[$boundKey]) && $payload[$boundKey] !== '') {

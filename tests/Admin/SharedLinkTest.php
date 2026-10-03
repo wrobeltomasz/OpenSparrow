@@ -161,4 +161,35 @@ final class SharedLinkTest extends TestCase
         $this->assertFalse(SharedLinkValidator::coercBool(0));
         $this->assertFalse(SharedLinkValidator::coercBool(null));
     }
+
+    public function testPruneEntriesDropsTablesRemovedFromTheSchema(): void
+    {
+        $existingTables = [
+            'customers' => ['enabled' => true, 'token_hash' => 'abc'],
+            'orders' => ['enabled' => false, 'token_hash' => 'def'],
+            'dropped_table' => ['enabled' => false, 'token_hash' => 'dead-token-hash'],
+        ];
+
+        $pruned = SharedLinkRepository::pruneEntries($existingTables, $this->schema);
+
+        $this->assertArrayNotHasKey('dropped_table', $pruned);
+        $this->assertArrayHasKey('customers', $pruned);
+        $this->assertArrayHasKey('orders', $pruned);
+        $this->assertSame($existingTables['customers'], $pruned['customers']);
+        $this->assertSame($existingTables['orders'], $pruned['orders']);
+    }
+
+    public function testPruneEntriesKeepsEverythingWhenTheSchemaHasNoTables(): void
+    {
+        $existingTables = ['customers' => ['enabled' => true, 'token_hash' => 'abc']];
+
+        $this->assertSame(
+            [],
+            SharedLinkRepository::pruneEntries($existingTables, ['tables' => []])
+        );
+        $this->assertSame(
+            [],
+            SharedLinkRepository::pruneEntries($existingTables, [])
+        );
+    }
 }
