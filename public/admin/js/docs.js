@@ -142,6 +142,8 @@ ${_ul([
     `<strong>${strings.s2_preview_label}:</strong> ${strings.s2_preview}`,
     `<strong>${strings.s2_iconpicker_label}:</strong> ${strings.s2_iconpicker}`,
     `<strong>${strings.s2_typemap_label}:</strong> ${strings.s2_typemap}`,
+    `<strong>${strings.s2_jsonb_label}:</strong> ${strings.s2_jsonb}`,
+    `<strong>${strings.s2_jsonbfields_label}:</strong> ${strings.s2_jsonbfields}`,
     `<strong>${strings.s2_virtual_label}:</strong> ${strings.s2_virtual}`,
     `<strong>${strings.s2_enumcolors_label}:</strong> ${strings.s2_enumcolors}`,
     `<strong>${strings.s2_highlights_label}:</strong> ${strings.s2_highlights}`,
@@ -248,6 +250,7 @@ ${_ul([
     `<strong>${strings.s5_steps_label}:</strong> ${strings.s5_steps}`,
     `<strong>${strings.s5_link_label}:</strong> ${strings.s5_link}`,
     `<strong>${strings.s5_multi_label}:</strong> ${strings.s5_multi}`,
+    `<strong>${strings.s5_jsonbfields_label}:</strong> ${strings.s5_jsonbfields}`,
     `<strong>${strings.s5_access_label}:</strong> ${strings.s5_access}`
 ])}
 ${_h4(strings.s5_validation_head)}

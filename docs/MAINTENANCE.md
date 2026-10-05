@@ -2368,6 +2368,41 @@ OneDrive-style public read-only links to a single table:
 - Known scope: side columns of referenced tables leak labels (same as the
   FK-label exemption for logged-in users) — documented, accepted for v1.
 
+## JSONB column type (2026-10-03)
+
+`jsonb` is a supported logical column type in the schema config. The rules
+below are binding.
+
+- **One sanitizer entry point.** `validate_jsonb_column()` in
+  `includes/api_helpers.php` is the only JSON validation; both write paths in
+  `includes/frontapi/record.php` (`frontapi_record_patch`,
+  `frontapi_record_insert`) call it and skip `validate_column_regexp` for
+  jsonb columns. Values reach SQL as parameters casted `::jsonb`
+  (`$n::jsonb`) — never literal-interpolated. Invalid JSON answers
+  `422` with the column name, mirroring the bool-cast pattern.
+- **Not-null floor is `{}`.** `type_min_value()` returns `'{}'` for jsonb —
+  do not let it fall back to `''` (invalid JSON) or 0.
+- **Field template lives on the column.** `columns.<col>.jsonb_fields`
+  (`[{name, display_name, type: text|number|boolean}]`) is defined in the
+  Schema editor and shared by every consumer. The public schema endpoint
+  (`includes/Controller/Api/SchemaController.php::publicColumns`) uses a
+  field whitelist — a new column-level key is invisible to the frontend
+  until added there. This bit us once: the template shipped invisible until
+  the controller passed `jsonb_fields` through (filtered to non-empty
+  `name`s). Remember when adding per-column config keys.
+- **Workflow rendering is type-driven.** `public/assets/js/workflows.js`
+  renders one normal field per template entry (checkbox gets
+  `wf-checkbox`); the group takes a full grid row via
+  `.form-grid .form-group:has(> .wf-jsonb-fields)`. `readForm()` serializes
+  the fields to a JSON string in the snapshot, `writeForm()` re-parses them
+  — `buildPayload` deliberately stays untouched. Without a template the
+  column is a raw JSON textarea. `labelForRecord` skips jsonb so record
+  labels never show raw JSON.
+- **The grid reads jsonb as text** (`resolveCellType` falls through to
+  `text`); server-side JSON validation protects inline edits. CSV import
+  deliberately does not offer jsonb — add it only with a round of manual
+  verification of its create-table DDL path.
+
 ## Where binding rules live
 
 This document is the authoritative, version-controlled home for binding UI and

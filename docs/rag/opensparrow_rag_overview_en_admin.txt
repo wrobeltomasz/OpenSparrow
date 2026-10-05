@@ -41,10 +41,12 @@ Schema:
   - Global settings: default grid page size, visibility options
   - Per table: display name, icon, hidden flag (excludes from menu), default sort,
     initial load limit
-  - Per column: name, type (string / int / enum / FK / M2M / file / virtual), display
-    name, description (grid header tooltip), nullable, unique, readonly, default value,
-    regex validation with custom error message, enum options with colors, FK config
-    (referenced table + column + display column)
+  - Per column: name, type (string / int / enum / FK / M2M / file / virtual / jsonb),
+    display name, description (grid header tooltip), nullable, unique, readonly,
+    default value, regex validation with custom error message, enum options with
+    colors, FK config (referenced table + column + display column); jsonb columns
+    can define a field template (named sub-fields stored as one JSON object) that
+    workflow step forms render as normal inputs instead of a raw JSON textarea
   - Drag-and-drop column reordering
   - Subtable configuration (FK back-references shown inside edit forms)
   - M2M (many-to-many) configuration
@@ -131,6 +133,10 @@ Workflow Manager:
   - Per workflow: title, description, icon
   - Step builder: add / remove / drag-reorder steps
   - Per step: target table, form fields, multi-record option (e.g. several contacts)
+  - Step forms: jsonb columns with a field template render one form input per template
+    field (text, number or boolean) and store the values as one JSON object; without
+    a template the column shows a raw JSON textarea. Invalid JSON is rejected with
+    HTTP 422 and the wizard stays on the step.
   - Per step: optional PostgreSQL procedure called when the user clicks "Next step".
     Pick schema + procedure from a dropdown listing the database's stored procedures;
     one row is then shown per declared IN parameter, each fed either from a workflow
