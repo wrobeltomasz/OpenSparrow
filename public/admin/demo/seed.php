@@ -667,7 +667,8 @@ function demo_install_run(
     } catch (ControlFlowException $signal) {
         throw $signal;
     } catch (Exception $exception) {
-        return ['status' => 'error', 'error' => $exception->getMessage()];
+        error_log('[demo_seed] install failed: ' . $exception->getMessage());
+        return ['status' => 'error', 'error' => admin_error_message($exception)];
     }
 }
 
@@ -1024,7 +1025,8 @@ if ($action === 'demo_uninstall') {
     } catch (ControlFlowException $signal) {
         throw $signal;
     } catch (Exception $exception) {
-        echo json_encode(['status' => 'error', 'error' => $exception->getMessage()]);
+        error_log('[demo_seed] uninstall failed: ' . $exception->getMessage());
+        echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
     throw ResponseException::sent();
 }

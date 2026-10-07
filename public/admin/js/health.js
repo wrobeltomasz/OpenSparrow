@@ -4,6 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 import { apiFetch } from '../../assets/js/util/api.js';
+import { escHtml } from '../../assets/js/util/esc.js';
 import { buildInnerTabs, createPageHeader, el } from './ui.js';
 
 function card(title, isOk, message) {
@@ -38,17 +39,23 @@ async function renderEnvironmentPanel(panel) {
 
     const infoBar = el('div', 'adm-sec-card');
     const infoBody = el('div', 'adm-sec-body');
-    infoBody.innerHTML = `<strong>OpenSparrow</strong>&nbsp;&nbsp;v${data.app_version}`;
+    const infoName = document.createElement('strong');
+    infoName.textContent = 'OpenSparrow';
+    const infoVersion = document.createElement('strong');
+    infoVersion.textContent = 'v' + data.app_version;
+    infoBody.appendChild(infoName);
+    infoBody.appendChild(document.createTextNode('\u00a0\u00a0'));
+    infoBody.appendChild(infoVersion);
     infoBar.appendChild(infoBody);
     content.appendChild(infoBar);
 
     section(content, 'PHP Environment');
     content.appendChild(card('PHP Version', data.php_version_ok,
-        `Detected: <strong>${data.php_version}</strong> — required: PHP &gt;= 8.4`));
+        `Detected: <strong>${escHtml(data.php_version)}</strong> — required: PHP &gt;= 8.4`));
     content.appendChild(card('memory_limit', data.memory_limit_ok,
-        `Current: <strong>${data.memory_limit}</strong> — minimum: 64M`));
+        `Current: <strong>${escHtml(data.memory_limit)}</strong> — minimum: 64M`));
     content.appendChild(card('upload_max_filesize', data.upload_max_filesize_ok,
-        `Current: <strong>${data.upload_max_filesize}</strong> — minimum: 8M`));
+        `Current: <strong>${escHtml(data.upload_max_filesize)}</strong> — minimum: 8M`));
     content.appendChild(card('display_errors = Off', data.display_errors_off,
         data.display_errors_off ? 'Disabled — correct for production.' : 'Should be Off in production to avoid leaking error details.'));
 
@@ -79,8 +86,8 @@ async function renderEnvironmentPanel(panel) {
     section(content, 'Database');
     content.appendChild(card('PostgreSQL Connection', data.db_connected,
         data.db_connected
-            ? `Connected: <strong>PostgreSQL ${data.pg_version}</strong>`
-            : `Connection failed: <strong>${data.db_error}</strong> — check database.json.`));
+            ? `Connected: <strong>PostgreSQL ${escHtml(data.pg_version)}</strong>`
+            : `Connection failed: <strong>${escHtml(data.db_error)}</strong> — check database.json.`));
 
     section(content, 'Filesystem');
     content.appendChild(card('includes/ writable', data.dir_writable,
@@ -141,7 +148,12 @@ async function renderProductionPanel(panel) {
 
     const envBar = el('div', 'adm-sec-card');
     const envBody = el('div', 'adm-sec-body');
-    envBody.innerHTML = `Current <strong>APP_ENV</strong>: <strong>${data.app_env}</strong>`;
+    const envLabel = document.createElement('span');
+    envLabel.textContent = 'Current APP_ENV: ';
+    const envValue = document.createElement('strong');
+    envValue.textContent = data.app_env;
+    envBody.appendChild(envLabel);
+    envBody.appendChild(envValue);
     envBar.appendChild(envBody);
     content.appendChild(envBar);
 
@@ -157,15 +169,15 @@ async function renderProductionPanel(panel) {
     content.appendChild(card('PASSWORD_ARGON2ID', data.argon2id_ok,
         data.argon2id_ok ? 'Argon2id hashing available.' : 'Not available — libargon2 not compiled in. Login will fail.'));
     content.appendChild(card('PASSWORD_MIN_LENGTH &gt;= 12', data.password_min_length_ok,
-        `Current: <strong>${data.password_min_length}</strong> — recommended minimum: 12`));
+        `Current: <strong>${escHtml(data.password_min_length)}</strong> — recommended minimum: 12`));
 
     section(content, 'Network & Rate Limiting');
     content.appendChild(card('API_RATE_LIMIT_PER_MIN enabled', data.rate_limit_on,
         data.rate_limit_on
-            ? `Current: <strong>${data.rate_limit_per_min}</strong> requests/min per user.`
+            ? `Current: <strong>${escHtml(data.rate_limit_per_min)}</strong> requests/min per user.`
             : 'Rate limiting is disabled (0) — every endpoint accepts unlimited requests.'));
     content.appendChild(card('SESSION_SAMESITE valid', !!data.session_samesite,
-        `Current: <strong>${data.session_samesite}</strong>`));
+        `Current: <strong>${escHtml(data.session_samesite)}</strong>`));
     if (data.trust_proxy_headers) {
         content.appendChild(card('TRUSTED_PROXY_IPS configured', data.trusted_proxy_ips_set,
             data.trusted_proxy_ips_set

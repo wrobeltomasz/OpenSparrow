@@ -26,7 +26,7 @@ final class CsvReader
     {
         $fileHandle = fopen($path, 'r');
         if ($fileHandle === false) {
-            throw new \RuntimeException('Cannot open CSV file for reading.');
+            throw new AdminApiMessage('Cannot open CSV file for reading.');
         }
         try {
             $headers = fgetcsv($fileHandle, 0, $delimiter, '"', '\\');
@@ -79,20 +79,20 @@ final class CsvFileValidator
                 UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
                 UPLOAD_ERR_EXTENSION  => 'Upload blocked by a PHP extension.',
             ];
-            throw new \InvalidArgumentException($uploadMessages[$uploadError] ?? 'Upload error code: ' . $uploadError);
+            throw new AdminApiMessage($uploadMessages[$uploadError] ?? 'Upload error code: ' . $uploadError);
         }
         if ((int) ($file['size'] ?? 0) > CSV_MAX_BYTES) {
-            throw new \InvalidArgumentException('File exceeds ' . (CSV_MAX_BYTES / 1048576) . ' MB limit.');
+            throw new AdminApiMessage('File exceeds ' . (CSV_MAX_BYTES / 1048576) . ' MB limit.');
         }
         $extension = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
         if ($extension !== 'csv') {
-            throw new \InvalidArgumentException('Only .csv files are accepted.');
+            throw new AdminApiMessage('Only .csv files are accepted.');
         }
         $finfo  = new \finfo(FILEINFO_MIME_TYPE);
         $mime   = $finfo->file((string) ($file['tmp_name'] ?? ''));
         $allowed = ['text/plain', 'text/csv', 'application/csv', 'application/vnd.ms-excel'];
         if (!in_array($mime, $allowed, true)) {
-            throw new \InvalidArgumentException("Invalid MIME type: {$mime}. Expected a CSV/text file.");
+            throw new AdminApiMessage("Invalid MIME type: {$mime}. Expected a CSV/text file.");
         }
     }
 }
@@ -176,7 +176,8 @@ final class ImportRepository
             json_encode($mapping), $conflictColumn, 'running',
         ]);
         if ($result === false) {
-            throw new \RuntimeException(
+            error_log('[csv_import] createRecord failed: ' . pg_last_error($this->conn));
+            throw new AdminApiMessage(
                 'Failed to create import record. Check that spw_imports table exists (run Initialize System Tables).'
             );
         }
@@ -362,12 +363,12 @@ final class CsvImportService
 
         if ($result === false) {
             @pg_query($this->conn, 'ROLLBACK');
-            $error    = substr(pg_last_error($this->conn), 0, 300);
+            error_log('[csv_import] batch insert failed: ' . pg_last_error($this->conn));
             $errors = array_map(
                 fn($batchEntry) => [
                     'row_number' => $batchEntry['rowNum'],
                     'raw_data'   => $batchEntry['raw'],
-                    'error'      => "Batch DB error: {$error}",
+                    'error'      => 'Batch DB error — check server error log.',
                 ],
                 $batch
             );
@@ -440,18 +441,18 @@ final class CsvImportService
             }
         }
         if (empty($columnMap)) {
-            throw new \RuntimeException('No columns mapped.');
+            throw new AdminApiMessage('No columns mapped.');
         }
 
         $fileHandle = fopen($csvPath, 'r');
         if ($fileHandle === false) {
-            throw new \RuntimeException('Cannot open CSV file.');
+            throw new AdminApiMessage('Cannot open CSV file.');
         }
 
         try {
             $csvHeaders = fgetcsv($fileHandle, 0, $delimiter, '"', '\\');
             if ($csvHeaders === false || $csvHeaders === null) {
-                throw new \RuntimeException('Empty CSV file.');
+                throw new AdminApiMessage('Empty CSV file.');
             }
             $csvHeaders[0] = ltrim((string) $csvHeaders[0], "\xEF\xBB\xBF");
             $csvHeaders    = array_map('trim', $csvHeaders);
@@ -472,7 +473,8 @@ final class CsvImportService
             $sql     = "COPY {$tableIdentifier} ({$columnList}) FROM STDIN WITH (FORMAT CSV, NULL '')";
 
             if (@pg_query($this->conn, $sql) === false) {
-                throw new \RuntimeException('COPY init failed: ' . substr(pg_last_error($this->conn), 0, 300));
+                error_log('[csv_import] COPY init failed: ' . pg_last_error($this->conn));
+                throw new AdminApiMessage('COPY import failed to start — check server error log.');
             }
 
             $total  = 0;
@@ -518,6 +520,7 @@ final class CsvImportService
 
             if (@pg_end_copy($this->conn) === false) {
                 $pgError = pg_last_error($this->conn);
+                error_log('[csv_import] COPY failed: ' . $pgError);
                 $hint  = '';
                 if (
                     preg_match('/invalid input syntax for type (\w+).*column (\w+)/i', $pgError, $matches)
@@ -535,7 +538,7 @@ final class CsvImportService
                     $hint = ' A row has more fields than the header.'
                         . ' Check the Delimiter setting or fix quoting in the source CSV.';
                 }
-                throw new \RuntimeException('COPY failed: ' . substr($pgError, 0, 400) . $hint);
+                throw new AdminApiMessage('COPY failed — one or more rows were rejected by the database.' . $hint);
             }
 
             return [$total, $total, 0];
@@ -607,8 +610,8 @@ if ($action === 'csv_import_upload') {
 
     try {
         CsvFileValidator::validate($file);
-    } catch (\InvalidArgumentException $exception) {
-        csv_fail($exception->getMessage());
+    } catch (AdminApiMessage $exception) {
+        csv_fail(admin_error_message($exception));
     }
 
     $request   = os_request();
@@ -786,11 +789,12 @@ if ($action === 'csv_import_execute') {
     } catch (ControlFlowException $signal) {
         throw $signal;
     } catch (\Exception $exception) {
+        error_log('[csv_import] execute failed: ' . $exception->getMessage());
         if ($importId > 0 && isset($repository)) {
-            $repository->finalize($importId, 'failed', 0, 0, 0, $exception->getMessage());
+            $repository->finalize($importId, 'failed', 0, 0, 0, 'Import failed — check server error log.');
         }
         @unlink($csvPath);
-        csv_fail($exception->getMessage());
+        csv_fail(admin_error_message($exception));
     }
     throw ResponseException::sent();
 }
@@ -841,7 +845,8 @@ if ($action === 'csv_create_table') {
         $result = @pg_query($conn, "CREATE TABLE {$safeSchema}.{$safeTable} (id serial4 NOT NULL PRIMARY KEY)");
         if ($result === false) {
             @pg_query($conn, 'ROLLBACK');
-            csv_fail('Cannot create table: ' . substr(pg_last_error($conn), 0, 300));
+            error_log('[csv_import] CREATE TABLE failed: ' . pg_last_error($conn));
+            csv_fail('Cannot create table. Check server error log.');
         }
 
         foreach ($columnDefinitions as $columnDefinition) {
@@ -851,9 +856,9 @@ if ($action === 'csv_create_table') {
                 "ALTER TABLE {$safeSchema}.{$safeTable} ADD COLUMN {$safeColumn} {$columnDefinition['type']}"
             );
             if ($result === false) {
-                $error = substr(pg_last_error($conn), 0, 300);
+                error_log('[csv_import] ADD COLUMN failed: ' . pg_last_error($conn));
                 @pg_query($conn, 'ROLLBACK');
-                csv_fail('Cannot add column "' . $columnDefinition['name'] . '": ' . $error);
+                csv_fail('Cannot add column "' . $columnDefinition['name'] . '". Check server error log.');
             }
         }
 
@@ -920,7 +925,8 @@ if ($action === 'csv_create_table') {
     } catch (ControlFlowException $signal) {
         throw $signal;
     } catch (\Exception $exception) {
-        csv_fail($exception->getMessage());
+        error_log('[csv_import] create table failed: ' . $exception->getMessage());
+        csv_fail(admin_error_message($exception));
     }
     throw ResponseException::sent();
 }
