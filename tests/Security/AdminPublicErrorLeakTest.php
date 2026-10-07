@@ -15,6 +15,16 @@ final class AdminPublicErrorLeakTest extends TestCase
 {
     private const CSV_ENDPOINT = __DIR__ . '/../../public/admin/api_csv_import.php';
     private const DEMO_SEED    = __DIR__ . '/../../public/admin/demo/seed.php';
+    private const CSV_SERVICE_DIR = __DIR__ . '/../../includes/Service';
+
+    private const CSV_SERVICE_FILES = [
+        'CopyImportService.php',
+        'CsvFileValidator.php',
+        'CsvImportService.php',
+        'CsvReader.php',
+        'ImportRepository.php',
+        'RowCaster.php',
+    ];
 
     private static function code(string $path): string
     {
@@ -36,6 +46,9 @@ final class AdminPublicErrorLeakTest extends TestCase
     {
         $this->assertFileExists(self::CSV_ENDPOINT);
         $this->assertFileExists(self::DEMO_SEED);
+        foreach (self::CSV_SERVICE_FILES as $serviceFile) {
+            $this->assertFileExists(self::CSV_SERVICE_DIR . '/' . $serviceFile);
+        }
     }
 
     public function testCsvEndpointNeverServesPgLastError(): void
@@ -97,5 +110,28 @@ final class AdminPublicErrorLeakTest extends TestCase
             . 'field rendered by the admin demo UI. '
             . 'Offending statements: ' . implode(' | ', $offending)
         );
+    }
+
+    public function testCsvServiceClassesNeverServeDriverText(): void
+    {
+        foreach (self::CSV_SERVICE_FILES as $serviceFile) {
+            $source = self::code(self::CSV_SERVICE_DIR . '/' . $serviceFile);
+
+            $offending = [];
+            if (preg_match_all('/throw\s+new\s+[^;]*pg_last_error[^;]*;/', $source, $matches) > 0) {
+                $offending = array_merge($offending, $matches[0]);
+            }
+            if (preg_match_all('/AdminApiMessage\s*\([^;]*pg_last_error[^;]*\)/', $source, $matches) > 0) {
+                $offending = array_merge($offending, $matches[0]);
+            }
+            $this->assertSame(
+                [],
+                $offending,
+                'includes/Service/' . $serviceFile . ' must never embed pg_last_error() text in a '
+                . 'message that reaches the caller — the CSV endpoint serves every AdminApiMessage '
+                . 'to the client. error_log() is the only sink for driver text. '
+                . 'Offending statements: ' . implode(' | ', $offending)
+            );
+        }
     }
 }
