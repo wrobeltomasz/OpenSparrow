@@ -25,9 +25,21 @@ final readonly class UpdateMapper
             $hasFk      = $config->hasForeignKey($column->name);
             $bound      = $this->registry->for($column, $hasFk)->bind($column->name, $postData);
             $this->assertMatchesRegexp($column, $bound->value);
+            $this->assertEnumOption($column, $bound->value, $hasFk);
             $bindings[] = ['col' => $column->name, 'bound' => $bound];
         }
         return new RecordData($bindings);
+    }
+
+    private function assertEnumOption(ColumnConfig $column, mixed $value, bool $hasForeignKey): void
+    {
+        if ($hasForeignKey || !$column->isEnum() || !is_string($value) || $value === '') {
+            return;
+        }
+        $allowedOptions = array_map('strval', $column->options);
+        if (!in_array($value, $allowedOptions, true)) {
+            throw new ValidationException($column->validationMessage ?? 'Invalid format: ' . $column->name);
+        }
     }
 
     private function assertMatchesRegexp(ColumnConfig $column, mixed $value): void

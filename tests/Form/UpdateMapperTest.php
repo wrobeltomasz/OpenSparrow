@@ -15,6 +15,7 @@ use App\Form\BoundValue;
 use App\Form\FieldTypeInterface;
 use App\Form\FieldTypeRegistry;
 use App\Form\RenderContext;
+use App\Form\Type\EnumField;
 use App\Form\UpdateMapper;
 use App\Form\ValidationException;
 use PHPUnit\Framework\TestCase;
@@ -156,5 +157,61 @@ final class UpdateMapperTest extends TestCase
         $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
         $recordData     = $mapper->fromPost($this->regexpTable($column), ['code' => 'anything']);
         $this->assertSame('anything', $recordData->bindings[0]['bound']->value);
+    }
+
+    public function testEnumValueOutsideOptionsThrows(): void
+    {
+        $column = new ColumnConfig('status', 'enum', 'Status', options: ['new', 'done']);
+        $mapper = new UpdateMapper(new FieldTypeRegistry([new EnumField()]));
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Invalid format: status');
+        $mapper->fromPost($this->regexpTable($column), ['status' => 'hacked']);
+    }
+
+    public function testEnumValueInsideOptionsPasses(): void
+    {
+        $column = new ColumnConfig('status', 'enum', 'Status', options: ['new', 'done']);
+        $mapper = new UpdateMapper(new FieldTypeRegistry([new EnumField()]));
+        $recordData = $mapper->fromPost($this->regexpTable($column), ['status' => 'done']);
+        $this->assertSame('done', $recordData->bindings[0]['bound']->value);
+    }
+
+    public function testEmptyEnumValueSkipsWhitelist(): void
+    {
+        $column = new ColumnConfig('status', 'enum', 'Status', options: ['new', 'done']);
+        $mapper = new UpdateMapper(new FieldTypeRegistry([new EnumField()]));
+        $recordData = $mapper->fromPost($this->regexpTable($column), ['status' => '']);
+        $this->assertNull($recordData->bindings[0]['bound']->value);
+    }
+
+    public function testEnumWhitelistSkipsForeignKeyColumns(): void
+    {
+        $column = new ColumnConfig('status', 'enum', 'Status', options: ['new']);
+        $table  = new TableConfig(
+            'orders',
+            'app',
+            'Orders',
+            ['status' => $column],
+            ['status' => ['reference_table' => 'users']],
+            []
+        );
+        $mapper = new UpdateMapper(new FieldTypeRegistry([$this->passthroughType()]));
+        $recordData = $mapper->fromPost($table, ['status' => '42']);
+        $this->assertSame('42', $recordData->bindings[0]['bound']->value);
+    }
+
+    public function testEnumValueOutsideOptionsUsesValidationMessage(): void
+    {
+        $column = new ColumnConfig(
+            'status',
+            'enum',
+            'Status',
+            options: ['new'],
+            validationMessage: 'Pick a valid status'
+        );
+        $mapper = new UpdateMapper(new FieldTypeRegistry([new EnumField()]));
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Pick a valid status');
+        $mapper->fromPost($this->regexpTable($column), ['status' => 'hacked']);
     }
 }

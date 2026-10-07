@@ -45,14 +45,20 @@ final readonly class FkOptionsLoader
         try {
             $result = $this->conn->exec($sql);
         } catch (\RuntimeException $exception) {
-            throw new \RuntimeException(sprintf(
-                'Foreign key configuration error: display column(s) [%s] not found on table "%s"."%s" '
-                . '(reference_column "%s"). Check the FK settings in the schema editor. Original error: %s',
+            error_log(sprintf(
+                '[FkOptionsLoader] Foreign key configuration error: display column(s) [%s] not found on '
+                . 'table "%s"."%s" (reference_column "%s"). Check the FK settings in the schema editor. '
+                . 'Original error: %s',
                 implode(', ', $dispRaw),
                 $referencedSchema,
                 $referencedTable,
                 $referencedPrimaryKey,
                 $exception->getMessage()
+            ));
+            throw new \RuntimeException(sprintf(
+                'Foreign key configuration error for table "%s"."%s". Check the FK settings in the schema editor.',
+                $referencedSchema,
+                $referencedTable
             ), 0, $exception);
         }
         $options = [];
