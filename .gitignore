@@ -113,3 +113,6 @@ AGENTS.md
 
 # Local mock data
 /mocks/
+
+# Local-only scripted manual verification of the dev instance (AGENTS.md § verify-dev-api)
+/scripts/verify-dev-api.ps1

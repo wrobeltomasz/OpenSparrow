@@ -108,6 +108,13 @@ function frontapi_record_patch(FrontApiWriteContext $context): never
         $value = null;
     }
 
+    $hasFk = isset($tableConfig['foreign_keys'][$column]);
+    $enumError = validate_column_enum($tableConfig['columns'][$column], $value, $hasFk);
+    if ($enumError !== null) {
+        http_response_code(422);
+        throw ResponseException::encoded(['error' => $enumError, 'column' => $column]);
+    }
+
     $regexpError = validate_column_regexp($tableConfig['columns'][$column], $value);
     if (!str_contains($columnType, 'bool') && $columnType !== 'jsonb' && $regexpError !== null) {
         http_response_code(422);
@@ -176,9 +183,18 @@ function frontapi_record_insert(FrontApiWriteContext $context): never
             $value = type_min_value($type);
         }
 
-        if (!str_contains($type, 'bool') && $type !== 'jsonb' && ($regexpError = validate_column_regexp($columnConfig, $value)) !== null) {
-            http_response_code(422);
-            throw ResponseException::encoded(['error' => $regexpError, 'column' => $columnName]);
+        if (!str_contains($type, 'bool') && $type !== 'jsonb') {
+            $hasFk = isset($tableConfig['foreign_keys'][$columnName]);
+            $enumError = validate_column_enum($columnConfig, $value, $hasFk);
+            if ($enumError !== null) {
+                http_response_code(422);
+                throw ResponseException::encoded(['error' => $enumError, 'column' => $columnName]);
+            }
+            $regexpError = validate_column_regexp($columnConfig, $value);
+            if ($regexpError !== null) {
+                http_response_code(422);
+                throw ResponseException::encoded(['error' => $regexpError, 'column' => $columnName]);
+            }
         }
 
         if ($value !== null) {

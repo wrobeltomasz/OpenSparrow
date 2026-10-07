@@ -92,7 +92,7 @@ final class MassEditController
         $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);
         $columnSql     = pg_ident($columnName);
 
-        return [$tableConfig, $tableName, $columns[$columnName], $columnSql, $qualifiedTable];
+        return [$tableConfig, $tableName, $columns[$columnName], $columnSql, $qualifiedTable, $columnName];
     }
 
     private function validatedTable(array $body): array
@@ -220,7 +220,13 @@ final class MassEditController
             ? ($body['value'] === null ? null : (string)$body['value'])
             : null;
 
-        [$tableConfig, $tableName, $columnConfig, $columnSql, $qualifiedTable] = $this->validateTableColumn($body);
+        [$tableConfig, $tableName, $columnConfig, $columnSql, $qualifiedTable, $columnName] = $this->validateTableColumn($body);
+
+        $hasFk = isset($tableConfig['foreign_keys'][$columnName]);
+        $enumError = validate_column_enum($columnConfig, $value, $hasFk);
+        if ($enumError !== null) {
+            throw HttpException::fromStatus(422, (string) $enumError);
+        }
 
         if (($regexpError = validate_column_regexp($columnConfig, $value)) !== null) {
             throw HttpException::fromStatus(422, (string) $regexpError);

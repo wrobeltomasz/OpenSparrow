@@ -315,6 +315,22 @@ function validate_jsonb_column(array $columnConfig, mixed $inputValue): ?string
     return null;
 }
 
+function validate_column_enum(array $columnConfig, mixed $inputValue, bool $hasForeignKey = false): ?string
+{
+    $type = strtolower((string) ($columnConfig['type'] ?? ''));
+    if (!str_starts_with($type, 'enum') || $hasForeignKey) {
+        return null;
+    }
+    if ($inputValue === null || $inputValue === '') {
+        return null;
+    }
+    $options = array_map('strval', (array) ($columnConfig['options'] ?? []));
+    if (!in_array((string) $inputValue, $options, true)) {
+        return (string) ($columnConfig['validation_message'] ?? 'Invalid format');
+    }
+    return null;
+}
+
 function validate_column_regexp(array $columnConfig, mixed $inputValue): ?string
 {
     $pattern = $columnConfig['validation_regexp'] ?? '';
