@@ -8,6 +8,7 @@ import { I18n } from './i18n.js';
 import { BulkPanel } from './bulk_panel.js';
 import { openNotesPanel } from './notes-panel.js';
 import { formatDateTime } from './util/format-value.js';
+import { escHtml } from './util/esc.js';
 import { AVATAR_COLORS, avatarColor, renderAvatar } from './avatar.js';
 
 const AVATAR_COUNT = AVATAR_COLORS.length;
@@ -37,18 +38,18 @@ function buildAvatarModal(currentId, username) {
     const box = document.createElement('div');
     box.className = 'um-box';
     box.innerHTML = `
-        <button class="um-close" aria-label="${I18n.t('header.close')}">&times;</button>
-        <h3>${I18n.t('header.choose_avatar')}</h3>
+        <button class="um-close" aria-label="${escHtml(I18n.t('header.close'))}">&times;</button>
+        <h3>${escHtml(I18n.t('header.choose_avatar'))}</h3>
         <div class="um-picker form-group">
-            <label for="umAvatarSelect">${I18n.t('header.avatar_options')}</label>
+            <label for="umAvatarSelect">${escHtml(I18n.t('header.avatar_options'))}</label>
             <div class="um-color-row">
                 <span class="um-color-preview"></span>
                 <select class="um-select" id="umAvatarSelect"></select>
             </div>
         </div>
         <div class="um-actions">
-            <button class="um-btn um-btn-secondary" id="umAvatarClear">${I18n.t('header.default_color')}</button>
-            <button class="um-btn um-btn-primary" id="umAvatarSave" disabled>${I18n.t('common.save')}</button>
+            <button class="um-btn um-btn-secondary" id="umAvatarClear">${escHtml(I18n.t('header.default_color'))}</button>
+            <button class="um-btn um-btn-primary" id="umAvatarSave" disabled>${escHtml(I18n.t('common.save'))}</button>
         </div>`;
 
     const select  = box.querySelector('#umAvatarSelect');
@@ -140,19 +141,19 @@ function buildPasswordModal() {
     const box = document.createElement('div');
     box.className = 'um-box';
     box.innerHTML = `
-        <button class="um-close" aria-label="${I18n.t('header.close')}">&times;</button>
-        <h3>${I18n.t('auth.change_password')}</h3>
+        <button class="um-close" aria-label="${escHtml(I18n.t('header.close'))}">&times;</button>
+        <h3>${escHtml(I18n.t('auth.change_password'))}</h3>
         <p class="um-error" id="umPwdError"></p>
         <form class="um-form" id="umPwdForm" autocomplete="off">
-            <label for="umPwdCurrent">${I18n.t('auth.current_password')}</label>
+            <label for="umPwdCurrent">${escHtml(I18n.t('auth.current_password'))}</label>
             <input type="password" id="umPwdCurrent" autocomplete="current-password" required />
-            <label for="umPwdNew">${I18n.t('auth.new_password')}</label>
+            <label for="umPwdNew">${escHtml(I18n.t('auth.new_password'))}</label>
             <input type="password" id="umPwdNew" autocomplete="new-password" required minlength="8" />
-            <label for="umPwdConfirm">${I18n.t('auth.confirm_password')}</label>
+            <label for="umPwdConfirm">${escHtml(I18n.t('auth.confirm_password'))}</label>
             <input type="password" id="umPwdConfirm" autocomplete="new-password" required minlength="8" />
             <div class="um-actions">
-                <button type="button" class="um-btn um-btn-secondary" id="umPwdCancel">${I18n.t('common.cancel')}</button>
-                <button type="submit" class="um-btn um-btn-primary">${I18n.t('common.save')}</button>
+                <button type="button" class="um-btn um-btn-secondary" id="umPwdCancel">${escHtml(I18n.t('common.cancel'))}</button>
+                <button type="submit" class="um-btn um-btn-primary">${escHtml(I18n.t('common.save'))}</button>
             </div>
         </form>`;
 

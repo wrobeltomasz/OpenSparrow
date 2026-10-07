@@ -35,7 +35,7 @@ $pageContent = ob_get_clean();
 
 $extraScripts = os_inline_globals([
     'VIEWS_INITIAL' => $viewName ?: null,
-    'CSRF_TOKEN'    => $_SESSION['csrf_token'],
+    'CSRF_TOKEN'    => os_session_get('csrf_token'),
 ], $cspNonce)
     . os_module_script('assets/js/views.js', $cspNonce);
 include __DIR__ . '/../templates/layout.php';

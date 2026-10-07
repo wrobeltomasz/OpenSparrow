@@ -30,7 +30,7 @@ $pageContent = ob_get_clean();
 
 $extraScripts = os_inline_globals([
     'PRINT_INITIAL' => $printName ?: null,
-    'CSRF_TOKEN'    => $_SESSION['csrf_token'],
+    'CSRF_TOKEN'    => os_session_get('csrf_token'),
 ], $cspNonce)
     . os_module_script('assets/js/print.js', $cspNonce);
 include __DIR__ . '/../templates/layout.php';

@@ -6,6 +6,7 @@
 import { sortRows } from './grid/state.js';
 import { I18n } from './i18n.js';
 import { apiJson as apiFetch } from './util/api.js';
+import { escHtml } from './util/esc.js';
 
 function applyColorRules(rawValue, rules) {
     if (!Array.isArray(rules) || rules.length === 0) return null;
@@ -444,7 +445,7 @@ function renderView(data) {
     const { view, level, max_level, group_by, drill_enabled, rows, columns, group_rows, display_name } = data;
 
     if (rows.length === 0) {
-        containerElement.insertAdjacentHTML('beforeend', `<div class="vw-empty">${I18n.t('views.no_data')}</div>`);
+        containerElement.insertAdjacentHTML('beforeend', `<div class="vw-empty">${escHtml(I18n.t('views.no_data'))}</div>`);
 
         window.CURRENT_VIEW = null;
         return;

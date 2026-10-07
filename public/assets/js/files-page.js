@@ -532,7 +532,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? relationCache[fileEntry.related_table][fileEntry.related_id]
                     : `${fileEntry.related_table} #${fileEntry.related_id}`;
                 relatedBadge = `
-                    <a href="edit.php?table=${encodeURIComponent(fileEntry.related_table)}&id=${encodeURIComponent(fileEntry.related_id)}" class="related-badge" title="${TEXT.go_to_record}">
+                    <a href="edit.php?table=${encodeURIComponent(fileEntry.related_table)}&id=${encodeURIComponent(fileEntry.related_id)}" class="related-badge" title="${escHtml(TEXT.go_to_record)}">
                         ${escHtml(displayLabel)}
                     </a>
                 `;
@@ -545,17 +545,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const tagsArr  = tagsToArray(fileEntry.tags);
             const tagsCell = canEdit
-                ? `<td class="f-td-tags editable-tags" data-uuid="${escHtml(fileEntry.uuid)}" data-tags="${escHtml(fileEntry.tags || '{}')}" title="${TEXT.edit_tags}">${tagsBadgesHtml(tagsArr)}</td>`
+                ? `<td class="f-td-tags editable-tags" data-uuid="${escHtml(fileEntry.uuid)}" data-tags="${escHtml(fileEntry.tags || '{}')}" title="${escHtml(TEXT.edit_tags)}">${tagsBadgesHtml(tagsArr)}</td>`
                 : `<td class="f-td-tags">${tagsArr.length ? tagsBadgesHtml(tagsArr) : '-'}</td>`;
 
             const deleteButton = window.USER_CAPS.canEdit
-                ? `<button class="btn-icon btn-icon-danger" data-action="delete-file" data-uuid="${escHtml(fileEntry.uuid)}" title="${TEXT.delete}">
-                        <img src="assets/icons/delete.png" alt="${TEXT.delete}">
+                ? `<button class="btn-icon btn-icon-danger" data-action="delete-file" data-uuid="${escHtml(fileEntry.uuid)}" title="${escHtml(TEXT.delete)}">
+                        <img src="assets/icons/delete.png" alt="${escHtml(TEXT.delete)}">
                     </button>`
                 : '';
 
             const selectTd = canEdit
-                ? `<td class="td-select"><input type="checkbox" class="row-select-cb" aria-label="${TEXT.select_file}" data-uuid="${escHtml(fileEntry.uuid)}"></td>`
+                ? `<td class="td-select"><input type="checkbox" class="row-select-cb" aria-label="${escHtml(TEXT.select_file)}" data-uuid="${escHtml(fileEntry.uuid)}"></td>`
                 : '';
 
             return `
@@ -574,8 +574,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     <td>${relatedBadge}</td>
                     <td>${date}</td>
                     <td class="td-actions">
-                        <a href="file_download.php?uuid=${encodeURIComponent(fileEntry.uuid)}" target="_blank" rel="noopener noreferrer" class="btn-icon" data-action="download-file" title="${TEXT.download}">
-                            <img src="assets/icons/material/download.svg" alt="${TEXT.download}">
+                        <a href="file_download.php?uuid=${encodeURIComponent(fileEntry.uuid)}" target="_blank" rel="noopener noreferrer" class="btn-icon" data-action="download-file" title="${escHtml(TEXT.download)}">
+                            <img src="assets/icons/material/download.svg" alt="${escHtml(TEXT.download)}">
                         </a>
                         ${deleteButton}
                     </td>

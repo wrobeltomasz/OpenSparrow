@@ -13,11 +13,11 @@ use App\Exception\RedirectException;
 os_register_exception_handler('html');
 start_session();
 
-if (isset($_SESSION['user_id'])) {
+if (os_session_get('user_id') !== null) {
     require_once __DIR__ . '/../includes/db.php';
     require __DIR__ . '/../includes/api_helpers.php';
     $conn = db_connect();
-    log_user_action($conn, $_SESSION['user_id'], 'LOGOUT');
+    log_user_action($conn, (int) os_session_get('user_id'), 'LOGOUT');
 }
 
 $_SESSION = [];

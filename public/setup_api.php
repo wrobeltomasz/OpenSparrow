@@ -198,7 +198,8 @@ if ($action === 'init_database') {
         if ($dropSchema) {
             $dropResult = @pg_query($conn, "DROP SCHEMA IF EXISTS $schemaIdentifier CASCADE");
             if (!$dropResult) {
-                throw new Exception('Failed to drop existing schema "' . $schema . '": ' . pg_last_error($conn));
+                error_log('[setup_api] drop schema failed: ' . pg_last_error($conn));
+                throw new Exception('Failed to drop the existing schema. Check database permissions.');
             }
         }
 

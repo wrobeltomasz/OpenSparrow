@@ -60,7 +60,7 @@ ob_start();
 ?>
 <?php echo os_inline_globals([
     'USER_CAPS'  => $userCaps,
-    'CSRF_TOKEN' => $_SESSION['csrf_token'],
+    'CSRF_TOKEN' => os_session_get('csrf_token'),
     'FILES_TEXT' => [
         'delete_error'   => t('files.delete_error'),
         'network_error'  => t('files.network_error'),

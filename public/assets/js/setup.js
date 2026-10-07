@@ -3,6 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
+import { escHtml } from './util/esc.js';
+
 const TEXT = window.SETUP_TEXT;
 let currentStep = 1;
 let connectionValid = false;
@@ -105,7 +107,7 @@ function testConnection() {
         } else {
             status.classList.remove('success');
             status.classList.add('error');
-            message.innerHTML = '<span class="status-icon error"></span>' + (data.message || TEXT.conn_failed);
+            message.innerHTML = '<span class="status-icon error"></span>' + escHtml(data.message || TEXT.conn_failed);
             connectionValid = false;
             nextButton.disabled = true;
             showMessage('status-message-2', data.message || TEXT.conn_failed, 'error');

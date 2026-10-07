@@ -22,7 +22,7 @@ os_register_exception_handler('html');
 start_session();
 send_security_headers('', false, 'download');
 
-if (empty($_SESSION['user_id'])) {
+if (empty(os_session_get('user_id'))) {
     throw new UnauthorizedException('Unauthorised');
 }
 
@@ -63,8 +63,8 @@ if ($relatedTable !== null && $relatedId !== null && $relatedId !== '') {
     $schema   = config_get('schema');
     $tableConfig = $schema['tables'][$relatedTable] ?? null;
     if (is_array($tableConfig)) {
-        $userId  = (int) $_SESSION['user_id'];
-        $role = $_SESSION['role'] ?? '';
+        $userId  = (int) os_session_get('user_id');
+        $role = (string) os_session_get('role', '');
 
         if (!user_can_access_table((string) $relatedTable)) {
             throw new NotFoundException('File not found in database');

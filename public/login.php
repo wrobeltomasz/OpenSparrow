@@ -60,7 +60,7 @@ $request = os_request();
 
 if ($request->isPost()) {
     $tokenPost = (string) $request->post('csrf_token');
-    $tokenSession = $_SESSION['csrf_token'] ?? '';
+    $tokenSession = (string) os_session_get('csrf_token', '');
 
     if (!hash_equals($tokenSession, $tokenPost)) {
         throw new ForbiddenException('Invalid CSRF token.');
@@ -226,7 +226,7 @@ if ($request->isPost()) {
                 <input
                     type="hidden"
                     name="csrf_token"
-                    value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>"
+                    value="<?php echo htmlspecialchars((string) os_session_get('csrf_token'), ENT_QUOTES, 'UTF-8'); ?>"
                 />
                 <input
                     type="text"
