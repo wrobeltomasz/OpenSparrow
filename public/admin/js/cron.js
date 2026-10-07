@@ -6,8 +6,6 @@
 import { apiFetch } from '../../assets/js/util/api.js';
 import { buildInnerTabs, createPageHeader, mkTable, mkThead, td, tdEl, buildSectionCard } from './ui.js';
 
-import { escHtml } from '../../assets/js/util/esc.js';
-
 function statusBadge(status) {
     const cssClass = { success: 'ok', error: 'danger', running: 'warn' }[status] ?? 'muted';
     const badgeSpan = document.createElement('span');
@@ -43,7 +41,7 @@ function buildManualRunSection() {
             });
             const data = await response.json();
             if (data.status === 'success') {
-                output.innerHTML = data.output || '(no output)';
+                output.textContent = data.output || '(no output)';
             } else {
                 output.textContent = 'Error: ' + (data.error || 'unknown');
                 output.style.color = 'var(--error)';

@@ -62,23 +62,14 @@ function etl_run_single_job(
 
     if ($result['status'] === 'success') {
         etl_cli_log("[etl]   read {$result['rows_read']}, written {$result['rows_written']}.");
-        $previousWatermark           = $job['last_watermark'] ?? null;
-        $watermarkChanged = $result['new_watermark'] !== null && $result['new_watermark'] !== $previousWatermark;
-        if (!$dryRun && $watermarkChanged) {
-            etl_persist_watermark($jobId, $result['new_watermark'], 'etl:' . $jobName);
+        if (!$dryRun) {
+            etl_persist_watermark_if_changed($job, $result, 'etl:' . $jobName);
         }
     } else {
         etl_cli_log('[etl]   ERROR: ' . ($result['error'] ?? 'unknown'));
     }
 
-    if ($logId !== null) {
-        @pg_query_params(
-            $conn,
-            "UPDATE {$etlLogTable} SET finished_at = now(), status = $1, rows_read = $2, "
-                . "rows_written = $3, error_message = $4 WHERE id = $5",
-            [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $logId]
-        );
-    }
+    etl_finish_job_log($conn, $etlLogTable, $logId, $result);
 
     return $result['status'] === 'success';
 }

@@ -120,22 +120,8 @@ function etl_flow_run_single(
         $watermarkParameter       = $previousWatermark !== null ? (string)$previousWatermark : null;
         $result        = etl_run_job($conn, $job, $connConfig, $dryRun, $watermarkParameter);
 
-        if ($stepLogId !== null) {
-            @pg_query_params(
-                $conn,
-                "UPDATE {$etlFlowStepLogTable} SET finished_at = now(), status = $1, rows_read = $2, "
-                    . "rows_written = $3, error_message = $4 WHERE id = $5",
-                [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $stepLogId]
-            );
-        }
-        if ($jobLogId !== null) {
-            @pg_query_params(
-                $conn,
-                "UPDATE {$etlLogTable} SET finished_at = now(), status = $1, rows_read = $2, "
-                    . "rows_written = $3, error_message = $4 WHERE id = $5",
-                [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $jobLogId]
-            );
-        }
+        etl_finish_job_log($conn, $etlFlowStepLogTable, $stepLogId, $result);
+        etl_finish_job_log($conn, $etlLogTable, $jobLogId, $result);
 
         if ($result['status'] !== 'success') {
             $errorMessage    = "Step " . ($stepIndex + 1) . " ('{$jobName}'): " . ($result['error'] ?? 'unknown error');
@@ -146,10 +132,8 @@ function etl_flow_run_single(
         }
 
         etl_cli_log("[etl_flow]     read {$result['rows_read']}, written {$result['rows_written']}.");
-        $previousWatermark           = $job['last_watermark'] ?? null;
-        $watermarkChanged = $result['new_watermark'] !== null && $result['new_watermark'] !== $previousWatermark;
-        if (!$dryRun && $watermarkChanged) {
-            etl_persist_watermark($jobId, $result['new_watermark'], 'etl_flow:' . $flowName);
+        if (!$dryRun) {
+            etl_persist_watermark_if_changed($job, $result, 'etl_flow:' . $flowName);
         }
     }
 

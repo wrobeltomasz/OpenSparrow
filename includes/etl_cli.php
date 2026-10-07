@@ -44,3 +44,30 @@ function etl_log_table_ready(\PgSql\Connection $conn, string $table): bool
 {
     return @pg_query($conn, "SELECT 1 FROM {$table} LIMIT 0") !== false;
 }
+
+function etl_finish_job_log(
+    \PgSql\Connection $conn,
+    string $logTable,
+    ?int $logId,
+    array $result
+): void {
+    if ($logId === null) {
+        return;
+    }
+    @pg_query_params(
+        $conn,
+        "UPDATE {$logTable} SET finished_at = now(), status = $1, rows_read = $2, "
+            . "rows_written = $3, error_message = $4 WHERE id = $5",
+        [$result['status'], $result['rows_read'], $result['rows_written'], $result['error'], $logId]
+    );
+}
+
+function etl_persist_watermark_if_changed(array $job, array $result, string $logTag): bool
+{
+    $previousWatermark = $job['last_watermark'] ?? null;
+    if ($result['new_watermark'] === null || $result['new_watermark'] === $previousWatermark) {
+        return false;
+    }
+    etl_persist_watermark((string)($job['id'] ?? ''), (string)$result['new_watermark'], $logTag);
+    return true;
+}

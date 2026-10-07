@@ -27,7 +27,7 @@ ob_implicit_flush(true);
 
 function print_log(string $message): void
 {
-    echo $message . "<br>\n";
+    echo $message . "\n";
 
     echo str_pad('', 4096) . "\n";
     flush();
@@ -39,7 +39,7 @@ require_once __DIR__ . '/../includes/api_helpers.php';
 function cron_notifications_main(array $argv): int
 {
     $triggeredBy = (isset($argv[1]) && $argv[1] === 'admin') ? 'admin' : 'cron';
-    print_log("<h3>Start CRON - Diagnostics</h3>");
+    print_log("Start CRON - Diagnostics");
     require_once __DIR__ . '/../includes/config_store.php';
 
     try {
@@ -56,16 +56,16 @@ function cron_notifications_main(array $argv): int
 
     $config = config_get('calendar');
     if ($config === null) {
-        print_log("<span style='color:red;'>Missing calendar configuration</span>");
+        print_log("Missing calendar configuration");
         return 0;
     }
 
     if (empty($config['sources'])) {
-        print_log("<span style='color:red;'>No sources defined in calendar.</span>");
+        print_log("No sources defined in calendar.");
         return 0;
     }
 
-    print_log("Loaded calendar configuration. Number of sources: " . count($config['sources']) . "<br>");
+    print_log("Loaded calendar configuration. Number of sources: " . count($config['sources']));
 
     $schemaConfig    = config_get('schema') ?? [];
     $schemaTables = is_array($schemaConfig['tables'] ?? null) ? $schemaConfig['tables'] : [];
@@ -75,7 +75,8 @@ function cron_notifications_main(array $argv): int
     try {
         print_log("Connecting to the database...");
         $conn = db_connect();
-        print_log("Database connected successfully.<br><hr>");
+        print_log("Database connected successfully.");
+        print_log("");
 
         pg_query(
             $conn,
@@ -100,8 +101,7 @@ function cron_notifications_main(array $argv): int
 
             if (!$table || !$dateColumn || !$titleColumn || empty($notifiedUsers) || !is_array($notifiedUsers)) {
                 print_log(
-                    "Skipping source <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8')
-                    . "</b> (missing required columns or no users assigned)."
+                    "Skipping source '" . $table . "' (missing required columns or no users assigned)."
                 );
                 continue;
             }
@@ -109,9 +109,9 @@ function cron_notifications_main(array $argv): int
 
             $targetDate = date('Y-m-d', strtotime("+$days days"));
             print_log(
-                "Analyzing table: <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8') . "</b>"
-                . " (looking for date: <b>" . htmlspecialchars($targetDate, ENT_QUOTES, 'UTF-8') . "</b>"
-                . " in column <b>" . htmlspecialchars($dateColumn, ENT_QUOTES, 'UTF-8') . "</b>)"
+                "Analyzing table: '" . $table . "'"
+                . " (looking for date: '" . $targetDate . "'"
+                . " in column '" . $dateColumn . "')"
             );
 
             $tableSchema = (string)($schemaTables[$table]['schema'] ?? sys_schema());
@@ -124,10 +124,8 @@ function cron_notifications_main(array $argv): int
             );
             $result = pg_query_params($conn, $sql, [$targetDate]);
             if (!$result) {
-                print_log(
-                    "<span style='color:red;'>SQL QUERY ERROR: "
-                    . htmlspecialchars(pg_last_error($conn), ENT_QUOTES, 'UTF-8') . "</span>"
-                );
+                error_log('[cron_notifications] source query failed on ' . $table . ': ' . pg_last_error($conn));
+                print_log("SQL QUERY ERROR on table '" . $table . "' — check server error log.");
                 continue;
             }
             $rows = pg_fetch_all($result) ?: [];
@@ -143,14 +141,14 @@ function cron_notifications_main(array $argv): int
                 : [];
             if (empty($validUserIds)) {
                 print_log(
-                    "Skipping source <b>" . htmlspecialchars($table, ENT_QUOTES, 'UTF-8')
-                    . "</b> (none of the configured users exist or are active)."
+                    "Skipping source '" . $table
+                    . "' (none of the configured users exist or are active)."
                 );
                 continue;
             }
 
             $rowCount = count($rows);
-            print_log("Found matching records in database: <b>$rowCount</b>");
+            print_log("Found matching records in database: $rowCount");
             foreach ($rows as $row) {
                 $recordId = (int)$row['record_id'];
 
@@ -172,19 +170,19 @@ function cron_notifications_main(array $argv): int
                         [$userId, $titleText, $link, $table, $recordId, $targetDate]
                     );
                     if ($updateResult && pg_affected_rows($updateResult) > 0) {
-                        print_log("&nbsp;&nbsp; Added notification for user ID $userId (Record ID: $recordId)");
+                        print_log("  Added notification for user ID $userId (Record ID: $recordId)");
                         $insertedCount++;
                     } else {
                         print_log(
-                            "&nbsp;&nbsp; Skipped (Notification for user $userId for record $recordId already exists)."
+                            "  Skipped (Notification for user $userId for record $recordId already exists)."
                         );
                     }
                 }
             }
-            print_log("<hr>");
+            print_log("");
         }
 
-        print_log("<h3>Note reminders</h3>");
+        print_log("Note reminders");
         $today = date('Y-m-d');
         $noteResult = pg_query(
             $conn,
@@ -193,7 +191,7 @@ function cron_notifications_main(array $argv): int
              WHERE reminder_date IS NOT NULL AND reminder_date <= NOW() AND deleted_at IS NULL"
         );
         $noteRows = $noteResult ? (pg_fetch_all($noteResult) ?: []) : [];
-        print_log("Notes with a reminder due: <b>" . count($noteRows) . "</b>");
+        print_log("Notes with a reminder due: " . count($noteRows));
         foreach ($noteRows as $note) {
             $noteUserId = (int)$note['user_id'];
             $noteTitle  = mb_strimwidth((string)$note['body'], 0, 120, '...');
@@ -212,13 +210,13 @@ function cron_notifications_main(array $argv): int
             $noteParameters = [$noteUserId, $noteTitle, $noteLink, (int)$note['id'], $noteDay];
             $noteInsertResult = pg_query_params($conn, $noteInsertSql, $noteParameters);
             if ($noteInsertResult && pg_affected_rows($noteInsertResult) > 0) {
-                print_log("&nbsp;&nbsp; Added reminder for user ID $noteUserId (Note ID: " . (int)$note['id'] . ")");
+                print_log("  Added reminder for user ID $noteUserId (Note ID: " . (int)$note['id'] . ")");
                 $insertedCount++;
             }
         }
-        print_log("<hr>");
+        print_log("");
 
-        print_log("<h3>Automation email queue</h3>");
+        print_log("Automation email queue");
         $automationEmailsTable = sys_table('automation_emails');
         $emailsSent  = 0;
         $emailsFailed = 0;
@@ -245,19 +243,19 @@ function cron_notifications_main(array $argv): int
 
         if (AUTOMATION_EMAIL_FROM === '') {
             print_log(
-                "<span style='color:orange;'>AUTOMATION_EMAIL_FROM is not configured — "
-                . "skipping email delivery (queued emails stay pending).</span>"
+                "AUTOMATION_EMAIL_FROM is not configured — "
+                . "skipping email delivery (queued emails stay pending)."
             );
         } elseif ($smtpEnabled && $smtpConfig['host'] === '') {
             print_log(
-                "<span style='color:orange;'>SMTP delivery is enabled but no SMTP host is configured — "
-                . "skipping email delivery (queued emails stay pending).</span>"
+                "SMTP delivery is enabled but no SMTP host is configured — "
+                . "skipping email delivery (queued emails stay pending)."
             );
         } else {
             $methodLabel = $smtpEnabled
-                ? 'SMTP (' . htmlspecialchars($smtpConfig['host'], ENT_QUOTES, 'UTF-8') . ')'
+                ? 'SMTP (' . $smtpConfig['host'] . ')'
                 : 'PHP mail()';
-            print_log('Delivery method: <b>' . $methodLabel . '</b>');
+            print_log('Delivery method: ' . $methodLabel);
             $pendingResult = pg_query_params(
                 $conn,
                 "SELECT id, recipient, subject, body FROM $automationEmailsTable
@@ -266,7 +264,7 @@ function cron_notifications_main(array $argv): int
                 [AUTOMATION_EMAIL_MAX_ATTEMPTS, AUTOMATION_EMAIL_BATCH_LIMIT]
             );
             $pending = $pendingResult ? (pg_fetch_all($pendingResult) ?: []) : [];
-            print_log("Pending emails picked up: <b>" . count($pending) . "</b>");
+            print_log("Pending emails picked up: " . count($pending));
 
             $hdrSafe = static fn(string $headerValue): string => str_replace(["\r", "\n"], ' ', $headerValue);
 
@@ -302,10 +300,7 @@ function cron_notifications_main(array $argv): int
                         [$mailId]
                     );
                     $emailsSent++;
-                    print_log(
-                        "&nbsp;&nbsp; Sent email #$mailId to "
-                        . htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8')
-                    );
+                    print_log("  Sent email #$mailId to " . $recipient);
                 } else {
                     pg_query_params(
                         $conn,
@@ -318,17 +313,15 @@ function cron_notifications_main(array $argv): int
                     );
                     $emailsFailed++;
                     print_log(
-                        "<span style='color:red;'>&nbsp;&nbsp; Failed email #$mailId to "
-                        . htmlspecialchars($recipient, ENT_QUOTES, 'UTF-8') . ": "
-                        . htmlspecialchars($failReason, ENT_QUOTES, 'UTF-8') . "</span>"
+                        "  Failed email #$mailId to " . $recipient . ": " . $failReason
                     );
                 }
             }
-            print_log("Emails sent: <b>$emailsSent</b>, failed this run: <b>$emailsFailed</b>");
+            print_log("Emails sent: $emailsSent, failed this run: $emailsFailed");
         }
-        print_log("<hr>");
+        print_log("");
 
-        print_log("<h3>Finished. NEW notifications generated: $insertedCount</h3>");
+        print_log("Finished. NEW notifications generated: $insertedCount");
         if ($logId) {
             pg_query_params(
                 $conn,
@@ -340,7 +333,8 @@ function cron_notifications_main(array $argv): int
     } catch (ControlFlowException $signal) {
         throw $signal;
     } catch (Throwable $exception) {
-        print_log("<span style='color:red;'>Critical error: " . htmlspecialchars($exception->getMessage()) . "</span>");
+        error_log('[cron_notifications] critical error: ' . $exception->getMessage());
+        print_log("Critical error — check server error log.");
         if (!empty($logId) && !empty($conn)) {
             pg_query_params(
                 $conn,
