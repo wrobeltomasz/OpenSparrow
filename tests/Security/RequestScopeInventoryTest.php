@@ -289,6 +289,7 @@ final class RequestScopeInventoryTest extends TestCase
             'includes/api_helpers.php'    => 'the shared backend helpers',
             'includes/admin/schema.php'   => 'the admin API modules',
             'templates/menu.php'          => 'the FE templates',
+            'includes/menu_builder.php'   => 'the FE menu builder',
             'includes/Controller/EditController.php' => 'the page controllers',
             'includes/Service/AppContext.php'        => 'the service layer',
             'templates/partials/subtables.php'       => 'the FE template partials',

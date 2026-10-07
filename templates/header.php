@@ -4,9 +4,9 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
-$userRole  = $_SESSION['role']      ?? 'viewer';
-$avatarId  = $_SESSION['avatar_id'] ?? null;
-$uname     = $_SESSION['username']  ?? '';
+$userRole  = os_session_get('role', 'viewer');
+$avatarId  = os_session_get('avatar_id');
+$uname     = os_session_get('username', '');
 
 $initial     = htmlspecialchars(mb_strtoupper(mb_substr($uname, 0, 1)), ENT_QUOTES, 'UTF-8');
 $avatarColor = os_avatar_color($avatarId !== null ? (int)$avatarId : null);

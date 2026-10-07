@@ -57,6 +57,11 @@ function os_user_caps(?string $role = null): array
     ];
 }
 
+function os_session_get(string $key, mixed $default = null): mixed
+{
+    return $_SESSION[$key] ?? $default;
+}
+
 function os_ensure_csrf_token(): string
 {
     if (empty($_SESSION['csrf_token'])) {

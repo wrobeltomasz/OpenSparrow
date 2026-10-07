@@ -88,7 +88,7 @@ return [
     'public/views.php' => [
         'os_query_string().view' => ['gated', 'os_require_access(views, ...) redirects to the grid, so a stale bookmark or a hand-edited URL cannot render a view shell whose data call would 403.'],
     ],
-    'templates/menu.php' => [
+    'includes/menu_builder.php' => [
         'os_query_string().table'    => ['none', 'Read only to mark the active menu entry, never to fetch anything. The items themselves come from filter_by_user_access(), so a name the user has no access to simply matches nothing and no entry lights up.'],
         'os_query_string().view'     => ['none', 'Active-entry highlight only, and the view list itself is already filtered — an out-of-scope name matches no entry.'],
         'os_query_string().print'    => ['none', 'Active-entry highlight only, and the printout list itself is already filtered — an out-of-scope name matches no entry.'],

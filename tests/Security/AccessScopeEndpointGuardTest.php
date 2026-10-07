@@ -210,7 +210,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
         );
         $this->assertCodeHas(
             'workflow_tables_in_scope($workflowItem)',
-            $this->code('templates/menu.php'),
+            $this->code('includes/menu_builder.php'),
             'The workflow submenu must apply the same step-table rule as the endpoint.'
         );
     }
@@ -227,7 +227,7 @@ final class AccessScopeEndpointGuardTest extends TestCase
             'public/api.php',
             self::WORKFLOWS_MODULE,
             self::WF_PROC_MODULE,
-            'templates/menu.php',
+            'includes/menu_builder.php',
             'public/index.php',
         ];
         foreach ($callSites as $file) {
