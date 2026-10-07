@@ -39,15 +39,6 @@ function resolve_landing_page(): string
     return 'index.php';
 }
 
-$version = 'unknown';
-$versionFile = __DIR__ . '/../includes/VERSION';
-if (is_file($versionFile)) {
-    $versionContent = @file_get_contents($versionFile);
-    if ($versionContent !== false) {
-        $version = trim($versionContent);
-    }
-}
-
 if (isset($_SESSION['user_id'])) {
     throw new RedirectException(resolve_landing_page());
 }
@@ -289,9 +280,6 @@ if ($request->isPost()) {
                     <?php echo htmlspecialchars(t('auth.login'), ENT_QUOTES, 'UTF-8'); ?>
                 </button>
             </form>
-            <div class="login-info">
-                <span>v<?php echo htmlspecialchars($version); ?></span>
-            </div>
         </div>
     </div>
     <script

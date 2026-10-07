@@ -7,10 +7,11 @@
 <footer>
     <div class="footer-content">
         <div class="footer-text">
+            <a href="https://opensparrow.org"><img src="/assets/img/logo.png" alt="OpenSparrow Logo" height="16"></a>
             <span>Copyright © 2026 <a href="https://opensparrow.org/">OpenSparrow</a> Team</span>
-			<span>
-			Licensed under LGPL-3.0
-			</span>
+            <span>
+            Licensed under LGPL-3.0
+            </span>
         </div>
         <a class="footer-github" href="https://github.com/wrobeltomasz/OpenSparrow" target="_blank" rel="noopener noreferrer" aria-label="OpenSparrow on GitHub">
             <img src="/assets/img/GitHub_Lockup_Black.svg" alt="GitHub" height="18">

@@ -3358,25 +3358,6 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
   border-radius: 4px;
   border: 1px solid var(--error);
 }
-.login-info {
-  text-align: center;
-  margin-top: 1.5rem;
-  color: var(--muted);
-}
-.login-info a {
-  color: var(--accent);
-  text-decoration: none;
-  transition: color 150ms ease;
-}
-.login-info a:hover {
-  color: var(--accent-dark);
-  text-decoration: underline;
-}
-.login-info-separator {
-  margin: 0 0.5rem;
-  opacity: 0.5;
-}
-
 :root {
   --f-primary: var(--accent-dark);
   --f-accent: var(--accent);
