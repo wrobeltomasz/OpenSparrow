@@ -45,7 +45,7 @@ require_once __DIR__ . '/../../includes/admin_api_errors.php';
 require_once __DIR__ . '/../../includes/admin/helpers.php';
 
 if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PATCH', 'DELETE'], true)) {
-    $csrfToken = (string) ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? os_request()->post('csrf_token'));
+    $csrfToken = (string) ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
     if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrfToken)) {
         throw new ForbiddenException(
             'CSRF token mismatch.',

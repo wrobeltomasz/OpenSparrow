@@ -25,7 +25,7 @@ const CSV_MAX_BYTES   = CsvFileValidator::MAX_BYTES;
 const CSV_BATCH_SIZE  = CsvImportService::BATCH_SIZE;
 const CSV_PREVIEW_ROWS = 5;
 
-$action = $_GET['action'] ?? '';
+$action = os_request()->query('action');
 
 function csv_fail(string $message, int $code = 400): never
 {
@@ -47,7 +47,7 @@ if ($action === 'csv_import_history') {
 }
 
 if ($action === 'csv_import_log') {
-    $importId = (int) ($_GET['id'] ?? 0);
+    $importId = (int) os_request()->query('id');
     if ($importId <= 0) {
         csv_fail('Missing or invalid import id.');
     }

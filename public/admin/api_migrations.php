@@ -16,7 +16,7 @@ require_once __DIR__ . '/../../includes/config_store.php';
 
 os_api_bootstrap(['connect' => false, 'role' => 'admin']);
 
-$action = $_GET['action'] ?? '';
+$action = os_request()->query('action');
 
 if ($action === 'apply') {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
