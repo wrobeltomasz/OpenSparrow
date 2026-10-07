@@ -328,7 +328,11 @@ function auto_action_update(
     );
 
     $queryResult = @pg_query_params($conn, $sql, $parameters);
-    return $queryResult === false ? ('update failed: ' . pg_last_error($conn)) : null;
+    if ($queryResult === false) {
+        error_log('[automations] update failed: ' . pg_last_error($conn));
+        return 'update failed — check server error log';
+    }
+    return null;
 }
 
 function auto_action_notify(
@@ -385,7 +389,8 @@ function auto_action_notify(
             $recordId,
         ]);
         if ($queryResult === false) {
-            $errors[] = 'notify failed: ' . pg_last_error($conn);
+            error_log('[automations] notify failed: ' . pg_last_error($conn));
+            $errors[] = 'notify failed — check server error log';
         }
     }
 
@@ -439,7 +444,11 @@ function auto_action_create_record(
     );
 
     $queryResult = @pg_query_params($conn, $sql, $parameters);
-    return $queryResult === false ? ('create_record failed: ' . pg_last_error($conn)) : null;
+    if ($queryResult === false) {
+        error_log('[automations] create_record failed: ' . pg_last_error($conn));
+        return 'create_record failed — check server error log';
+    }
+    return null;
 }
 
 function auto_webhook_secret(array $action): string
@@ -674,7 +683,8 @@ function auto_action_email(
             $userId,
         ]);
         if ($queryResult === false) {
-            $errors[] = 'email queue failed: ' . pg_last_error($conn);
+            error_log('[automations] email queue failed: ' . pg_last_error($conn));
+            $errors[] = 'email queue failed — check server error log';
         } else {
             $queued++;
         }
