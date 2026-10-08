@@ -138,6 +138,10 @@ final class RagController
 
             $config = rag_config();
 
+            if (!rag_chat_enabled($config)) {
+                throw HttpException::fromStatus(403, 'Ask AI is disabled by the administrator.');
+            }
+
             $maxTurns = max(0, min(10, (int) ($config['conversation_turns'] ?? 0)));
             $history  = [];
             if ($maxTurns > 0 && !empty($rawHistory)) {

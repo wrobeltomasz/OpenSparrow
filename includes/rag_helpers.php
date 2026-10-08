@@ -33,6 +33,20 @@ function rag_config(): array
     return $config;
 }
 
+function rag_chat_enabled(?array $config = null): bool
+{
+    if ($config === null) {
+        try {
+            $config = rag_config();
+        } catch (\App\Exception\ControlFlowException $signal) {
+            throw $signal;
+        } catch (Throwable $exception) {
+            return true;
+        }
+    }
+    return (bool) ($config['chat_enabled'] ?? true);
+}
+
 function pg_text_array_to_php(string $pgArray): array
 {
     $pgArray = trim($pgArray);

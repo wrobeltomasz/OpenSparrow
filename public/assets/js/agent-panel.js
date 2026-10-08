@@ -181,7 +181,7 @@ function updateContextBar() {
 }
 
 function buildFab() {
-    if (!window.CHAT_BUBBLE_ENABLED) return;
+    if (!window.CHAT_BUBBLE_ENABLED || window.CHAT_ENABLED === false) return;
     fabElement           = document.createElement('button');
     fabElement.id        = 'agFab';
     fabElement.className = 'ag-fab';

@@ -326,4 +326,16 @@ final class RagHelpersTest extends TestCase
         $this->assertStringNotContainsString('HISTORY>>>', $prompt);
         $this->assertStringContainsString("Question:\nWhat is the total?", $prompt);
     }
+
+    public function testChatEnabledFlagIsReadFromTheConfig(): void
+    {
+        $this->assertTrue(rag_chat_enabled(['chat_enabled' => true]));
+        $this->assertFalse(rag_chat_enabled(['chat_enabled' => false]));
+    }
+
+    public function testChatEnabledDefaultsToTrueWhenTheKeyIsMissing(): void
+    {
+        $this->assertTrue(rag_chat_enabled([]));
+        $this->assertTrue(rag_chat_enabled(['ollama_model' => 'llama3']));
+    }
 }

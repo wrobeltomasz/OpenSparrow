@@ -597,7 +597,7 @@ function ragBuildSettingsTab(panel) {
 
     const chatDescription = document.createElement('div');
     chatDescription.style.cssText = 'margin-top:2px;';
-    chatDescription.textContent = 'When unchecked, the chat input and send button are hidden for all users. The document list remains visible. Useful when Ollama is not yet set up or during maintenance.';
+    chatDescription.textContent = 'When unchecked, the Ask AI panel and the chat bubble are hidden for all users and the API rejects questions. The document list remains visible. Useful when Ollama is not yet set up or during maintenance.';
 
     chatTextWrap.appendChild(chatTitle);
     chatTextWrap.appendChild(chatDescription);

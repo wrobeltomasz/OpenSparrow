@@ -25,6 +25,9 @@ $adminTitleLabel     = htmlspecialchars(t('admin.title'), ENT_QUOTES, 'UTF-8');
 $changeAvatarLabel   = htmlspecialchars(t('header.change_avatar'), ENT_QUOTES, 'UTF-8');
 $changePasswordLabel = htmlspecialchars(t('auth.change_password'), ENT_QUOTES, 'UTF-8');
 $agentTitleLabel     = htmlspecialchars(t('agent.title'), ENT_QUOTES, 'UTF-8');
+
+require_once __DIR__ . '/../includes/rag_helpers.php';
+$agentEnabled = rag_chat_enabled();
 $myRecordsLabel      = htmlspecialchars(t('header.my_records'), ENT_QUOTES, 'UTF-8');
 $myCommentsLabel     = htmlspecialchars(t('header.my_comments'), ENT_QUOTES, 'UTF-8');
 $notesTable          = htmlspecialchars(t('header.notes'), ENT_QUOTES, 'UTF-8');
@@ -107,7 +110,9 @@ if ($logoEnabled) {
                 <button class="user-avatar-menu-item" id="changePasswordBtn" role="menuitem">
                     <?= $changePasswordLabel ?>
                 </button>
+                <?php if ($agentEnabled) : ?>
                 <button class="user-avatar-menu-item" id="openAgentBtn" role="menuitem"><?= $agentTitleLabel ?></button>
+                <?php endif; ?>
                 <button class="user-avatar-menu-item" id="myRecordsBtn" data-cy="my-records" role="menuitem">
                     <?= $myRecordsLabel ?>
                 </button>
@@ -131,6 +136,7 @@ if ($logoEnabled) {
 <script type="module" src="assets/js/user-menu.js?v=<?= $cacheBust ?>"<?= $nonceAttribute ?>></script>
 <?= os_inline_globals([
     'CHAT_BUBBLE_ENABLED' => defined('CHAT_BUBBLE_ENABLED') && CHAT_BUBBLE_ENABLED,
+    'CHAT_ENABLED'        => $agentEnabled,
 ], $cspNonce ?? '') ?>
 <script type="module" src="assets/js/agent-panel.js?v=<?= $agentJsVersion ?>"<?= $nonceAttribute ?>></script>
 <div class="app-container">
