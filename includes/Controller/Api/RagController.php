@@ -220,6 +220,19 @@ final class RagController
             }
 
             $prompt = rag_build_prompt($query, $files, $pageContext, $language, $history, $aggregateView);
+
+            if (!empty($body['stream'])) {
+                $this->streamAnswer(
+                    $conn,
+                    $config,
+                    $prompt,
+                    $query,
+                    $tags,
+                    $files,
+                    $tagFallback
+                );
+            }
+
             $result = rag_call_ollama(
                 (string) $config['ollama_url'],
                 (string) $config['ollama_model'],
@@ -272,5 +285,89 @@ final class RagController
             error_log('[api_rag][query] ' . $exception->getMessage());
             throw new ServerErrorException('The assistant failed to answer. Please try again.');
         }
+    }
+
+    private function streamAnswer(
+        \PgSql\Connection $conn,
+        array $config,
+        string $prompt,
+        string $query,
+        array $tags,
+        array $files,
+        bool $tagFallback
+    ): void {
+        $sources    = [];
+        $seenNames  = [];
+        foreach ($files as $file) {
+            if (!isset($seenNames[$file['filename']])) {
+                $seenNames[$file['filename']] = true;
+                $sources[] = [
+                    'filename' => $file['filename'],
+                    'tags'     => pg_text_array_to_php($file['tags'] ?? '{}'),
+                ];
+            }
+        }
+
+        while (ob_get_level() > 0) {
+            ob_end_flush();
+        }
+
+        http_response_code(200);
+        header('Content-Type: application/x-ndjson; charset=utf-8');
+        header('Cache-Control: no-cache');
+        header('X-Accel-Buffering: no');
+
+        $emit = static function (array $event): void {
+            echo json_encode($event, JSON_UNESCAPED_UNICODE) . "\n";
+            flush();
+        };
+
+        $emit(['t' => 'meta', 'sources' => $sources, 'tag_fallback' => $tagFallback]);
+
+        try {
+            $result = rag_call_ollama_stream(
+                (string) $config['ollama_url'],
+                (string) $config['ollama_model'],
+                $prompt,
+                (int) ($config['ollama_timeout'] ?? 120),
+                (bool) ($config['ollama_ssl_verify'] ?? true),
+                secret_decrypt((string) ($config['ollama_api_key_enc'] ?? '')),
+                static function (string $delta) use ($emit): void {
+                    $emit(['t' => 'delta', 'v' => $delta]);
+                }
+            );
+        } catch (ControlFlowException $signal) {
+            throw $signal;
+        } catch (Throwable $exception) {
+            error_log('[api_rag][query][stream] ' . $exception->getMessage());
+            $emit(['t' => 'error', 'message' => 'The assistant failed mid-answer. Please try again.']);
+            throw ResponseException::sent(200);
+        }
+
+        $parsed      = rag_extract_suggestions($result['response']);
+        $answer      = rag_strip_context_leaks($parsed['answer']);
+        $suggestions = $parsed['suggestions'];
+
+        rag_log_query($conn, [
+            'query'             => $query,
+            'tags'              => $tags,
+            'matched_files'     => count($files),
+            'prompt_tokens'     => $result['prompt_tokens'],
+            'completion_tokens' => $result['completion_tokens'],
+            'total_ms'          => $result['total_ms'],
+            'model'             => (string) $config['ollama_model'],
+            'user_id'           => $this->context->session()->get('user_id'),
+            'prompt_snapshot'   => $prompt,
+            'sources'           => $files,
+        ]);
+
+        $emit([
+            't'           => 'done',
+            'answer'      => $answer,
+            'suggestions' => $suggestions,
+            'no_answer'   => rag_is_no_answer($answer, $suggestions),
+        ]);
+
+        throw ResponseException::sent(200);
     }
 }

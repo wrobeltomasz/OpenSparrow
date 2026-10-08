@@ -49,6 +49,11 @@ export function buildGridContext() {
             .map(columnEntry => columnEntry.col);
     }
 
+    const hasOwnId = columns.includes('id');
+    if (!hasOwnId && pageRows.some(row => row.id !== undefined && row.id !== null)) {
+        columns = ['id', ...columns];
+    }
+
     const rows       = pageRows.slice(0, MAX_CONTEXT_ROWS);
     const hiddenRows = pageRows.length - rows.length;
 

@@ -747,6 +747,115 @@ function rag_call_ollama(
     ];
 }
 
+function rag_call_ollama_stream(
+    string $ollamaUrl,
+    string $model,
+    string $prompt,
+    int $timeout = 120,
+    bool $sslVerify = true,
+    ?string $apiKey = null,
+    ?callable $onDelta = null
+): array {
+    if (!function_exists('curl_init')) {
+        throw new RuntimeException('cURL extension is required for Ollama integration.');
+    }
+
+    $url     = rtrim($ollamaUrl, '/') . '/api/generate';
+    $payload = json_encode(['model' => $model, 'prompt' => $prompt, 'stream' => true]);
+
+    $headers = ['Content-Type: application/json'];
+    if ($apiKey !== null && $apiKey !== '') {
+        $headers[] = 'Authorization: Bearer ' . $apiKey;
+    }
+
+    $fullResponse   = '';
+    $assembledAnswer = '';
+
+    $writeCallback = function ($curlHandle, string $chunk) use ($onDelta, &$fullResponse, &$assembledAnswer): int {
+        $fullResponse .= $chunk;
+        $lines = explode("\n", $chunk);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            $token = json_decode($line, true);
+            if (is_array($token) && isset($token['response']) && $token['response'] !== '') {
+                $assembledAnswer .= (string) $token['response'];
+                if ($onDelta !== null) {
+                    ($onDelta)((string) $token['response']);
+                }
+            }
+        }
+        return strlen($chunk);
+    };
+
+    $curlHandle = curl_init($url);
+    if ($curlHandle === false) {
+        throw new RuntimeException('Failed to initialize cURL.');
+    }
+    curl_setopt_array($curlHandle, [
+        CURLOPT_RETURNTRANSFER  => true,
+        CURLOPT_POST            => true,
+        CURLOPT_POSTFIELDS      => $payload,
+        CURLOPT_HTTPHEADER      => $headers,
+        CURLOPT_TIMEOUT         => $timeout,
+        CURLOPT_CONNECTTIMEOUT  => HTTP_CLIENT_CONNECT_TIMEOUT,
+        CURLOPT_SSL_VERIFYPEER  => $sslVerify,
+        CURLOPT_SSL_VERIFYHOST  => $sslVerify ? 2 : 0,
+        CURLOPT_WRITEFUNCTION   => $writeCallback,
+    ]);
+
+    $response = curl_exec($curlHandle);
+    $curlError = curl_error($curlHandle);
+    curl_close($curlHandle);
+
+    if ($response === false) {
+        throw new RuntimeException('Ollama unreachable: ' . $curlError);
+    }
+
+    $finalToken       = null;
+    $promptTokens     = 0;
+    $completionTokens = 0;
+    $totalDuration    = 0;
+    foreach (explode("\n", $fullResponse) as $line) {
+        $line = trim($line);
+        if ($line === '') {
+            continue;
+        }
+        $token = json_decode($line, true);
+        if (!is_array($token)) {
+            continue;
+        }
+        if (isset($token['done']) && $token['done'] === true) {
+            $finalToken = $token;
+        }
+        if (isset($token['prompt_eval_count'])) {
+            $promptTokens = (int) $token['prompt_eval_count'];
+        }
+        if (isset($token['eval_count'])) {
+            $completionTokens = (int) $token['eval_count'];
+        }
+        if (isset($token['total_duration'])) {
+            $totalDuration = (int) $token['total_duration'];
+        }
+    }
+
+    if ($finalToken === null) {
+        throw new RuntimeException('Ollama returned invalid response.');
+    }
+    if (!empty($finalToken['error'])) {
+        throw new RuntimeException('Ollama error: ' . $finalToken['error']);
+    }
+
+    return [
+        'response'          => $assembledAnswer,
+        'prompt_tokens'     => $promptTokens,
+        'completion_tokens' => $completionTokens,
+        'total_ms'          => (int) round($totalDuration / 1_000_000),
+    ];
+}
+
 function rag_log_query(\PgSql\Connection $conn, array $data): void
 {
     $ragQueriesTable      = sys_table('rag_queries');

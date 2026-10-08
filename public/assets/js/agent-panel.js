@@ -431,6 +431,40 @@ function scrollDown() {
     convElement.scrollTop = convElement.scrollHeight;
 }
 
+async function consumeStream(body, handlers) {
+    const reader    = body.getReader();
+    const decoder   = new TextDecoder();
+    let lineBuffer = '';
+
+    for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        lineBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex;
+        while ((newlineIndex = lineBuffer.indexOf('\n')) !== -1) {
+            const line = lineBuffer.slice(0, newlineIndex).trim();
+            lineBuffer = lineBuffer.slice(newlineIndex + 1);
+            if (line === '') continue;
+            let event;
+            try {
+                event = JSON.parse(line);
+            } catch {
+                continue;
+            }
+            if (event.t === 'delta') {
+                handlers.onDelta(event.v ?? '');
+            } else if (event.t === 'meta') {
+                if (handlers.onMeta) handlers.onMeta(event);
+            } else if (event.t === 'done') {
+                handlers.onDone(event);
+            } else if (event.t === 'error') {
+                handlers.onError(event.message ?? 'The assistant failed to answer. Please try again.');
+            }
+        }
+    }
+}
+
 async function sendQuery() {
     const query = queryElement.value.trim();
     if (!query) return;
@@ -457,6 +491,7 @@ async function sendQuery() {
             method:  'POST',
             body: {
                 query, tags,
+                stream: true,
                 page_context: includeGrid ? readGridContext() : '',
                 table: includeGrid ? pageTableName() : '',
                 language: document.documentElement.lang || '',
@@ -470,22 +505,46 @@ async function sendQuery() {
             signal: currentAbortController.signal,
         });
 
-        let data;
-        try {
-            data = await result.json();
-        } catch {
-            replaceWithError(thinkWrap, 'The server timed out or returned an unexpected response. Please try again.');
+        const contentType = result.headers.get('Content-Type') ?? '';
+        if (!result.body || !contentType.includes('ndjson')) {
+            const data = await result.json().catch(() => null);
+            if (result.ok && data && !data.error) {
+                replaceWithAnswer(thinkWrap, data.answer, data.sources ?? [], data.tag_fallback ?? false, data.suggestions ?? []);
+
+                const answer = String(data.answer ?? '').trim();
+                lastTurn = (answer === '' || data.no_answer) ? null : { query, answer };
+            } else {
+                replaceWithError(thinkWrap, data?.error ?? 'Request failed.');
+            }
             return;
         }
 
-        if (!result.ok || data.error) {
-            replaceWithError(thinkWrap, data.error ?? 'Request failed.');
-        } else {
-            replaceWithAnswer(thinkWrap, data.answer, data.sources ?? [], data.tag_fallback ?? false, data.suggestions ?? []);
+        const streamMeta = { sources: [], tagFallback: false };
 
-            const answer = String(data.answer ?? '').trim();
-            lastTurn = (answer === '' || data.no_answer) ? null : { query, answer };
-        }
+        await consumeStream(result.body, {
+            onMeta: event => {
+                streamMeta.sources     = event.sources ?? [];
+                streamMeta.tagFallback = event.tag_fallback ?? false;
+            },
+            onDelta: deltaText => {
+                const bubble = thinkWrap.querySelector('.ag-msg-thinking');
+                if (bubble) {
+                    bubble.classList.remove('ag-msg-thinking');
+                    bubble.classList.add('ag-msg-bubble');
+                    bubble.textContent = '';
+                }
+                const target = thinkWrap.querySelector('.ag-msg-bubble');
+                if (target) target.textContent += deltaText;
+                scrollDown();
+            },
+            onDone: data => {
+                replaceWithAnswer(thinkWrap, data.answer, streamMeta.sources, streamMeta.tagFallback, data.suggestions ?? []);
+
+                const answer = String(data.answer ?? '').trim();
+                lastTurn = (answer === '' || data.no_answer) ? null : { query, answer };
+            },
+            onError: message => replaceWithError(thinkWrap, message),
+        });
     } catch (error) {
         if (error.name === 'AbortError') {
             if (abortedByUser) {
