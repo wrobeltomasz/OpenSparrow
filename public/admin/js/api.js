@@ -21,6 +21,7 @@ const FILTER_OPERATORS = [
 let apiConfig = null;
 let apiVersion = 0;
 let schemaTables = [];
+let schemaViews = [];
 let shownKeys = {};
 
 async function loadSchemaTables() {
@@ -43,9 +44,28 @@ async function loadSchemaTables() {
     }
 }
 
-function tableColumns(tableName) {
-    const table = schemaTables.find(candidate => candidate.name === tableName);
-    return table ? table.columns : [];
+async function loadSchemaViews() {
+    try {
+        const response = await apiFetch('api.php?action=get&file=views');
+        const viewsData = await response.json();
+        const viewsConfig = viewsData.config ?? viewsData;
+        schemaViews = Object.entries(viewsConfig?.views ?? {})
+            .filter(([, viewConfig]) => !viewConfig?.hidden && (viewConfig?.source ?? 'postgres') === 'postgres')
+            .map(([name, viewConfig]) => ({
+                name,
+                label: viewConfig.display_name || name,
+                columns: Object.keys(viewConfig.columns ?? {}),
+            }))
+            .sort((left, right) => left.label.localeCompare(right.label));
+    } catch (_) {
+        schemaViews = [];
+    }
+}
+
+function sourceColumns(api) {
+    const list = (api.type ?? 'table') === 'view' ? schemaViews : schemaTables;
+    const source = list.find(candidate => candidate.name === api.table);
+    return source ? source.columns : [];
 }
 
 function endpointUrl(api) {
@@ -119,26 +139,46 @@ function buildApiCard(api, index, redraw, status) {
     table.className = 'adm-input';
     const emptyOption = document.createElement('option');
     emptyOption.value = '';
-    emptyOption.textContent = '-- Select Table --';
+    emptyOption.textContent = '-- Select Source --';
     table.appendChild(emptyOption);
+    const tablesGroup = document.createElement('optgroup');
+    tablesGroup.label = 'Tables';
     schemaTables.forEach(candidate => {
         const option = document.createElement('option');
         option.value = candidate.name;
         option.textContent = candidate.label;
-        if (api.table === candidate.name) option.selected = true;
-        table.appendChild(option);
+        option.dataset.type = 'table';
+        if ((api.type ?? 'table') !== 'view' && api.table === candidate.name) option.selected = true;
+        tablesGroup.appendChild(option);
     });
+    table.appendChild(tablesGroup);
+    if (schemaViews.length > 0) {
+        const viewsGroup = document.createElement('optgroup');
+        viewsGroup.label = 'Views';
+        schemaViews.forEach(candidate => {
+            const option = document.createElement('option');
+            option.value = candidate.name;
+            option.textContent = candidate.label;
+            option.dataset.type = 'view';
+            if (api.type === 'view' && api.table === candidate.name) option.selected = true;
+            viewsGroup.appendChild(option);
+        });
+        table.appendChild(viewsGroup);
+    }
     table.onchange = () => {
+        const selectedOption = table.selectedOptions[0];
         api.table = table.value;
-        api.columns = api.columns.filter(column => tableColumns(api.table).includes(column));
-        api.filters = api.filters.filter(filter => tableColumns(api.table).includes(filter.column));
+        api.type = api.table === '' ? 'table' : (selectedOption?.dataset?.type ?? 'table');
+        const available = sourceColumns(api);
+        api.columns = api.columns.filter(column => available.includes(column));
+        api.filters = api.filters.filter(filter => available.includes(filter.column));
         redraw();
     };
 
     const columnsBox = el('div', 'multiselect-box');
     function renderColumns() {
         columnsBox.innerHTML = '';
-        const available = tableColumns(api.table);
+        const available = sourceColumns(api);
         if (available.length === 0) {
             columnsBox.appendChild(el('span', 'c-muted', 'No columns available'));
             return;
@@ -172,7 +212,7 @@ function buildApiCard(api, index, redraw, status) {
             const column = document.createElement('select');
             column.className = 'adm-input';
             column.style.flex = '1';
-            tableColumns(api.table).forEach(columnName => {
+            sourceColumns(api).forEach(columnName => {
                 const option = document.createElement('option');
                 option.value = columnName;
                 option.textContent = columnName;
@@ -208,7 +248,7 @@ function buildApiCard(api, index, redraw, status) {
         const add = el('button', 'btn btn-secondary btn-sm', '+ Add filter');
         add.type = 'button';
         add.onclick = () => {
-            api.filters.push({ column: tableColumns(api.table)[0] || '', operator: 'eq', value: '' });
+            api.filters.push({ column: sourceColumns(api)[0] || '', operator: 'eq', value: '' });
             renderFilters();
         };
         filtersHost.appendChild(add);
@@ -243,7 +283,7 @@ function buildApiCard(api, index, redraw, status) {
         keyStatus,
         fg('', regenerateLabel),
         keyNote,
-        fg('Table', table),
+        fg('Source (table or view)', table),
         fg('Columns', columnsBox),
         fg('Filters (fixed, applied server-side)', filtersHost),
         fg('Row limit', limit),
@@ -259,6 +299,7 @@ export async function renderApiPage(context) {
     workspaceElement.innerHTML = '<p class="c-muted" style="padding:16px;">Loading API configuration…</p>';
 
     await loadSchemaTables();
+    await loadSchemaViews();
 
     try {
         const response = await apiFetch('api.php?action=api_load');
@@ -275,6 +316,9 @@ export async function renderApiPage(context) {
     }
 
     if (!Array.isArray(apiConfig.apis)) apiConfig.apis = [];
+    apiConfig.apis.forEach(api => {
+        if (api.type !== 'view') api.type = 'table';
+    });
 
     workspaceElement.innerHTML = '';
     const wrap = el('div', 'admin-page');
@@ -282,7 +326,7 @@ export async function renderApiPage(context) {
 
     wrap.appendChild(createPageHeader(
         'External API',
-        'Expose table data to external services through read-only API keys. Each API binds one table, '
+        'Expose table or view data to external services through read-only API keys. Each API binds one table or view, '
         + 'a set of columns and fixed filters. External services call public/api/external.php with the key.'
     ));
 
@@ -303,7 +347,7 @@ export async function renderApiPage(context) {
     buttonAdd.onclick = () => {
         apiConfig.apis.push({
             id: '', name: 'New API', enabled: true, key: '', key_regenerate: false,
-            table: '', columns: [], filters: [], limit: 100,
+            type: 'table', table: '', columns: [], filters: [], limit: 100,
         });
         redraw();
     };

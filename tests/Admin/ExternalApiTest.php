@@ -11,6 +11,7 @@ namespace Tests\Admin;
 
 use App\Service\ApiConfigRepository;
 use App\Service\ApiConfigValidator;
+use App\Service\ApiFilterValueCoercer;
 use App\Service\ApiKeyManager;
 use PHPUnit\Framework\TestCase;
 
@@ -66,6 +67,16 @@ final class ExternalApiTest extends TestCase
         $config = ['apis' => ['not-an-array']];
 
         $this->assertSame($config, $this->repository->redact($config));
+    }
+
+    public function testRedactReturnsTheApiListUnderOneApisKey(): void
+    {
+        $config = ['apis' => [['id' => 'a', 'key_enc' => 'enc']]];
+
+        $redacted = $this->repository->redact($config);
+
+        $this->assertIsList($redacted['apis']);
+        $this->assertSame('a', $redacted['apis'][0]['id']);
     }
 
     public function testValidateRejectsAnEmptyName(): void
@@ -353,6 +364,171 @@ final class ExternalApiTest extends TestCase
         );
 
         $this->assertSame('4', $validated['filters'][0]['value']);
+    }
+
+    public function testValidateDefaultsTypeToTable(): void
+    {
+        $schema = ['tables' => ['tasks' => ['columns' => ['title' => ['type' => 'text']]]]];
+
+        $validated = $this->validator->validate(
+            ['name' => 'x', 'table' => 'tasks', 'columns' => ['title']],
+            $schema
+        );
+
+        $this->assertSame('table', $validated['type']);
+    }
+
+    public function testValidateAcceptsAViewWithLiveColumns(): void
+    {
+        $viewsConfig = ['views' => ['v_pipeline' => [
+            'source' => 'postgres', 'columns' => ['company_name' => ['display_name' => 'Company']],
+        ]]];
+        $viewColumnTypes = ['v_pipeline' => ['company_name' => 'character varying(255)', 'deal_count' => 'bigint']];
+
+        $validated = $this->validator->validate(
+            ['name' => 'x', 'type' => 'view', 'table' => 'v_pipeline', 'columns' => ['company_name', 'deal_count']],
+            ['tables' => []],
+            $viewsConfig,
+            $viewColumnTypes
+        );
+
+        $this->assertSame('view', $validated['type']);
+        $this->assertSame('v_pipeline', $validated['table']);
+        $this->assertSame(['company_name', 'deal_count'], $validated['columns']);
+    }
+
+    public function testValidateRejectsAnUnknownView(): void
+    {
+        $this->expectException(\AdminApiMessage::class);
+        $this->validator->validate(
+            ['name' => 'x', 'type' => 'view', 'table' => 'missing', 'columns' => ['company_name']],
+            ['tables' => []],
+            ['views' => []],
+            []
+        );
+    }
+
+    public function testValidateRejectsAHiddenView(): void
+    {
+        $viewsConfig = ['views' => ['v_leads' => [
+            'hidden' => true, 'source' => 'postgres', 'columns' => ['status' => []],
+        ]]];
+
+        $this->expectException(\AdminApiMessage::class);
+        $this->validator->validate(
+            ['name' => 'x', 'type' => 'view', 'table' => 'v_leads', 'columns' => ['status']],
+            ['tables' => []],
+            $viewsConfig,
+            ['v_leads' => ['status' => 'text']]
+        );
+    }
+
+    public function testValidateRejectsANonPostgresView(): void
+    {
+        $viewsConfig = ['views' => ['v_sql' => [
+            'source' => 'sql', 'columns' => ['status' => []],
+        ]]];
+
+        $this->expectException(\AdminApiMessage::class);
+        $this->validator->validate(
+            ['name' => 'x', 'type' => 'view', 'table' => 'v_sql', 'columns' => ['status']],
+            ['tables' => []],
+            $viewsConfig,
+            ['v_sql' => ['status' => 'text']]
+        );
+    }
+
+    public function testValidateRejectsABadlyNamedView(): void
+    {
+        $viewsConfig = ['views' => ['v-demo' => [
+            'source' => 'postgres', 'columns' => ['status' => []],
+        ]]];
+
+        $this->expectException(\AdminApiMessage::class);
+        $this->validator->validate(
+            ['name' => 'x', 'type' => 'view', 'table' => 'v-demo', 'columns' => ['status']],
+            ['tables' => []],
+            $viewsConfig,
+            ['v-demo' => ['status' => 'text']]
+        );
+    }
+
+    public function testValidateRejectsAViewColumnMissingFromLiveColumns(): void
+    {
+        $viewsConfig = ['views' => ['v_pipeline' => [
+            'source' => 'postgres', 'columns' => ['company_name' => []],
+        ]]];
+
+        $this->expectException(\AdminApiMessage::class);
+        $this->validator->validate(
+            ['name' => 'x', 'type' => 'view', 'table' => 'v_pipeline', 'columns' => ['nope']],
+            ['tables' => []],
+            $viewsConfig,
+            ['v_pipeline' => ['company_name' => 'text']]
+        );
+    }
+
+    public function testValidateCoercesAViewFilterValueUsingLiveTypes(): void
+    {
+        $viewsConfig = ['views' => ['v_pipeline' => [
+            'source' => 'postgres', 'columns' => ['deal_count' => [], 'company_name' => []],
+        ]]];
+        $viewColumnTypes = ['v_pipeline' => [
+            'deal_count' => 'bigint', 'company_name' => 'character varying(255)',
+        ]];
+
+        $this->expectException(\AdminApiMessage::class);
+        $this->validator->validate(
+            ['name' => 'x', 'type' => 'view', 'table' => 'v_pipeline', 'columns' => ['deal_count'], 'filters' => [
+                ['column' => 'deal_count', 'operator' => 'eq', 'value' => 'abc'],
+            ]],
+            ['tables' => []],
+            $viewsConfig,
+            $viewColumnTypes
+        );
+    }
+
+    public function testValidateAcceptsANumericValueForAViewFilter(): void
+    {
+        $viewsConfig = ['views' => ['v_pipeline' => [
+            'source' => 'postgres', 'columns' => ['deal_count' => []],
+        ]]];
+
+        $validated = $this->validator->validate(
+            ['name' => 'x', 'type' => 'view', 'table' => 'v_pipeline', 'columns' => ['deal_count'], 'filters' => [
+                ['column' => 'deal_count', 'operator' => 'eq', 'value' => '42'],
+            ]],
+            ['tables' => []],
+            $viewsConfig,
+            ['v_pipeline' => ['deal_count' => 'bigint']]
+        );
+
+        $this->assertSame('42', $validated['filters'][0]['value']);
+    }
+
+    public function testValidateSkipsCoercionWhenLiveTypesAbsent(): void
+    {
+        $viewsConfig = ['views' => ['v_pipeline' => [
+            'source' => 'postgres', 'columns' => ['stage' => ['display_name' => 'Stage']],
+        ]]];
+
+        $validated = $this->validator->validate(
+            ['name' => 'x', 'type' => 'view', 'table' => 'v_pipeline', 'columns' => ['stage'], 'filters' => [
+                ['column' => 'stage', 'operator' => 'eq', 'value' => 'Negotiation'],
+            ]],
+            ['tables' => []],
+            $viewsConfig,
+            []
+        );
+
+        $this->assertSame(['stage'], $validated['columns']);
+        $this->assertSame('Negotiation', $validated['filters'][0]['value']);
+    }
+
+    public function testCoercerThrowsInvalidArgumentException(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        ApiFilterValueCoercer::coerce('x', 'amount', 'number', 'abc');
     }
 
     public function testResolveKeyEncryptsASubmittedKey(): void

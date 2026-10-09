@@ -15,6 +15,9 @@ use App\Exception\NotFoundException;
 use App\Exception\ResponseException;
 use App\Exception\ServerErrorException;
 use App\Exception\UnauthorizedException;
+use App\Service\ApiConfigValidator;
+use App\Service\ApiFilterValueCoercer;
+use InvalidArgumentException;
 
 final class ExternalApiController
 {
@@ -45,23 +48,19 @@ final class ExternalApiController
             throw HttpException::fromStatus(429, 'Too many requests. Please slow down.');
         }
 
-        $schema = config_get('schema');
-        $table = (string) ($api['table'] ?? '');
-        if (!is_array($schema) || $table === '' || !isset($schema['tables'][$table])) {
-            throw new NotFoundException('The configured table no longer exists.');
-        }
-        $tableConfig = $schema['tables'][$table];
-        if (!empty($tableConfig['hidden']) || !empty($tableConfig['owner_restricted']) || is_system_table($table)) {
-            throw new NotFoundException('The configured table no longer exists.');
-        }
-        $schemaName = $tableConfig['schema'] ?? 'public';
-
         $conn = db_connect();
 
-        $availableColumns = array_merge(['id'], column_list($tableConfig));
+        if (($api['type'] ?? '') === 'view') {
+            [$schemaName, $source, $columnTypes, $orderColumn, $orderDirection] =
+                $this->resolveViewSource($api, $conn);
+        } else {
+            [$schemaName, $source, $columnTypes, $orderColumn, $orderDirection] =
+                $this->resolveTableSource($api);
+        }
+
         $columns = array_values(array_unique(array_filter(
             array_map('strval', (array) ($api['columns'] ?? [])),
-            static fn($column) => $column !== '' && in_array($column, $availableColumns, true)
+            static fn($column) => $column !== '' && isset($columnTypes[$column])
         )));
         if ($columns === []) {
             throw new NotFoundException('The configured columns no longer exist.');
@@ -75,15 +74,28 @@ final class ExternalApiController
                 continue;
             }
             $filterColumn = (string) ($filter['column'] ?? '');
-            if ($filterColumn === '' || !in_array($filterColumn, $availableColumns, true)) {
+            if ($filterColumn === '' || !isset($columnTypes[$filterColumn])) {
                 continue;
             }
             $value = (string) ($filter['value'] ?? '');
             if ($value === '') {
                 continue;
             }
-            $column = pg_ident($filterColumn);
             $operator = (string) ($filter['operator'] ?? 'eq');
+            if ($operator !== 'contains') {
+                try {
+                    $value = ApiFilterValueCoercer::coerce(
+                        (string) ($api['name'] ?? 'api'),
+                        $filterColumn,
+                        $columnTypes[$filterColumn],
+                        $value
+                    );
+                } catch (InvalidArgumentException $exception) {
+                    error_log('[external_api] filter coercion failed: ' . $exception->getMessage());
+                    throw new NotFoundException('The configured source no longer exists.');
+                }
+            }
+            $column = pg_ident($filterColumn);
             $parameterNumber = count($parameters) + 1;
             $clause = match ($operator) {
                 'neq'      => sprintf('%s <> $%d', $column, $parameterNumber),
@@ -103,12 +115,13 @@ final class ExternalApiController
         $limit = max(1, min(1000, (int) ($api['limit'] ?? 100)));
 
         $sql = sprintf(
-            'SELECT %s FROM %s.%s%s ORDER BY %s DESC LIMIT %d',
+            'SELECT %s FROM %s.%s%s ORDER BY %s %s LIMIT %d',
             $selectSql,
             pg_ident($schemaName),
-            pg_ident($table),
+            pg_ident($source),
             $whereSql,
-            pg_ident('id'),
+            pg_ident($orderColumn ?? $columns[0]),
+            $orderDirection,
             $limit
         );
         $startedAt = hrtime(true);
@@ -131,6 +144,66 @@ final class ExternalApiController
             'data'  => $rows,
             'total' => count($rows),
         ]);
+    }
+
+    private function resolveTableSource(array $api): array
+    {
+        $schema = config_get('schema');
+        $table = (string) ($api['table'] ?? '');
+        if (!is_array($schema) || $table === '' || !isset($schema['tables'][$table])) {
+            throw new NotFoundException('The configured table no longer exists.');
+        }
+        $tableConfig = $schema['tables'][$table];
+        if (!empty($tableConfig['hidden']) || !empty($tableConfig['owner_restricted']) || is_system_table($table)) {
+            throw new NotFoundException('The configured table no longer exists.');
+        }
+
+        $columnTypes = ['id' => 'number'];
+        foreach ($tableConfig['columns'] ?? [] as $columnName => $columnConfig) {
+            if (($columnConfig['type'] ?? '') === 'virtual') {
+                continue;
+            }
+            $columnTypes[(string) $columnName] = (string) ($columnConfig['type'] ?? 'text');
+        }
+
+        return [
+            (string) ($tableConfig['schema'] ?? 'public'),
+            $table,
+            $columnTypes,
+            'id',
+            'DESC',
+        ];
+    }
+
+    private function resolveViewSource(array $api, \PgSql\Connection $conn): array
+    {
+        $view = (string) ($api['table'] ?? '');
+        $viewsConfig = config_get('views');
+        $viewConfig = is_array($viewsConfig) ? ($viewsConfig['views'][$view] ?? null) : null;
+        if (
+            $view === ''
+            || !is_array($viewConfig)
+            || !empty($viewConfig['hidden'])
+            || ($viewConfig['source'] ?? 'postgres') !== 'postgres'
+            || is_system_table($view)
+            || preg_match(ApiConfigValidator::VIEW_NAME_PATTERN, $view) !== 1
+        ) {
+            throw new NotFoundException('The configured view no longer exists.');
+        }
+
+        $schemaName = (string) ($viewConfig['schema'] ?? sys_schema());
+        $columnTypes = view_column_types($conn, $schemaName, $view);
+        if ($columnTypes === []) {
+            throw new NotFoundException('The configured view no longer exists.');
+        }
+
+        return [
+            $schemaName,
+            $view,
+            $columnTypes,
+            null,
+            'ASC',
+        ];
     }
 
     private function enforceIpRateLimit(): void

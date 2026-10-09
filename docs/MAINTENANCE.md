@@ -2187,20 +2187,23 @@ the bare term `local` and ranked `local_cafe` and `local_mall` above
 
 ## External API (2026-09-05)
 
-Admin → System → API defines read-only API keys that expose table data to
-external services. The rules below are binding.
+Admin → System → API defines read-only API keys that expose table or view
+data to external services. The rules below are binding.
 
 ### One config key, one endpoint, no client-supplied SQL surface
 
 - All definitions live in the `external_api` key of `spw_config`, shaped as
-  `{"apis": [{"id", "name", "enabled", "key_enc", "key_hash", "table",
-  "columns", "filters", "limit"}]}`. No new table, no migration; an unknown
-  key is ignored, so the document upgrades itself.
+  `{"apis": [{"id", "name", "enabled", "key_enc", "key_hash", "type",
+  "table", "columns", "filters", "limit"}]}`. `type` is `"table"`
+  (the default and the only value before views were supported — an absent
+  `type` means `"table"`) or `"view"`, in which case `table` carries the
+  **view name**. No new table, no migration; an unknown key is ignored, so
+  the document upgrades itself.
 - `public/api/external.php` is the only endpoint. It is **sessionless by
   design** — it must not call `os_api_bootstrap()` (that requires a session) —
   and boots with `os_register_exception_handler('json')` +
   `send_security_headers()` + `Cache-Control: no-store` instead. It accepts
-  **nothing** from the client except the key: table, columns, filters and
+  **nothing** from the client except the key: source, columns, filters and
   limit all come from the config, so there is no request-supplied
   table/column name to gate or inventory.
 - Auth is `Authorization: Bearer <key>` only — the `?key=<key>` query form is
@@ -2231,13 +2234,37 @@ external services. The rules below are binding.
   table** (`spw_` prefix). `ApiConfigValidator::validate()` rejects both on
   save, and the endpoint re-checks them (defense in depth for hand-edited
   config), answering 404 rather than exposing a hidden or system table.
-- Filter values are type-checked against the column's schema type on save
-  (`ApiConfigValidator`): `number` values must be whole numbers, `boolean`
+- A key bound to a view (`type === "view"`) follows the same shape with view
+  specifics: the view must exist in the `views` config key, be **not
+  hidden**, and have `source === 'postgres'` (like `PrintController`'s
+  view catalogue); the name must match `/^[a-zA-Z_][a-zA-Z0-9_]*$/` and the
+  endpoint additionally refuses `spw_`-prefixed names. Views are resolved
+  against the **live database**: `ApiConfigRepository::save()` introspects
+  the view's columns once per view via `view_column_types()` (pg_attribute
+  catalog query in `includes/api_helpers.php`) so column picks and filter
+  coercion validate against reality, and the endpoint re-introspects on
+  every request — a view altered after the save yields 404 ("columns no
+  longer exist"), never a 500. Materialised views are covered too
+  (`relkind 'm'` is still a relation with pg_attribute rows).
+- Filter values are type-checked against the column type on save
+  (`ApiConfigValidator` delegating to `ApiFilterValueCoercer` in
+  `includes/Service/`): `number` values must be whole numbers, `boolean`
   values are normalised to `TRUE`/`FALSE`, `date` values must be a valid
   `YYYY-MM-DD`, and `datetime` values must parse as a date with an optional
-  time. This keeps a stored filter from 500ing at query time under strict
-  mode (e.g. `"id" = 'abc'` on an `int4` column). The `contains` operator is
-  exempt because it casts the column to text before ILIKE.
+  time. For tables the type comes from the schema config; for views it is
+  the live PostgreSQL type string (`format_type()`), which the coercer's
+  normaliser maps by substring (`integer`→number,
+  `character varying`→text, `timestamp with(out) time zone`→datetime).
+  The endpoint re-coerces view filter values with live types at request
+  time and answers 404 when coercion fails — skipping the filter would
+  widen the result set, so a broken filter is a missing source, not a
+  degraded one. `contains` stays exempt on both paths (it casts to text
+  before ILIKE). This keeps a stored filter from 500ing at query time
+  under strict mode (e.g. `"id" = 'abc'` on an `int4` column).
+- Ordering: tables stay `ORDER BY id DESC` — the primary key is guaranteed.
+  Views have no guaranteed `id` (aggregate views have none), so they are
+  served `ORDER BY <first selected column> ASC`. The first column is part
+  of the key's definition, so the order is stable for a given key.
 
 ### Keys are secrets — the RAG convention applies
 
@@ -2260,24 +2287,31 @@ every entry; `key_hash` is redacted from `api_load` just like `key_enc`.
 (pinned by `AdminApiGuardsTest`/`AdminDispatchRegistryTest`). The tab is a
 full-page module (`public/admin/js/api.js`) like clickstats/etl: it is in
 `NON_CONFIG_TABS`, the full-page lists in `app.js`, and hides the global Save
-button. The module is a thin `$action` block that delegates to three service
+button. The module is a thin `$action` block that delegates to the service
 classes under `includes/Service/` (autoloaded as `App\Service\*`):
-`ApiConfigValidator` (name/table/columns/filters/limit validation plus filter
-type coercion), `ApiKeyManager` (encrypt/hash/generate/backfill keys) and
-`ApiConfigRepository` (load/redact/save orchestration and the `MAX_APIS`
-cap). Validation happens server-side: name required, table must exist in the
-schema config, columns and filter columns must exist in that table, limit
-clamped to 1–1000. The client-side pickers are convenience only — never
-trust them.
+`ApiConfigValidator` (name/source/columns/filters/limit validation, with
+filter type coercion delegated to `ApiFilterValueCoercer`), `ApiKeyManager`
+(encrypt/hash/generate/backfill keys) and `ApiConfigRepository`
+(load/redact/save orchestration and the `MAX_APIS` cap). Validation happens
+server-side: name required, the source must exist (table in the schema
+config, view in the views config — not hidden, PostgreSQL source), columns
+and filter columns must exist in that source, limit clamped to 1–1000.
+The client-side pickers are convenience only — never trust them.
 
 ### Deliberate gaps — do not "fix" without a design change
 
-- The endpoint is read-only and returns at most `limit` rows ordered by
-  `id DESC`; there is no pagination, no search and no per-user access scoping.
-  A key is a full read of the configured columns of its table — grant keys
-  only to services that should see that data. If per-user scoping is ever
-  wanted, it belongs in the endpoint (resolve the key to a user), not in the
-  admin module.
+- The endpoint is read-only and returns at most `limit` rows (tables ordered
+  by `id DESC`, views by the first selected column ASC); there is no
+  pagination, no search and no per-user access scoping. A key is a full read
+  of the configured columns of its table or view — grant keys only to
+  services that should see that data. If per-user scoping is ever wanted, it
+  belongs in the endpoint (resolve the key to a user), not in the admin
+  module.
+- A view can read past per-user table grants — the view's SQL lives in the
+  database, not in the app config, so exposing a view through a key exposes
+  everything that view selects (same caveat as printouts, see the Users →
+  Access rules). Split per-audience views instead of hoping table access
+  masks part of one.
 - `ApiConfigValidator::validate()` reads `$api['table']` from the admin request
   body; the `RequestScopeInventoryTest` scanner does not see it (same shape as
   `$rule['table']` in `anonymization.php`), and it needs no inventory entry:

@@ -30,6 +30,31 @@ function column_list(array $tableConfig): array
     return array_keys(array_filter($columns, fn($column) => ($column['type'] ?? '') !== 'virtual'));
 }
 
+function view_column_types(\PgSql\Connection $conn, string $schemaName, string $viewName): array
+{
+    $columnSql = 'SELECT a.attname AS column_name, '
+        . 'pg_catalog.format_type(a.atttypid, a.atttypmod) AS data_type '
+        . 'FROM pg_catalog.pg_attribute a '
+        . 'JOIN pg_catalog.pg_class c ON c.oid = a.attrelid '
+        . 'JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace '
+        . 'WHERE n.nspname = $1 AND c.relname = $2 '
+        . 'AND a.attnum > 0 AND NOT a.attisdropped '
+        . 'ORDER BY a.attnum';
+    $result = @pg_query_params($conn, $columnSql, [$schemaName, $viewName]);
+    if (!$result) {
+        error_log('[view_column_types] ' . pg_last_error($conn));
+        return [];
+    }
+
+    $columns = [];
+    while ($row = pg_fetch_assoc($result)) {
+        $columns[$row['column_name']] = $row['data_type'];
+    }
+    pg_free_result($result);
+
+    return $columns;
+}
+
 function id_column(): string
 {
     return 'id';

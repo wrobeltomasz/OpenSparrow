@@ -61,6 +61,7 @@ final class ApiConfigRepository
         }
 
         $schema = \config_get('schema') ?? [];
+        $viewsConfig = \config_get('views') ?? [];
 
         $apis = [];
         $generatedKeys = [];
@@ -77,8 +78,26 @@ final class ApiConfigRepository
                 'Too many APIs — the limit is ' . self::MAX_APIS . '.'
             );
         }
+
+        $viewColumnTypes = [];
         foreach ($submittedApis as $api) {
-            $validated = $this->validator->validate($api, $schema);
+            if (($api['type'] ?? '') !== 'view') {
+                continue;
+            }
+            $viewName = trim((string) ($api['table'] ?? ''));
+            if ($viewName === '' || isset($viewColumnTypes[$viewName])) {
+                continue;
+            }
+            $viewConfig = $viewsConfig['views'][$viewName] ?? null;
+            if (!is_array($viewConfig)) {
+                continue;
+            }
+            $viewSchema = (string) ($viewConfig['schema'] ?? \sys_schema());
+            $viewColumnTypes[$viewName] = \view_column_types(\db_connect(), $viewSchema, $viewName);
+        }
+
+        foreach ($submittedApis as $api) {
+            $validated = $this->validator->validate($api, $schema, $viewsConfig, $viewColumnTypes);
 
             $id = trim((string) ($api['id'] ?? ''));
             if ($id === '') {
@@ -104,6 +123,7 @@ final class ApiConfigRepository
                 'enabled'  => ApiConfigValidator::coerceBool($api['enabled'] ?? true, true),
                 'key_enc'  => $resolved['key_enc'],
                 'key_hash' => $resolved['key_hash'],
+                'type'     => $validated['type'],
                 'table'    => $validated['table'],
                 'columns'  => $validated['columns'],
                 'filters'  => $validated['filters'],
@@ -121,7 +141,7 @@ final class ApiConfigRepository
         return [
             'status'         => 'ok',
             'version'        => $result['version'],
-            'apis'           => $this->redact($config),
+            'apis'           => $this->redact($config)['apis'],
             'generated_keys' => $generatedKeys,
         ];
     }
