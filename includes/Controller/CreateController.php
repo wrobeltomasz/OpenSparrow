@@ -26,7 +26,6 @@ use App\Repository\FkOptionsLoader;
 use App\Repository\RecordRepositoryInterface;
 use App\Service\AppContext;
 use App\Service\AutomationService;
-use App\Service\ImageService;
 use App\Service\M2MService;
 use App\Service\RecordOwnershipService;
 use App\Service\RecordSnapshotService;
@@ -155,8 +154,7 @@ final class CreateController
                 ));
                 $this->m2m->sync($m2mConfig, (int) $newId, $selected, $rawSchema);
             }
-            $fragment = ImageService::config($rawSchema, $table) ? '#tab-images' : '#tab-files';
-            throw new RedirectException('edit.php?table=' . urlencode($table) . '&id=' . $newId . $fragment);
+            throw new RedirectException('edit.php?table=' . urlencode($table) . '&id=' . $newId);
         } catch (ValidationException $exception) {
             return $exception->getMessage();
         } catch (\RuntimeException $exception) {
