@@ -1,6 +1,6 @@
 # OpenSparrow Testing Guidelines
 
-**Version:** 4.0  
+**Version:** 4.1  
 **Audience:** Developers  
 **Focus:** PHPUnit unit test suite in `tests/` and manual verification of behaviour changes  
 
@@ -53,4 +53,5 @@ Refactor-vs-regression proof uses the behaviour baseline harness: `scripts/basel
 
 ---
 
-**Version:** 4.0
+**Version:** 4.1
+
