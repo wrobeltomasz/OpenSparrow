@@ -43,6 +43,10 @@ if (isset($_SESSION['user_id'])) {
     throw new RedirectException(resolve_landing_page());
 }
 
+require_once __DIR__ . '/../includes/two_factor.php';
+
+$pendingTwoFactorUserId = os_session_get('pending_2fa_user_id');
+
 $loginLogoPath = 'assets/img/logo.png';
 if ((bool) settings_value('logo_enabled', false)) {
     $customLogoPath = settings_value('custom_logo_path', null);
@@ -66,13 +70,17 @@ if ($request->isPost()) {
         throw new ForbiddenException('Invalid CSRF token.');
     }
 
-    $username = trim((string) $request->post('username'));
-    $password = (string) $request->post('password');
-
     $ipHash = hash_hmac('sha256', client_ip(), IP_HASH_SALT);
 
-    if (!preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $username)) {
-        $error = 'Invalid credentials.';
+    $username = '';
+    $password = '';
+    if ($pendingTwoFactorUserId === null) {
+        $username = trim((string) $request->post('username'));
+        $password = (string) $request->post('password');
+
+        if (!preg_match('/^[a-zA-Z0-9_.-]{3,50}$/', $username)) {
+            $error = 'Invalid credentials.';
+        }
     }
 
     if (empty($error)) {
@@ -87,6 +95,10 @@ if ($request->isPost()) {
         $rateLimitWindowMinutes = LOGIN_RATE_LIMIT_WINDOW_MINUTES;
         $lookbackMinutes        = $lockoutMinutes + $rateLimitWindowMinutes;
         $attemptsTable          = sys_table('login_attempts');
+
+        $lockoutUsername = $pendingTwoFactorUserId !== null
+            ? (string) os_session_get('pending_2fa_username', '')
+            : $username;
 
         $sqlCheck = "
             SELECT
@@ -108,12 +120,13 @@ if ($request->isPost()) {
         ";
         $checkResult = pg_query_params($conn, $sqlCheck, [
             $ipHash,
-            $username,
+            $lockoutUsername,
             $lookbackMinutes,
             $maxAttemptsPerIp - 1,
             $maxAttemptsPerUsername - 1,
         ]);
 
+        $isLockedOut = false;
         if (!$checkResult) {
             $error = 'Technical error. Contact administrator.';
         } else {
@@ -144,7 +157,63 @@ if ($request->isPost()) {
             }
         }
 
-        if (empty($error)) {
+        if (empty($error) && $pendingTwoFactorUserId !== null) {
+            $pendingUserId = (int) $pendingTwoFactorUserId;
+            $pendingCodeHash = (string) os_session_get('pending_2fa_code_hash', '');
+            $pendingExpires = (int) os_session_get('pending_2fa_expires', 0);
+            $pendingAttempts = (int) os_session_get('pending_2fa_attempts', 0);
+            $pendingUsername = (string) os_session_get('pending_2fa_username', '');
+
+            $submittedCode = trim((string) $request->post('two_factor_code'));
+            if (!preg_match('/^[0-9]{6}$/', $submittedCode)) {
+                $error = 'Invalid verification code.';
+            } elseif ($pendingExpires < time()) {
+                two_factor_session_clear();
+                $pendingTwoFactorUserId = null;
+                $error = 'Verification code expired. Please log in again.';
+            } elseif (!two_factor_code_matches($submittedCode, $pendingCodeHash)) {
+                $_SESSION['pending_2fa_attempts'] = $pendingAttempts + 1;
+                if ($pendingAttempts + 1 >= TWO_FACTOR_MAX_ATTEMPTS) {
+                    two_factor_session_clear();
+                    $pendingTwoFactorUserId = null;
+                }
+                $sqlInsert = 'INSERT INTO ' . sys_table('login_attempts') . ' (username, ip_hash) VALUES ($1, $2)';
+                pg_query_params($conn, $sqlInsert, [$pendingUsername, $ipHash]);
+                $error = 'Invalid verification code.';
+            } else {
+                $sqlUser = 'SELECT id, username, role, avatar_id FROM '
+                    . sys_table('users') . ' WHERE id = $1';
+                $userResult = pg_query_params($conn, $sqlUser, [$pendingUserId]);
+
+                if (!$userResult || !($user = pg_fetch_assoc($userResult))) {
+                    two_factor_session_clear();
+                    $pendingTwoFactorUserId = null;
+                    $error = 'Invalid credentials.';
+                } else {
+                    session_regenerate_id(true);
+
+                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['role'] = $user['role'] ?? 'editor';
+                    $_SESSION['avatar_id'] = ($user['avatar_id'] !== '' && $user['avatar_id'] !== null)
+                        ? (int)$user['avatar_id']
+                        : null;
+                    $_SESSION['created_at'] = time();
+                    $_SESSION['user_agent'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+
+                    two_factor_session_clear();
+
+                    log_user_action($conn, $user['id'], 'LOGIN');
+
+                    session_write_close();
+
+                    throw new RedirectException(
+                        UserRole::fromSession() === UserRole::Admin ? 'admin/' : resolve_landing_page()
+                    );
+                }
+            }
+        } elseif (empty($error) && $pendingTwoFactorUserId === null) {
             $sqlUser = 'SELECT id, username, password_hash, salt, role, avatar_id FROM '
                 . sys_table('users') . ' WHERE username = $1';
             $userResult = pg_query_params($conn, $sqlUser, [$username]);
@@ -162,33 +231,64 @@ if ($request->isPost()) {
                 $toVerify = $storedSalt !== '' ? $storedSalt . $password : $password;
 
                 if ($user && password_verify($toVerify, $user['password_hash'])) {
-                    session_regenerate_id(true);
-
-                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['username'] = $user['username'];
-                    $_SESSION['role'] = $user['role'] ?? 'editor';
-                    $_SESSION['avatar_id'] = ($user['avatar_id'] !== '' && $user['avatar_id'] !== null)
-                        ? (int)$user['avatar_id']
-                        : null;
-                    $_SESSION['created_at'] = time();
-                    $_SESSION['user_agent'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
-
-                    if (password_needs_rehash($user['password_hash'], PASSWORD_ARGON2ID, ARGON2_OPTIONS)) {
-                        $newSalt = bin2hex(random_bytes(32));
-                        $newHash = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
-                        $sqlUpdate = 'UPDATE ' . sys_table('users')
-                            . ' SET password_hash = $1, salt = $2 WHERE id = $3';
-                        pg_query_params($conn, $sqlUpdate, [$newHash, $newSalt, $user['id']]);
+                    $userEmail = '';
+                    if (two_factor_enabled() && two_factor_email_column_present($conn)) {
+                        $emailResult = pg_query_params(
+                            $conn,
+                            'SELECT email FROM ' . sys_table('users') . ' WHERE id = $1',
+                            [$user['id']]
+                        );
+                        if ($emailResult) {
+                            $emailRow = pg_fetch_assoc($emailResult);
+                            $userEmail = trim((string) ($emailRow['email'] ?? ''));
+                        }
                     }
 
-                    log_user_action($conn, $user['id'], 'LOGIN');
+                    $twoFactorApplies = $userEmail !== ''
+                        && filter_var($userEmail, FILTER_VALIDATE_EMAIL) !== false;
 
-                    session_write_close();
+                    if ($twoFactorApplies && !two_factor_send_allowed($ipHash, $user['username'])) {
+                        $error = 'Too many verification code requests. Please try again later.';
+                    } elseif ($twoFactorApplies) {
+                        $verificationCode = two_factor_generate_code();
+                        two_factor_session_start((int) $user['id'], $user['username'], $verificationCode);
 
-                    throw new RedirectException(
-                        UserRole::fromSession() === UserRole::Admin ? 'admin/' : resolve_landing_page()
-                    );
+                        if (two_factor_send_email($userEmail, $verificationCode, $user['username'])) {
+                            $pendingTwoFactorUserId = (int) $user['id'];
+                            session_write_close();
+                        } else {
+                            two_factor_session_clear();
+                            $error = 'Could not send the verification email. Contact administrator.';
+                        }
+                    } else {
+                        session_regenerate_id(true);
+
+                        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                        $_SESSION['user_id'] = $user['id'];
+                        $_SESSION['username'] = $user['username'];
+                        $_SESSION['role'] = $user['role'] ?? 'editor';
+                        $_SESSION['avatar_id'] = ($user['avatar_id'] !== '' && $user['avatar_id'] !== null)
+                            ? (int)$user['avatar_id']
+                            : null;
+                        $_SESSION['created_at'] = time();
+                        $_SESSION['user_agent'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] ?? '');
+
+                        if (password_needs_rehash($user['password_hash'], PASSWORD_ARGON2ID, ARGON2_OPTIONS)) {
+                            $newSalt = bin2hex(random_bytes(32));
+                            $newHash = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
+                            $sqlUpdate = 'UPDATE ' . sys_table('users')
+                                . ' SET password_hash = $1, salt = $2 WHERE id = $3';
+                            pg_query_params($conn, $sqlUpdate, [$newHash, $newSalt, $user['id']]);
+                        }
+
+                        log_user_action($conn, $user['id'], 'LOGIN');
+
+                        session_write_close();
+
+                        throw new RedirectException(
+                            UserRole::fromSession() === UserRole::Admin ? 'admin/' : resolve_landing_page()
+                        );
+                    }
                 } else {
                     $sqlInsert = 'INSERT INTO ' . sys_table('login_attempts') . ' (username, ip_hash) VALUES ($1, $2)';
                     pg_query_params($conn, $sqlInsert, [$username, $ipHash]);
@@ -222,7 +322,32 @@ if ($request->isPost()) {
             <?php if ($error) : ?>
                 <div class="error" data-cy="login-error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
-            <form method="POST">
+            <?php if ($pendingTwoFactorUserId !== null) : ?>
+                <p class="login-2fa-hint"><?php echo htmlspecialchars(t('auth.two_factor_sent'), ENT_QUOTES, 'UTF-8'); ?></p>
+                <form method="POST">
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="<?php echo htmlspecialchars((string) os_session_get('csrf_token'), ENT_QUOTES, 'UTF-8'); ?>"
+                    />
+                    <input
+                        type="text"
+                        name="two_factor_code"
+                        data-cy="two-factor-code"
+                        inputmode="numeric"
+                        pattern="[0-9]{6}"
+                        maxlength="6"
+                        placeholder="<?php echo htmlspecialchars(t('auth.two_factor_code'), ENT_QUOTES, 'UTF-8'); ?>"
+                        required
+                        autofocus
+                        autocomplete="one-time-code"
+                    />
+                    <button type="submit" data-cy="verifyBtn">
+                        <?php echo htmlspecialchars(t('auth.two_factor_verify'), ENT_QUOTES, 'UTF-8'); ?>
+                    </button>
+                </form>
+            <?php else : ?>
+                <form method="POST">
                 <input
                     type="hidden"
                     name="csrf_token"
@@ -280,6 +405,7 @@ if ($request->isPost()) {
                     <?php echo htmlspecialchars(t('auth.login'), ENT_QUOTES, 'UTF-8'); ?>
                 </button>
             </form>
+            <?php endif; ?>
         </div>
     </div>
     <script

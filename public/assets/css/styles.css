@@ -3358,6 +3358,13 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
   border-radius: 4px;
   border: 1px solid var(--error);
 }
+.login-box .login-2fa-hint {
+  color: var(--muted);
+  text-align: center;
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
 :root {
   --f-primary: var(--accent-dark);
   --f-accent: var(--accent);

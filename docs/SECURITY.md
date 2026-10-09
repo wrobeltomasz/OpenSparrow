@@ -19,6 +19,17 @@ audits are not repeated from scratch.
 - **Auth material stays server-side** — PHP session cookie (HttpOnly, Secure,
   SameSite=Lax, `session_regenerate_id(true)` on login — `public/login.php`).
   `localStorage` is UI-preferences only, never tokens.
+- **Optional two-factor login (email code)** — `includes/two_factor.php` +
+  `includes/mailer.php`, toggled by `two_factor_enabled` in `spw_config.settings`,
+  off by default. After a correct password the account (if it has
+  `spw_users.email` set) is emailed a 6-digit code; only the HMAC hash of the
+  code is stored (login session, never plaintext, never the DB). Rules: 60 s
+  validity, 5 attempts per code, wrong codes also land in `spw_login_attempts`
+  so the existing IP/username lockout covers the code phase; code sending is
+  throttled (3/min per IP and per username). Delivery failure is fail-closed
+  (generic error, never a silent skip of the second factor); accounts without
+  an email keep password-only login. Driver/SMTP error text goes to
+  `error_log('[mailer]…')` only.
 - **DOM building** — pattern is "clear with `innerHTML = ''`, build with
   `createElement`/`textContent`". `innerHTML` with data is allowed only through the
   vetted escaping helpers listed in the audit below.

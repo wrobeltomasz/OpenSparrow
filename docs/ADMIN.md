@@ -241,6 +241,16 @@ Manage the core PostgreSQL connection from **System → Settings → Database** 
 - **Test Saved Connection:** Always click *Save configuration* first — the test reads persisted `database.json`, not in-form values.
 - **Login protection:** DB-backed rate limiter, CSRF tokens, session fingerprinting, 8-hour session lifetime, `SameSite=Lax` / `HttpOnly` cookies.
 
+### 7b. Two-Factor Authentication (email code)
+
+**System → Settings → Login Security** (an inner tab of Settings) adds a second login factor: after a correct password, the account receives a 6-digit code by email and must type it in to finish logging in. Off by default; applies to every account that has a contact email set.
+
+- **Login flow:** Password step → the code is generated, emailed immediately (not through the cron queue) and shown a code input instead of the password form → code step → session is created and the audit log records `LOGIN`. A wrong or expired code keeps the user on the code form.
+- **Code rules:** Valid for 60 seconds, 6 digits, at most 5 attempts per code — after that the pending code is cleared and the login starts over. Wrong codes are also written to `spw_login_attempts`, so the existing IP/username lockout covers the code phase too, and code-sending is throttled (3 per minute per IP and per username) to prevent email flooding.
+- **Emails without a code:** An account with no (or invalid-format) email address logs in with the password only — the second factor requires an address to send to. Set one in **Users → Manage Users** before relying on this feature for that account.
+- **Delivery:** Uses the same email settings as Cron & Notifications (**System → Cron → Email Delivery**): the `AUTOMATION_EMAIL_FROM` address plus optional SMTP. When the message cannot be sent, the login fails with a generic error instead of silently skipping the second factor.
+- **Storage:** Writes `two_factor_enabled` to `spw_config.settings`. No database migration is needed — the code itself lives only in the login session (hashed, never in plaintext) and expires with it.
+
 ### 8. Backup Tables
 
 **System → Backup Tables** creates timestamped copies of selected tables directly in PostgreSQL, in the same schema as the original. Tables are grouped into three tabs: *Application Tables* (from your schema configuration), *System Tables (spw_*)* (discovered live from the database) and *Global Settings* (`spw_config` + `spw_config_log`, the configuration store and its history). Each tab has *Select all* / *Deselect all* and its own *Backup selected tables* button.
@@ -293,11 +303,11 @@ The **Users → Access** tab restricts a frontend user to a subset of the schema
 
 ### 9p. User Contact Details
 
-Each account can carry a first name, last name, email address and phone number. The data is informational only — it is not used for login, notifications or any frontend display.
+Each account can carry a first name, last name, email address and phone number, set in the admin panel. The first name, last name and phone stay purely informational; the email additionally doubles as the two-factor delivery address (see section 7b) — an account with an email set will be asked for a login code when Two-Factor Authentication is enabled.
 
 - **Where:** Set them in **Users → Manage Users**, either in the "Add New User" form or via the "Edit Details" button on a row. They are shown in the Name / Email / Phone columns.
 - **Optional:** All four fields may stay empty (an empty cell renders as a dash). The email is only checked for a valid format and is not required to be unique.
-- **Scope:** Admin panel only. Nothing on the frontend reads these columns, and they are never exposed through the public API.
+- **Scope:** Admin panel only — nothing on the frontend reads these columns and they are never exposed through the public API; the two-factor module reads the email server-side at login time.
 
 ### 9e. Grid Default Sort & Load Limit
 

@@ -5,7 +5,7 @@
 
 import { apiFetch } from '../../assets/js/util/api.js';
 import { showStatusPill } from './app.js';
-import { createPageHeader, buildInnerTabs, el } from './ui.js';
+import { createPageHeader, buildInnerTabs, buildSectionCard, el } from './ui.js';
 import { renderDatabaseSection } from './database.js';
 import { renderAuditEditor } from './audit.js';
 
@@ -13,17 +13,19 @@ export async function renderSettingsPage(context) {
     const { workspaceEl: workspaceElement } = context;
     workspaceElement.innerHTML = '<h3>Loading settings…</h3>';
 
-    let data, bubbleData, logoData;
+    let data, bubbleData, logoData, twoFactorData;
     try {
-        const [langResult, bubbleResult, logoResult] = await Promise.all([
+        const [langResult, bubbleResult, logoResult, twoFactorResult] = await Promise.all([
             apiFetch('api.php?action=get_language_setting'),
             apiFetch('api.php?action=get_chat_bubble_setting'),
             apiFetch('api.php?action=get_logo_setting'),
+            apiFetch('api.php?action=get_two_factor_setting'),
         ]);
         if (!langResult.ok) throw new Error('HTTP ' + langResult.status);
-        data       = await langResult.json();
-        bubbleData = bubbleResult.ok ? await bubbleResult.json() : { chat_bubble_enabled: false };
-        logoData   = logoResult.ok ? await logoResult.json() : { logo_path: null };
+        data           = await langResult.json();
+        bubbleData     = bubbleResult.ok ? await bubbleResult.json() : { chat_bubble_enabled: false };
+        logoData       = logoResult.ok ? await logoResult.json() : { logo_path: null };
+        twoFactorData  = twoFactorResult.ok ? await twoFactorResult.json() : { two_factor_enabled: false };
     } catch (error) {
         workspaceElement.innerHTML = '<h3 style="color:var(--error);">Error loading settings. Check server logs.</h3>';
         return;
@@ -37,15 +39,17 @@ export async function renderSettingsPage(context) {
 
     wrap.appendChild(createPageHeader('Application Settings'));
 
-    const [languagePanel, chatBubblePanel, brandingPanel, databasePanel, auditPanel] = buildInnerTabs(wrap, [
+    const [languagePanel, chatBubblePanel, loginSecurityPanel, brandingPanel, databasePanel, auditPanel] = buildInnerTabs(wrap, [
         { label: 'Language', icon: 'material/translate.svg' },
         { label: 'Chat Bubble', icon: 'material/comment.svg' },
+        { label: 'Login Security', icon: 'material/shield.svg' },
         { label: 'Branding', icon: 'material/image.svg' },
         { label: 'Database', icon: 'material/database.svg' },
         { label: 'Audit & Snapshots', icon: 'material/fact_check.svg' },
     ], [
         'Set the site-wide default language for all users. Language files live in languages/*.json.',
         'Show a floating chat button in the bottom-right corner of every app page to open the AI assistant.',
+        'Require a one-time email code (valid for 60 seconds) after the password at login, for every account with a contact email set.',
         'Replace the default OpenSparrow logo in the frontend header and set the application name shown on the login page.',
         'PostgreSQL connection settings: host, port, database name, credentials and the system schema for spw_* tables.',
         'Capture a full JSONB snapshot of every written record to spw_record_snapshots, linked to the audit log.',
@@ -184,6 +188,58 @@ export async function renderSettingsPage(context) {
     bubbleCard.appendChild(bubbleSaveRow);
 
     chatBubblePanel.appendChild(bubbleCard);
+
+    const { card: twoFactorCard, body: twoFactorBody } = buildSectionCard(
+        'Two-Factor Authentication',
+        'When enabled, every account with a contact email set (Users → Manage Users) must confirm a 6-digit code '
+            + 'emailed after a correct password. The code is valid for 60 seconds and limited to 5 attempts. '
+            + 'Accounts without an email address keep logging in with the password only. '
+            + 'Delivery uses the same email settings as Cron & Notifications (System → Cron → Email Delivery).'
+    );
+    loginSecurityPanel.appendChild(twoFactorCard);
+
+    const twoFactorToggleRow = el('label');
+    twoFactorToggleRow.className = 'adm-field-label';
+    twoFactorToggleRow.style.cssText = 'display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:20px;';
+
+    const twoFactorCheckbox = el('input');
+    twoFactorCheckbox.type = 'checkbox';
+    twoFactorCheckbox.id = 'setting-two-factor';
+    twoFactorCheckbox.checked = !!(twoFactorData.two_factor_enabled);
+    twoFactorCheckbox.style.cssText = 'width:16px; height:16px; cursor:pointer;';
+
+    twoFactorToggleRow.appendChild(twoFactorCheckbox);
+    twoFactorToggleRow.appendChild(document.createTextNode('Require an email code at login'));
+    twoFactorBody.appendChild(twoFactorToggleRow);
+
+    const twoFactorSaveRow = el('div');
+    twoFactorSaveRow.style.cssText = 'display:flex; align-items:center; gap:12px;';
+
+    const twoFactorSaveButton = el('button', 'btn btn-primary', 'Save');
+    const twoFactorPillAnchor = el('span');
+
+    twoFactorSaveButton.addEventListener('click', async () => {
+        twoFactorSaveButton.disabled = true;
+        try {
+            const response = await apiFetch('api.php?action=set_two_factor_setting', {
+                method: 'POST',
+                body: JSON.stringify({ two_factor_enabled: twoFactorCheckbox.checked }),
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                showStatusPill(twoFactorPillAnchor, 'Saved. The new setting applies to the next login.', 'success');
+            } else {
+                showStatusPill(twoFactorPillAnchor, result.error || 'Error saving setting.', 'error');
+            }
+        } catch (error) {
+            showStatusPill(twoFactorPillAnchor, 'Request failed.', 'error');
+        }
+        twoFactorSaveButton.disabled = false;
+    });
+
+    twoFactorSaveRow.appendChild(twoFactorSaveButton);
+    twoFactorSaveRow.appendChild(twoFactorPillAnchor);
+    twoFactorBody.appendChild(twoFactorSaveRow);
 
     const logoCard = document.createElement('div');
     logoCard.style.cssText = 'padding:20px; background:white; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; max-width:540px;';

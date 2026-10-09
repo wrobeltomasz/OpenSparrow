@@ -256,6 +256,25 @@ if ($action === 'set_chat_bubble_setting') {
     admin_ok(['chat_bubble_enabled' => $enabled]);
 }
 
+if ($action === 'get_two_factor_setting') {
+    $settings = admin_read_settings();
+    throw ResponseException::encoded([
+        'two_factor_enabled' => (bool) ($settings['two_factor_enabled'] ?? false),
+    ]);
+}
+
+if ($action === 'set_two_factor_setting') {
+    require_not_demo();
+    $body    = json_decode(file_get_contents('php://input'), true) ?? [];
+    $enabled = !empty($body['two_factor_enabled']);
+
+    $settings = admin_read_settings();
+    $settings['two_factor_enabled'] = $enabled;
+
+    admin_save_settings($settings);
+    admin_ok(['two_factor_enabled' => $enabled]);
+}
+
 if ($action === 'get_logo_setting') {
     $settings = admin_read_settings();
     $logoPath = $settings['custom_logo_path'] ?? null;

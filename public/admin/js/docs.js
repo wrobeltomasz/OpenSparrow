@@ -279,6 +279,16 @@ ${_ul([
     `<strong>${strings.s7_login_label}:</strong> ${strings.s7_login}`
 ])}
 
+${_h3('doc-7b', strings.s7b_head)}
+${paragraphHtml(strings.s7b_desc)}
+${_ul([
+    `<strong>${strings.s7b_flow_label}:</strong> ${strings.s7b_flow}`,
+    `<strong>${strings.s7b_rules_label}:</strong> ${strings.s7b_rules}`,
+    `<strong>${strings.s7b_email_label}:</strong> ${strings.s7b_email}`,
+    `<strong>${strings.s7b_delivery_label}:</strong> ${strings.s7b_delivery}`,
+    `<strong>${strings.s7b_storage_label}:</strong> ${strings.s7b_storage}`
+])}
+
 ${_h3('doc-8', strings.s8_head)}
 ${paragraphHtml(strings.s8_desc)}
 ${_ul([

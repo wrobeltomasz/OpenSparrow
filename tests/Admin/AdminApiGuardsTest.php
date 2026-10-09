@@ -27,6 +27,7 @@ final class AdminApiGuardsTest extends TestCase
         'backup_tables',
         'backup_settings_save', 'backup_cleanup',
         'set_snapshot_setting', 'set_language_setting', 'set_chat_bubble_setting',
+        'set_two_factor_setting',
         'set_logo_enabled', 'set_app_name', 'upload_logo', 'remove_logo',
         'set_automation_email_setting', 'test_smtp_connection',
         'create_m2m', 'delete_m2m',

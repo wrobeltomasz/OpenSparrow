@@ -13,7 +13,11 @@ Current version: 3.1. Self-hosted, works fully offline.
 
 LOGIN & SESSION
 ---------------
-Log in at login.php with username and password. Sessions expire after a configured time
+Log in at login.php with username and password. When the admin enables two-factor
+authentication (an optional feature, off by default), accounts with a contact email
+set receive a 6-digit code by email after the correct password and must type it in to
+finish logging in; the code is valid for 60 seconds and allows at most 5 attempts.
+Sessions expire after a configured time
 (default 8 hours) — you will be logged out automatically. Change your password anytime from
 the user menu (top-right avatar). Your avatar is the first letter of your username on a
 colour you choose — pick one of 24 colours from the same menu, or reset it to the default.

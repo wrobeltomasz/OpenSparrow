@@ -367,8 +367,10 @@ Migrations:
                             the only table-layout change in 3.1
       3.3_user_contact    — appends four nullable columns to spw_users (first_name,
                             last_name, email, phone) with their column comments. Admin
-                            panel only: informational, and used by nothing for login,
-                            ownership or notifications
+                            panel only: purely informational for ownership and
+                            notifications; the email is read server-side by the
+                            two-factor module (Settings -> Login Security) at login
+                            time when the feature is enabled
       3.3_clickstats      — creates spw_clickstats plus its two indexes, the storage for
                             the optional Click Statistics module. Nothing writes to it
                             until the module is enabled
@@ -391,9 +393,10 @@ Performance:
   - Copy SQL buttons for recommended fix queries
 
 Settings:
-  - Five inner tabs: Language (site-wide default language; locales discovered
+  - Six inner tabs: Language (site-wide default language; locales discovered
     automatically from languages/*.json), Chat Bubble (floating AI assistant button),
-    Branding (custom logo + application name on the login page), Database
+    Login Security (two-factor email code at login, off by default), Branding
+    (custom logo + application name on the login page), Database
     (PostgreSQL connection settings), Audit & Snapshots (record snapshot capture)
   - Custom Logo: replace the default frontend header logo (PNG/JPEG/WEBP, up to 2 MB);
     independent show/hide toggle
@@ -411,8 +414,11 @@ Users:
     preselected with the configured default role)
   - Optional contact details per account: first name, last name, email, phone.
     Entered in the add-user form or the per-row "Edit Details" dialog, shown in the
-    Name / Email / Phone columns. Informational only — admin panel exclusive, never
-    required, not used for login or notifications; the email is format-checked but
+    Name / Email / Phone columns. First name, last name and phone are informational
+    only — admin panel exclusive, never required; the email doubles as the
+    two-factor delivery address (Settings -> Login Security): an account with an
+    email set receives a 6-digit login code (valid 60 seconds, 5 attempts) when
+    two-factor authentication is enabled. The email is format-checked but
     need not be unique
   - Statistics: total / active / inactive user counts, breakdown by role, and the
     last 10 user-related audit log entries (who did what, when)
