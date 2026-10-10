@@ -42,6 +42,11 @@ export class BulkPanel {
         if (this._applyBtn) this._applyBtn.disabled = disabled;
     }
 
+    setApplyLabel(label) {
+        this._applyLabel = label;
+        if (this._applyBtn) this._applyBtn.textContent = label;
+    }
+
     setStatus(message, isError = false) {
         if (!this._statusEl) return;
         this._statusEl.textContent = message;

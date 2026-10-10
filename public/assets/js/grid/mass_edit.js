@@ -8,6 +8,7 @@ import { showToast } from '../toast.js';
 import { state, clearSelection } from './state.js';
 import { BulkPanel } from '../bulk_panel.js';
 import { loadTable, getState } from '../grid.js';
+import { buildXlsxBlob, downloadBlob } from '../export_xlsx.js';
 import { getCsrfToken } from '../util/csrf.js';
 import { apiFetch } from '../util/api.js';
 
@@ -538,6 +539,7 @@ function buildExportBody(panelInstance) {
     const body = panelInstance.bodyElement;
     body.innerHTML = '';
     panelInstance.setApplyDisabled(false);
+    panelInstance.setApplyLabel(I18n.t('mass_edit.export_download'));
 
     const { displayedColumns } = getState();
     const schemaColumns = window.schema?.tables?.[state.currentTable]?.columns ?? {};
@@ -546,6 +548,34 @@ function buildExportBody(panelInstance) {
     information.className = 'me-scope-info';
     information.textContent = I18n.t('mass_edit.export_rows').replace('{n}', state.selectedIds.size);
     body.appendChild(information);
+
+    const formatRow = document.createElement('div');
+    formatRow.className = 'me-format-row';
+    const formatLabel = document.createElement('span');
+    formatLabel.className = 'me-format-label';
+    formatLabel.textContent = I18n.t('mass_edit.export_format');
+    formatRow.appendChild(formatLabel);
+    [['csv', 'CSV'], ['excel', 'Excel']].forEach(([formatValue, formatText]) => {
+        const optionLabel = document.createElement('label');
+        optionLabel.className = 'me-format-option';
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'me-export-format';
+        radio.className = 'me-format-rb';
+        radio.value = formatValue;
+        radio.checked = formatValue === 'csv';
+        radio.addEventListener('change', () => {
+            panelInstance.setApplyLabel(I18n.t(
+                formatValue === 'excel' ? 'mass_edit.export_download_excel' : 'mass_edit.export_download'
+            ));
+        });
+        const span = document.createElement('span');
+        span.textContent = formatText;
+        optionLabel.appendChild(radio);
+        optionLabel.appendChild(span);
+        formatRow.appendChild(optionLabel);
+    });
+    body.appendChild(formatRow);
 
     const quickRow = document.createElement('div');
     quickRow.className = 'me-col-picker-quick';
@@ -591,6 +621,21 @@ function applyExport(panelInstance) {
     const { filteredData } = getState();
     const rows        = filteredData.filter(referenceRow => state.selectedIds.has(referenceRow.id));
     const schemaColumns  = window.schema?.tables?.[state.currentTable]?.columns ?? {};
+    const format = body.querySelector('.me-format-rb:checked')?.value ?? 'csv';
+
+    if (format === 'excel') {
+        const headers = checkedColumns.map(displayColumn => schemaColumns[displayColumn]?.display_name ?? displayColumn);
+        const xlsxRows = rows.map(referenceRow =>
+            checkedColumns.map(displayColumn => referenceRow[displayColumn] ?? null)
+        );
+        downloadBlob(
+            buildXlsxBlob({ headers, rows: xlsxRows, sheetName: state.currentTable }),
+            'export_selected.xlsx'
+        );
+        panelInstance.close();
+        return;
+    }
+
     const header      = checkedColumns.map(displayColumn => JSON.stringify(schemaColumns[displayColumn]?.display_name ?? displayColumn)).join(',');
     const lines       = rows.map(referenceRow =>
         checkedColumns.map(displayColumn => JSON.stringify(referenceRow[displayColumn] ?? '')).join(',')

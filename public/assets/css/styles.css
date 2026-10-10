@@ -3803,6 +3803,30 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
     flex-shrink: 0;
 }
 
+.me-format-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: var(--muted);
+}
+.me-format-label {
+    font-weight: var(--font-weight-bold);
+}
+.me-format-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+.me-format-rb {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+}
+
 .kg-focused {
     outline: 2px solid var(--accent);
     outline-offset: -2px;

@@ -469,6 +469,8 @@
         "select_fk_placeholder": "— Select —",
         "export_title": "Export columns",
         "export_download": "Download CSV",
+        "export_format": "Format",
+        "export_download_excel": "Download Excel",
         "export_select_all": "Select all",
         "export_select_none": "Deselect all",
         "export_none_selected": "Select at least one column.",
