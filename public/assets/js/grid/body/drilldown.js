@@ -5,6 +5,7 @@
 
 import { state } from '../state.js';
 import { I18n } from '../../i18n.js';
+import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from '../../util/record-tooltip.js';
 
 export function buildExpandButton(row, schema, tr) {
     const tdExpand = document.createElement('td');
@@ -38,7 +39,7 @@ export function buildExpandButton(row, schema, tr) {
         ddTd.replaceChildren();
 
         for (const sub of subtables) {
-            ddTd.appendChild(await buildSubtableBlock(sub, row));
+            ddTd.appendChild(await buildSubtableBlock(sub, row, schema));
         }
     });
 
@@ -47,7 +48,7 @@ export function buildExpandButton(row, schema, tr) {
     return tdExpand;
 }
 
-async function buildSubtableBlock(sub, row) {
+async function buildSubtableBlock(sub, row, schema) {
     const wrapper = document.createElement('div');
     wrapper.className = 'drilldown-container';
     wrapper.style.marginBottom = '20px';
@@ -84,15 +85,23 @@ async function buildSubtableBlock(sub, row) {
 
         if (data.rows?.length > 0) {
             const columns = sub.columns_to_show?.length ? sub.columns_to_show : ['id'];
+            const subColumns = schema.tables?.[sub.table]?.columns ?? {};
             data.rows.forEach(childRow => {
                 const li = document.createElement('li');
+                li.dataset.rowId = String(childRow.id);
                 const textSpan = document.createElement('span');
-                textSpan.textContent = columns.map(columnName => childRow[columnName + '__display'] ?? childRow[columnName] ?? '').join(' - ') || I18n.t('grid.drilldown_no_title');
+                const summary = columns.map(columnName => childRow[columnName + '__display'] ?? childRow[columnName] ?? '').join(' - ') || I18n.t('grid.drilldown_no_title');
+                textSpan.textContent = summary;
                 const badge = document.createElement('span');
                 badge.className = 'badge';
                 badge.textContent = I18n.t('grid.id_badge', { id: childRow.id });
+                let tooltipToken = null;
                 li.appendChild(textSpan);
                 li.appendChild(badge);
+                li.addEventListener('mouseenter', () => {
+                    tooltipToken = showRecordTooltip(li, { title: summary, rows: rowsFromRecord(childRow, subColumns) });
+                });
+                li.addEventListener('mouseleave', () => hideRecordTooltip(tooltipToken));
                 li.addEventListener('click', () => {
                     window.location.href = `edit.php?table=${sub.table}&id=${childRow.id}`;
                 });

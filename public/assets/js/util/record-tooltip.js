@@ -46,6 +46,11 @@ export function rowsFromRecord(rowData = {}, columns = {}) {
 }
 
 let showTimer = null;
+let showToken = 0;
+
+export function currentShowToken() {
+    return showToken;
+}
 
 function renderTooltipNow(anchor, { title, rows } = {}) {
     const element = getRecordTooltip();
@@ -96,12 +101,19 @@ function renderTooltipNow(anchor, { title, rows } = {}) {
 
 export function showRecordTooltip(anchor, model = {}, delay = 1000) {
     clearTimeout(showTimer);
-    showTimer = setTimeout(() => renderTooltipNow(anchor, model), delay);
+    const token = ++showToken;
+    showTimer = setTimeout(() => {
+        if (token !== showToken) return;
+        renderTooltipNow(anchor, model);
+    }, delay);
+    return token;
 }
 
-export function hideRecordTooltip() {
-    clearTimeout(showTimer);
-    showTimer = null;
+export function hideRecordTooltip(unlessSupersededBy = null) {
+    if (typeof unlessSupersededBy !== 'number' || unlessSupersededBy === showToken) {
+        clearTimeout(showTimer);
+        showTimer = null;
+    }
     const element = document.getElementById(TOOLTIP_ID);
     if (element) element.style.display = 'none';
 }

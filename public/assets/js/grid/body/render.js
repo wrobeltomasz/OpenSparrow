@@ -9,7 +9,7 @@ import { state } from '../state.js';
 import { CellRenderer } from '../cells/registry.js';
 import { buildExpandButton } from './drilldown.js';
 import { makeIconButton } from '../dom.js';
-import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from '../../util/record-tooltip.js';
+import { showRecordTooltip, hideRecordTooltip, rowsFromRecord, currentShowToken } from '../../util/record-tooltip.js';
 import { matchHighlightRule } from '../highlight-rules.js';
 
 import '../cells/fk-cell.js';
@@ -63,8 +63,9 @@ function handleTooltipOver(event, schema) {
 function handleTooltipOut(event) {
     const td = event.target.closest('td');
     if (!td || td !== tooltipState.activeTd) return;
+    const token = currentShowToken();
     tooltipState.hideTimeout = setTimeout(() => {
-        hideRecordTooltip();
+        hideRecordTooltip(token);
         tooltipState.activeTd = null;
     }, 50);
 }
