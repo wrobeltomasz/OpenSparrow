@@ -33,6 +33,7 @@
         "add_row": "Tilføj række",
         "add_record": "Tilføj",
         "export_csv": "Eksporter CSV",
+        "export_excel": "Eksporter til Excel",
         "refresh_table": "Opdater tabel",
         "no_results": "Ingen resultater fundet",
         "showing": "Viser {from}–{to} af {total} poster",

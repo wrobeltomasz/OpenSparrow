@@ -33,6 +33,7 @@
         "add_row": "Dodaj redak",
         "add_record": "Dodaj",
         "export_csv": "Izvezi CSV",
+        "export_excel": "Izvezi u Excel",
         "refresh_table": "Osvježi tablicu",
         "no_results": "Nisu pronađeni rezultati",
         "showing": "Prikazano {from}–{to} od {total} zapisa",

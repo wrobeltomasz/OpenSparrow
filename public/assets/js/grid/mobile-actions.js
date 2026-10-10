@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const action = event.target.value;
             if (action === "add") clickById("addRow");
             if (action === "export") clickById("exportCsv");
+            if (action === "export-excel") clickById("exportXlsx");
             if (action === "data-cleanup") clickById("dataCleanupBtn");
             if (action === "keyboard-help") clickById("kgHelpBtn");
             if (action === "refresh") location.reload();

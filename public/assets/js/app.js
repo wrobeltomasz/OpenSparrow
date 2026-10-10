@@ -7,6 +7,7 @@ import { I18n } from './i18n.js';
 import { loadTable, renderGrid, getState, setFilteredData, resetFilters, injectPagination, appendMoreRows, serverApplyView } from './grid.js';
 import { state as gridState } from './grid/state.js';
 import { exportCSV } from './export_csv.js';
+import { exportXlsx } from './export_xlsx.js';
 import { debugLog } from './debug.js';
 import { setupPagination, getPageRows, initPageSize, resetPagination } from './pagination.js';
 import { initWorkflows } from './workflows.js';
@@ -479,6 +480,8 @@ document.addEventListener('grid:loadMore', async () => {
 document.addEventListener('DOMContentLoaded', () => {
     const exportButton = document.getElementById('exportCsv');
     if (exportButton) exportButton.addEventListener('click', exportCSV);
+    const exportExcelButton = document.getElementById('exportXlsx');
+    if (exportExcelButton) exportExcelButton.addEventListener('click', exportXlsx);
 });
 
 document.addEventListener("tableLoaded", () => {

@@ -33,6 +33,7 @@
         "add_row": "Pridėti eilutę",
         "add_record": "Pridėti",
         "export_csv": "Eksportuoti CSV",
+        "export_excel": "Eksportuoti į Excel",
         "refresh_table": "Atnaujinti lentelę",
         "no_results": "Rezultatų nerasta",
         "showing": "Rodoma {from}–{to} iš {total} įrašų",

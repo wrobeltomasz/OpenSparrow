@@ -33,6 +33,7 @@
         "add_row": "Dodaj wiersz",
         "add_record": "Dodaj",
         "export_csv": "Eksportuj CSV",
+        "export_excel": "Eksportuj do Excel",
         "refresh_table": "Odśwież tabelę",
         "no_results": "Brak wyników",
         "showing": "Wyniki {from}–{to} z {total} rekordów",

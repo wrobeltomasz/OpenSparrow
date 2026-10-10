@@ -202,7 +202,8 @@
         display: none;
     }
 
-    #exportCsv {
+    #exportCsv,
+    #exportXlsx {
         width: 100%;
         padding: 0.7rem;
         font-size: 15px;

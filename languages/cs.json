@@ -33,6 +33,7 @@
         "add_row": "Přidat řádek",
         "add_record": "Přidat",
         "export_csv": "Exportovat CSV",
+        "export_excel": "Exportovat do Excelu",
         "refresh_table": "Obnovit tabulku",
         "no_results": "Žádné výsledky nenalezeny",
         "showing": "Zobrazení {from}–{to} z {total} záznamů",

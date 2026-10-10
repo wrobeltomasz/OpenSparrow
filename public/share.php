@@ -66,6 +66,7 @@ $footerNoteLabel = htmlspecialchars(t('share.footer_note'), ENT_QUOTES, 'UTF-8')
 $searchPlaceholderLabel = htmlspecialchars(t('grid.search_placeholder'), ENT_QUOTES, 'UTF-8');
 $allColumnsLabel = htmlspecialchars(t('grid.all_columns'), ENT_QUOTES, 'UTF-8');
 $exportCsvLabel = htmlspecialchars(t('grid.export_csv'), ENT_QUOTES, 'UTF-8');
+$exportXlsxLabel = htmlspecialchars(t('grid.export_excel'), ENT_QUOTES, 'UTF-8');
 $loadMoreLabel = htmlspecialchars(t('grid.load_more'), ENT_QUOTES, 'UTF-8');
 $truncatedNoticeLabel = htmlspecialchars(t('grid.truncated_notice'), ENT_QUOTES, 'UTF-8');
 $cannotLoadLabel = htmlspecialchars(t('grid.cannot_load_table'), ENT_QUOTES, 'UTF-8');
@@ -83,6 +84,7 @@ $pageContent = <<<HTML
             <input id="globalSearch" type="search" placeholder="{$searchPlaceholderLabel}" />
             <select id="columnFilter"><option value="">{$allColumnsLabel}</option></select>
             <button id="exportCsv">{$exportCsvLabel}</button>
+            <button id="exportXlsx">{$exportXlsxLabel}</button>
             <button id="clearFilters" hidden>{$allColumnsLabel}</button>
         </div>
         <div id="filterPills" class="filter-pills"></div>
@@ -97,6 +99,7 @@ $shareI18n = [
     'grid.search_placeholder' => t('grid.search_placeholder'),
     'grid.all_columns' => t('grid.all_columns'),
     'grid.export_csv' => t('grid.export_csv'),
+    'grid.export_excel' => t('grid.export_excel'),
     'grid.load_more' => t('grid.load_more'),
     'grid.select_column' => t('grid.select_column'),
     'grid.showing' => t('grid.showing'),

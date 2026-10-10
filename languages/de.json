@@ -33,6 +33,7 @@
         "add_row": "Zeile hinzufügen",
         "add_record": "Hinzufügen",
         "export_csv": "CSV exportieren",
+        "export_excel": "Excel exportieren",
         "refresh_table": "Tabelle aktualisieren",
         "no_results": "Keine Ergebnisse gefunden",
         "showing": "Anzeige {from}–{to} von {total} Datensätzen",

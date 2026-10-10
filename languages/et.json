@@ -33,6 +33,7 @@
         "add_row": "Lisa rida",
         "add_record": "Lisa",
         "export_csv": "Ekspordi CSV",
+        "export_excel": "Ekspordi Exceli",
         "refresh_table": "Värskenda tabelit",
         "no_results": "Tulemusi ei leitud",
         "showing": "Kuvatakse {from}–{to} {total} kirjest",

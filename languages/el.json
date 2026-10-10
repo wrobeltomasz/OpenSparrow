@@ -33,6 +33,7 @@
         "add_row": "Προσθήκη γραμμής",
         "add_record": "Προσθήκη",
         "export_csv": "Εξαγωγή CSV",
+        "export_excel": "Εξαγωγή σε Excel",
         "refresh_table": "Ανανέωση πίνακα",
         "no_results": "Δεν βρέθηκαν αποτελέσματα",
         "showing": "Εμφάνιση {from}–{to} από {total} εγγραφές",

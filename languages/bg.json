@@ -33,6 +33,7 @@
         "add_row": "Добавяне на ред",
         "add_record": "Добавяне",
         "export_csv": "Експортиране в CSV",
+        "export_excel": "Експортиране в Excel",
         "refresh_table": "Опресняване на таблицата",
         "no_results": "Няма намерени резултати",
         "showing": "Показване на {from}–{to} от {total} записа",

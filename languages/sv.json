@@ -33,6 +33,7 @@
         "add_row": "Lägg till rad",
         "add_record": "Lägg till",
         "export_csv": "Exportera CSV",
+        "export_excel": "Exportera till Excel",
         "refresh_table": "Uppdatera tabell",
         "no_results": "Inga resultat hittades",
         "showing": "Visar {from}–{to} av {total} poster",

@@ -33,6 +33,7 @@
         "add_row": "Sor hozzáadása",
         "add_record": "Hozzáadás",
         "export_csv": "CSV exportálása",
+        "export_excel": "Excel exportálása",
         "refresh_table": "Táblázat frissítése",
         "no_results": "Nem találhatók eredmények",
         "showing": "{from}–{to} megjelenítése {total} rekordból",

@@ -33,6 +33,7 @@
         "add_row": "Dodaj vrstico",
         "add_record": "Dodaj",
         "export_csv": "Izvozi CSV",
+        "export_excel": "Izvozi v Excel",
         "refresh_table": "Osveži tabelo",
         "no_results": "Ni najdenih rezultatov",
         "showing": "Prikazano {from}–{to} od {total} zapisov",

@@ -10,6 +10,7 @@ import { attachCrosshair } from './grid/crosshair.js';
 import { computeVirtual } from './grid/cells/virtual-cell.js';
 import { setupPagination, getPageRows, initPageSize, resetPagination } from './pagination.js';
 import { exportCSV } from './export_csv.js';
+import { exportXlsx } from './export_xlsx.js';
 
 import './grid/cells/fk-cell.js';
 import './grid/cells/enum-cell.js';
@@ -211,6 +212,8 @@ function bindLoadMore() {
 function bindExport() {
     const exportButton = document.getElementById('exportCsv');
     if (exportButton) exportButton.addEventListener('click', exportCSV);
+    const exportExcelButton = document.getElementById('exportXlsx');
+    if (exportExcelButton) exportExcelButton.addEventListener('click', exportXlsx);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

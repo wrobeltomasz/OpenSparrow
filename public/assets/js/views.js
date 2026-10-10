@@ -7,6 +7,7 @@ import { sortRows } from './grid/state.js';
 import { I18n } from './i18n.js';
 import { apiJson as apiFetch } from './util/api.js';
 import { escHtml } from './util/esc.js';
+import { buildXlsxBlob, downloadBlob } from './export_xlsx.js';
 
 function applyColorRules(rawValue, rules) {
     if (!Array.isArray(rules) || rules.length === 0) return null;
@@ -72,6 +73,7 @@ const pillsElement = document.createElement('div');
 pillsElement.id = 'filterPills';
 breadcrumbElement.after(pillsElement);
 let exportButton  = null;
+let exportXlsxButton = null;
 let actionsBar = null;
 
 const clearFiltersElement = document.getElementById('clearFilters');
@@ -383,6 +385,7 @@ function _clearHandlers() {
         _searchHandler = null;
     }
     if (exportButton) { exportButton.onclick = null; }
+    if (exportXlsxButton) { exportXlsxButton.onclick = null; }
     if (actionsBar) { actionsBar.style.display = 'none'; }
     columnFilters    = {};
     _applyFilters = null;
@@ -596,6 +599,10 @@ function renderView(data) {
     exportButton.id          = 'exportCsv';
     exportButton.textContent = I18n.t('grid.export_csv');
     actionsLeft.appendChild(exportButton);
+    exportXlsxButton = document.createElement('button');
+    exportXlsxButton.id          = 'exportXlsx';
+    exportXlsxButton.textContent = I18n.t('grid.export_excel');
+    actionsLeft.appendChild(exportXlsxButton);
     actionsBar.appendChild(actionsLeft);
     containerElement.appendChild(actionsBar);
 
@@ -764,6 +771,14 @@ function renderView(data) {
             const leftNumber    = document.createElement('a');
             leftNumber.href = url; leftNumber.download = `${view}.csv`; leftNumber.click();
             URL.revokeObjectURL(url);
+        };
+    }
+
+    if (exportXlsxButton) {
+        exportXlsxButton.onclick = () => {
+            const headers = allKeys.map(columnKey => columns[columnKey]?.display_name ?? columnKey);
+            const rows    = currentFilteredRows.map(row => allKeys.map(columnKey => row[columnKey] ?? null));
+            downloadBlob(buildXlsxBlob({ headers, rows, sheetName: view }), `${view}.xlsx`);
         };
     }
 

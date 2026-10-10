@@ -33,6 +33,7 @@
         "add_row": "Pievienot rindu",
         "add_record": "Pievienot",
         "export_csv": "Eksportēt CSV",
+        "export_excel": "Eksportēt uz Excel",
         "refresh_table": "Atsvaidzināt tabulu",
         "no_results": "Rezultāti nav atrasti",
         "showing": "Rāda {from}–{to} no {total} ierakstiem",

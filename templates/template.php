@@ -11,6 +11,7 @@ $clearFiltersLabel      = htmlspecialchars(t('grid.clear_filters'), ENT_QUOTES, 
 $chooseActionLabel      = htmlspecialchars(t('grid.choose_action'), ENT_QUOTES, 'UTF-8');
 $addRowLabel            = htmlspecialchars(t('grid.add_row'), ENT_QUOTES, 'UTF-8');
 $exportCsvLabel         = htmlspecialchars(t('grid.export_csv'), ENT_QUOTES, 'UTF-8');
+$exportXlsxLabel        = htmlspecialchars(t('grid.export_excel'), ENT_QUOTES, 'UTF-8');
 $refreshTableLabel      = htmlspecialchars(t('grid.refresh_table'), ENT_QUOTES, 'UTF-8');
 $dataCleanupLabel       = htmlspecialchars(t('data_cleanup.title'), ENT_QUOTES, 'UTF-8');
 $shortcutsHelpLabel     = htmlspecialchars(t('shortcuts.help_title'), ENT_QUOTES, 'UTF-8');
@@ -28,6 +29,12 @@ $gridActions = [
         'optionLabel' => $exportCsvLabel,
         'role' => null,
         'button' => ['id' => 'exportCsv', 'cy' => 'export', 'class' => null, 'label' => $exportCsvLabel],
+    ],
+    [
+        'value' => 'export-excel',
+        'optionLabel' => $exportXlsxLabel,
+        'role' => null,
+        'button' => ['id' => 'exportXlsx', 'cy' => 'export-excel', 'class' => null, 'label' => $exportXlsxLabel],
     ],
     [
         'value' => 'refresh',

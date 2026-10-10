@@ -33,6 +33,7 @@
         "add_row": "Adaugă rând",
         "add_record": "Adaugă",
         "export_csv": "Exportă CSV",
+        "export_excel": "Exportă în Excel",
         "refresh_table": "Reîmprospătează tabelul",
         "no_results": "Nu s-au găsit rezultate",
         "showing": "Se afișează {from}–{to} din {total} înregistrări",
