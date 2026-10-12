@@ -200,5 +200,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds optional two-factor login via an emailed code, toggled from Admin -> Settings -> Login Security and off by default. After a correct password, every account with a contact email set receives a 6-digit code (valid for 60 seconds, at most 5 attempts) and must enter it to finish logging in; accounts without an email address keep password-only login. The code is delivered immediately through the same AUTOMATION_EMAIL_FROM / SMTP settings as the notification cron, its HMAC hash lives only in the login session (never plaintext, never the database), wrong codes feed the existing spw_login_attempts rate limiter so the lockout covers the code phase, and code sending is throttled to prevent email flooding. No database migration and no configuration keys are removed by this release."
+    },
+    "4.2": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Adds native Excel (.xlsx) export next to the existing CSV in the record grid, public share links, views and mass edit. The workbook is built client-side by a dependency-free writer (public/assets/js/export_xlsx.js) that emits a valid OPC package (including docProps/core.xml and docProps/app.xml) with typed cells, XML-safe text, sanitized sheet names and deferred object-URL revocation so downloads are not cut short; every download site now goes through the shared downloadBlob helper and the mass-edit format labels (CSV / Excel) are translated into all 20 locales. Adds a mask_for_viewer flag to schema columns: a column marked with it is visible but its values are blanked for the read-only viewer role across the grid and the frontend modules (list, board, calendar, dashboard, roadmap, m2m and the edit form), while editors and admins keep seeing the real values; the flag is set in the schema editor and needs no migration because it lives in the schema configuration. The grid also gains a record tooltip on drilldown rows, with the hide race fixed so the tooltip does not linger. Fixes Deploy Smoke reliability by authenticating Docker Hub pulls and guarding against 429 rate limits. No database migration and no configuration keys are removed by this release."
     }
 }
