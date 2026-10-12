@@ -139,6 +139,7 @@ export function buildXlsxBlob({ headers, rows, sheetName }) {
         sheetData += `<row r="${rowIndex + 1}">${cells}</row>`;
     });
     const safeName = escapeXmlText(sanitizeSheetName(sheetName));
+    const timestamp = new Date().toISOString();
     const parts = [
         {
             name: '[Content_Types].xml',
@@ -146,9 +147,31 @@ export function buildXlsxBlob({ headers, rows, sheetName }) {
                 + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
                 + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
                 + '<Default Extension="xml" ContentType="application/xml"/>'
+                + '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+                + '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
                 + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
                 + '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
                 + '</Types>',
+        },
+        {
+            name: 'docProps/core.xml',
+            text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                + '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"'
+                + ' xmlns:dc="http://purl.org/dc/elements/1.1/"'
+                + ' xmlns:dcterms="http://purl.org/dc/terms/"'
+                + ' xmlns:dcmitype="http://purl.org/dc/dcmitype/"'
+                + ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+                + `<dcterms:created xsi:type="dcterms:W3CDTF">${timestamp}</dcterms:created>`
+                + `<dcterms:modified xsi:type="dcterms:W3CDTF">${timestamp}</dcterms:modified>`
+                + '</cp:coreProperties>',
+        },
+        {
+            name: 'docProps/app.xml',
+            text: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                + '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"'
+                + ' xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
+                + '<Application>OpenSparrow</Application>'
+                + '</Properties>',
         },
         {
             name: '_rels/.rels',
@@ -188,7 +211,7 @@ export function downloadBlob(blob, filename) {
     link.href = url;
     link.download = filename;
     link.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export function exportXlsx() {

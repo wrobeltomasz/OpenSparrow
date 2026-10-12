@@ -88,7 +88,6 @@ async function buildSubtableBlock(sub, row, schema) {
             const subColumns = schema.tables?.[sub.table]?.columns ?? {};
             data.rows.forEach(childRow => {
                 const li = document.createElement('li');
-                li.dataset.rowId = String(childRow.id);
                 const textSpan = document.createElement('span');
                 const summary = columns.map(columnName => childRow[columnName + '__display'] ?? childRow[columnName] ?? '').join(' - ') || I18n.t('grid.drilldown_no_title');
                 textSpan.textContent = summary;

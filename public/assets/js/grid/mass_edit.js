@@ -555,7 +555,7 @@ function buildExportBody(panelInstance) {
     formatLabel.className = 'me-format-label';
     formatLabel.textContent = I18n.t('mass_edit.export_format');
     formatRow.appendChild(formatLabel);
-    [['csv', 'CSV'], ['excel', 'Excel']].forEach(([formatValue, formatText]) => {
+    [['csv', 'export_format_csv'], ['excel', 'export_format_excel']].forEach(([formatValue, formatKey]) => {
         const optionLabel = document.createElement('label');
         optionLabel.className = 'me-format-option';
         const radio = document.createElement('input');
@@ -570,7 +570,7 @@ function buildExportBody(panelInstance) {
             ));
         });
         const span = document.createElement('span');
-        span.textContent = formatText;
+        span.textContent = I18n.t(`mass_edit.${formatKey}`);
         optionLabel.appendChild(radio);
         optionLabel.appendChild(span);
         formatRow.appendChild(optionLabel);
@@ -641,13 +641,7 @@ function applyExport(panelInstance) {
         checkedColumns.map(displayColumn => JSON.stringify(referenceRow[displayColumn] ?? '')).join(',')
     );
     const csv  = [header, ...lines].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const downloadLink    = document.createElement('a');
-    downloadLink.href     = url;
-    downloadLink.download = 'export_selected.csv';
-    downloadLink.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), 'export_selected.csv');
     panelInstance.close();
 }
 

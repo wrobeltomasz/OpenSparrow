@@ -479,6 +479,8 @@
         "export_download": "Download CSV",
         "export_format": "Oblika",
         "export_download_excel": "Prenesi Excel",
+        "export_format_csv": "CSV",
+        "export_format_excel": "Excel",
         "export_select_all": "Select all",
         "export_select_none": "Deselect all",
         "export_none_selected": "Select at least one column.",

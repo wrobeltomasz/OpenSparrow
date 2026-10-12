@@ -468,6 +468,8 @@
         "export_download": "Pobierz CSV",
         "export_format": "Format",
         "export_download_excel": "Pobierz Excel",
+        "export_format_csv": "CSV",
+        "export_format_excel": "Excel",
         "export_select_all": "Zaznacz wszystkie",
         "export_select_none": "Odznacz wszystkie",
         "export_none_selected": "Zaznacz co najmniej jedną kolumnę.",
