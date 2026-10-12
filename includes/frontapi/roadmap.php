@@ -143,7 +143,7 @@ function frontapi_roadmap(FrontApiContext $context): never
         }
         pg_free_result($result);
     }
-    $rows = map_fk_display($schema, $tableConfig, $rows, $conn);
+    $rows = map_fk_display($schema, $tableConfig, $rows, $conn, $context->isViewer());
 
     if ($hasCategory && $categories === []) {
         $categoryColorValues = [];
@@ -154,6 +154,14 @@ function frontapi_roadmap(FrontApiContext $context): never
                 $categories[] = ['value' => $categoryValue, 'label' => $categoryValue, 'color' => $defaultColor];
             }
         }
+    }
+
+    if ($context->isViewer()) {
+        $maskedColumns = masked_columns_for_viewer($tableConfig, true);
+        foreach ($rows as &$roadmapRow) {
+            $roadmapRow = mask_viewer_row($roadmapRow, $maskedColumns);
+        }
+        unset($roadmapRow);
     }
 
     $bars = [];

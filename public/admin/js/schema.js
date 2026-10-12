@@ -519,6 +519,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
         if (columnConfig.show_in_grid !== false && currentType !== 'virtual') headerBadges.push({ label: 'grid' });
         if (columnConfig.show_in_edit !== false && currentType !== 'virtual') headerBadges.push({ label: 'form' });
         if (columnConfig.readonly) headerBadges.push({ label: 'readonly' });
+        if (columnConfig.mask_for_viewer) headerBadges.push({ label: 'viewer-masked', className: 'adm-badge-warn' });
 
         const moveControls = document.createElement('div');
 
@@ -960,6 +961,7 @@ export function renderSchemaEditor(tableName, tableData, context) {
             { key: 'show_in_edit', label: 'Show in Edit Form', checked: columnConfig.show_in_edit, onChange: (value) => columnConfig.show_in_edit = value, defaultValue: true },
             { key: 'not_null', label: 'Is Required (Not Null)', checked: columnConfig.not_null, onChange: (value) => columnConfig.not_null = value, defaultValue: false },
             { key: 'readonly', label: 'Read Only', checked: columnConfig.readonly, onChange: (value) => columnConfig.readonly = value, defaultValue: false },
+            { key: 'mask_for_viewer', label: 'Mask value for Viewer', checked: columnConfig.mask_for_viewer, onChange: (value) => columnConfig.mask_for_viewer = value, defaultValue: false },
         ]));
 
         makeCollapsible(block);

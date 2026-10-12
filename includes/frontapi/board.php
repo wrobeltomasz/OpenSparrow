@@ -149,7 +149,14 @@ function frontapi_board(FrontApiContext $context): never
         }
         pg_free_result($result);
     }
-    $rows = map_fk_display($schema, $tableConfig, $rows, $conn);
+    $rows = map_fk_display($schema, $tableConfig, $rows, $conn, $context->isViewer());
+    if ($context->isViewer()) {
+        $maskedColumns = masked_columns_for_viewer($tableConfig, true);
+        foreach ($rows as &$boardRow) {
+            $boardRow = mask_viewer_row($boardRow, $maskedColumns);
+        }
+        unset($boardRow);
+    }
     foreach ($rows as $row) {
         $fields = [];
         foreach ($cardColumns as $column) {

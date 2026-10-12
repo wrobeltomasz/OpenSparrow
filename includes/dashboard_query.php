@@ -7,6 +7,36 @@
 
 declare(strict_types=1);
 
+function dashboard_mask_viewer_data(string $queryType, array $query, mixed $data, array $maskedColumns): mixed
+{
+    if ($maskedColumns === [] || !is_array($data)) {
+        return $data;
+    }
+
+    if ($queryType === 'list') {
+        foreach ($data as &$row) {
+            $row = mask_viewer_row($row, $maskedColumns);
+        }
+        unset($row);
+        return $data;
+    }
+
+    if ($queryType === 'group_by' || $queryType === 'time_series') {
+        $labelColumn = $queryType === 'group_by'
+            ? (string) ($query['group_column'] ?? '')
+            : (string) ($query['x_column'] ?? '');
+        if ($labelColumn !== '' && in_array($labelColumn, $maskedColumns, true)) {
+            foreach ($data as &$row) {
+                $row['label'] = OS_VIEWER_MASK;
+            }
+            unset($row);
+        }
+        return $data;
+    }
+
+    return $data;
+}
+
 function dashboard_conditions_sql($conn, array $tableConfig, array $conditions): string
 {
     $conditionParts = [];

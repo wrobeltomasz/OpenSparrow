@@ -237,7 +237,14 @@ function frontapi_list(FrontApiContext $context): never
         $rows[] = $row;
     }
     pg_free_result($result);
-    $rows = map_fk_display($schema, $tableConfig, $rows, $conn);
+    $rows = map_fk_display($schema, $tableConfig, $rows, $conn, $context->isViewer());
+    if ($context->isViewer()) {
+        $maskedColumns = masked_columns_for_viewer($tableConfig, true);
+        foreach ($rows as &$listRow) {
+            $listRow = mask_viewer_row($listRow, $maskedColumns);
+        }
+        unset($listRow);
+    }
     $rowCount = count($rows);
     echo json_encode([
         'columns'   => $selectColumns,

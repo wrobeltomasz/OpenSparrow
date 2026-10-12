@@ -58,6 +58,16 @@ function frontapi_m2m_options(FrontApiContext $context): never
     $options  = $m2mService->options($config, $schema);
     $selected = $m2mService->selected($config, $rowId, $schema);
 
+    if ($context->isViewer()) {
+        $displayColumn = (string) ($config['display_column'] ?? 'id');
+        if (!empty($otherConfig['columns'][$displayColumn]['mask_for_viewer'])) {
+            foreach ($options as &$option) {
+                $option['label'] = OS_VIEWER_MASK;
+            }
+            unset($option);
+        }
+    }
+
     if ($otherRestricted) {
         $optionIds = array_column($options, 'id');
         $visibleOptionIds = array_flip(filter_visible_ids($context->conn, $otherConfig, $otherTable, $optionIds, $context->userId));
@@ -146,10 +156,13 @@ function frontapi_m2m_rows(FrontApiContext $context): never
         throw ResponseException::encoded(['data' => (object)[]]);
     }
 
+    $displayMasked = $context->isViewer()
+        && !empty($schema['tables'][$otherTable]['columns'][$displayColumn]['mask_for_viewer']);
+
     $data = [];
     while ($row = pg_fetch_assoc($result)) {
         $sourceId = (string)$row['sid'];
-        $data[$sourceId][] = (string)$row['label'];
+        $data[$sourceId][] = $displayMasked ? OS_VIEWER_MASK : (string)$row['label'];
     }
 
     throw ResponseException::encoded(['data' => $data ?: (object)[]]);

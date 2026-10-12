@@ -15,6 +15,8 @@ use App\Exception\ResponseException;
 use App\Service\RecordOwnershipService;
 use App\Service\RecordSnapshotService;
 
+const OS_VIEWER_MASK = '•••••';
+
 function safe_table(array $schema, string $table): array
 {
     if (!isset($schema['tables'][$table])) {
@@ -70,8 +72,43 @@ function to_display_name(array $tableConfig): string
     return $tableConfig['display_name'] ?? ($tableConfig['name'] ?? 'Unknown');
 }
 
-function map_fk_display(array $schema, array $tableConfig, array $rows, \PgSql\Connection $conn): array
+function masked_columns_for_viewer(array $tableConfig, bool $isViewer): array
 {
+    if (!$isViewer) {
+        return [];
+    }
+
+    $masked = [];
+    foreach ($tableConfig['columns'] ?? [] as $columnName => $columnConfig) {
+        if (!empty($columnConfig['mask_for_viewer'])) {
+            $masked[] = $columnName;
+        }
+    }
+
+    return $masked;
+}
+
+function mask_viewer_row(array $row, array $maskedColumns): array
+{
+    foreach ($maskedColumns as $column) {
+        if (array_key_exists($column, $row)) {
+            $row[$column] = OS_VIEWER_MASK;
+        }
+        if (array_key_exists($column . '__display', $row)) {
+            $row[$column . '__display'] = OS_VIEWER_MASK;
+        }
+    }
+
+    return $row;
+}
+
+function map_fk_display(
+    array $schema,
+    array $tableConfig,
+    array $rows,
+    \PgSql\Connection $conn,
+    bool $isViewer = false,
+): array {
     if (empty($rows) || !isset($tableConfig['foreign_keys'])) {
         return $rows;
     }
@@ -110,6 +147,17 @@ function map_fk_display(array $schema, array $tableConfig, array $rows, \PgSql\C
             $referencedDisplayRaw = [$referencedColumnId];
         }
 
+        $displayMasked = false;
+        if ($isViewer) {
+            $referencedColumns = $referencedTable['columns'] ?? [];
+            foreach ($referencedDisplayRaw as $displayColumn) {
+                if (!empty($referencedColumns[$displayColumn]['mask_for_viewer'])) {
+                    $displayMasked = true;
+                    break;
+                }
+            }
+        }
+
         $escapedDisplayColumns = array_map(pg_ident(...), $referencedDisplayRaw);
         if (count($escapedDisplayColumns) > 1) {
             $displaySql = "CONCAT_WS(' - ', " . implode(', ', $escapedDisplayColumns) . ')';
@@ -138,7 +186,7 @@ function map_fk_display(array $schema, array $tableConfig, array $rows, \PgSql\C
 
         foreach ($rows as &$row) {
             if (isset($row[$fkColumn]) && array_key_exists($row[$fkColumn], $map)) {
-                $row[$fkColumn . '__display'] = $map[$row[$fkColumn]];
+                $row[$fkColumn . '__display'] = $displayMasked ? OS_VIEWER_MASK : $map[$row[$fkColumn]];
             }
         }
         unset($row);

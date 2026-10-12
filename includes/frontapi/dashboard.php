@@ -123,6 +123,11 @@ function frontapi_dashboard(FrontApiContext $context): never
             $widget['column_types'] = $result['column_types'];
         }
 
+        if ($context->isViewer() && !isset($result['sql_error'])) {
+            $maskedColumns = masked_columns_for_viewer($tableConfig, true);
+            $data = dashboard_mask_viewer_data($queryType, $widget['query'] ?? [], $data, $maskedColumns);
+        }
+
         if (
             $previousWhereSql !== null
             && in_array($queryType, ['count', 'sum', 'avg'], true)

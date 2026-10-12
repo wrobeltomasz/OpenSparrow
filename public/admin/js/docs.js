@@ -151,6 +151,7 @@ ${_ul([
     `<strong>${strings.s2_remove_label}:</strong> ${strings.s2_remove}`,
     `<strong>${strings.s2_fksearch_label}:</strong> ${strings.s2_fksearch}`,
     `<strong>${strings.s2_visibility_label}:</strong> ${strings.s2_visibility}`,
+    `<strong>${strings.s2_mask_label}:</strong> ${strings.s2_mask}`,
     `<strong>${strings.s2_validation_label}:</strong> ${strings.s2_validation}
         <ul style="padding-left:20px;margin-top:5px;">
             <li><strong>Email:</strong> <code>^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$</code></li>

@@ -151,7 +151,7 @@ final class EditController
 
         $formFields     = $this->formFields($tableConfig, $rawSchema, $row, $isReadOnly);
         $m2mGroups      = $this->m2mGroups($m2mConfigs, $rawSchema, $id, $isReadOnly);
-        $subtablePanels = $this->subtablePanels($subtablesData, $id);
+        $subtablePanels = $this->subtablePanels($subtablesData, $id, $rawSchema);
         $imagesPanel    = $this->imagesPanel($imagesConfig, $table, $id, $isReadOnly);
         $filesPanel     = $this->filesPanel($tableConfig->name, $id);
         $historyPanel   = $this->historyPanel();
@@ -229,6 +229,27 @@ final class EditController
         }
     }
 
+    private function isViewer(): bool
+    {
+        return $this->session->role() === 'viewer';
+    }
+
+    private function maskedColumns(array $rawSchema, string $table): array
+    {
+        if (!$this->isViewer()) {
+            return [];
+        }
+
+        $masked = [];
+        foreach ($rawSchema['tables'][$table]['columns'] ?? [] as $columnName => $columnConfig) {
+            if (!empty($columnConfig['mask_for_viewer'])) {
+                $masked[] = $columnName;
+            }
+        }
+
+        return $masked;
+    }
+
     private function formFields(
         TableConfig $tableConfig,
         array $rawSchema,
@@ -241,6 +262,7 @@ final class EditController
         }
 
         $renderContext = new RenderContext($isReadOnly, $fkOptions);
+        $maskedColumns = $this->maskedColumns($rawSchema, $tableConfig->name);
 
         $formFields = [];
         foreach ($tableConfig->visibleColumns() as $column) {
@@ -248,11 +270,14 @@ final class EditController
                 continue;
             }
             $isColumnReadOnly = $column->readonly || $isReadOnly;
+            $value = in_array($column->name, $maskedColumns, true)
+                ? OS_VIEWER_MASK
+                : ($row[$column->name] ?? '');
             $formFields[] = [
                 'label'    => $column->displayName,
                 'required' => $column->notNull && !$isColumnReadOnly,
                 'html'     => $this->fieldRegistry->for($column, $tableConfig->hasForeignKey($column->name))
-                    ->render($column, $row[$column->name] ?? '', $renderContext),
+                    ->render($column, $value, $renderContext),
             ];
         }
 
@@ -263,10 +288,21 @@ final class EditController
     {
         $m2mGroups = [];
         foreach ($m2mConfigs as $m2mIndex => $m2mConfig) {
+            $options = $this->m2m->options($m2mConfig, $rawSchema);
+            if ($this->isViewer()) {
+                $otherTable = M2MService::resolveOtherTable($m2mConfig, $rawSchema);
+                $displayColumn = (string) ($m2mConfig['display_column'] ?? 'id');
+                if (!empty($rawSchema['tables'][$otherTable]['columns'][$displayColumn]['mask_for_viewer'])) {
+                    foreach ($options as &$option) {
+                        $option['label'] = OS_VIEWER_MASK;
+                    }
+                    unset($option);
+                }
+            }
             $m2mGroups[] = os_m2m_group(
                 (int) $m2mIndex,
                 $m2mConfig,
-                $this->m2m->options($m2mConfig, $rawSchema),
+                $options,
                 $this->m2m->selected($m2mConfig, $id, $rawSchema),
                 $isReadOnly
             );
@@ -275,12 +311,13 @@ final class EditController
         return $m2mGroups;
     }
 
-    private function subtablePanels(array $subtablesData, int $id): array
+    private function subtablePanels(array $subtablesData, int $id, array $rawSchema): array
     {
         $subtablePanels = [];
         foreach ($subtablesData as $subtableIndex => $subtableData) {
             $subtableName    = $subtableData['config']['table'];
             $subtableFk      = $subtableData['config']['foreign_key'];
+            $maskedColumns   = $this->maskedColumns($rawSchema, $subtableName);
             $subtableColumns = $subtableData['config']['columns_to_show'] ?? ['id'];
             $subtableLabel   = $subtableData['config']['label']
                 ?? ($subtableData['schema']->displayName ?? $subtableName);
@@ -303,10 +340,16 @@ final class EditController
             foreach ($subtableData['rows'] as $subtableRow) {
                 $subtableCells = [];
                 foreach ($subtableColumns as $column) {
-                    $subtableCells[] = (string) ($subtableRow[$column . '__display'] ?? $subtableRow[$column] ?? '');
+                    $subtableCells[] = in_array($column, $maskedColumns, true)
+                        ? OS_VIEWER_MASK
+                        : (string) ($subtableRow[$column . '__display'] ?? $subtableRow[$column] ?? '');
+                }
+                $jsonRow = $subtableRow;
+                if ($this->isViewer()) {
+                    $jsonRow = mask_viewer_row($jsonRow, $maskedColumns);
                 }
                 $subtableRows[] = [
-                    'json'    => (string) json_encode($subtableRow, self::JSON_FLAGS),
+                    'json'    => (string) json_encode($jsonRow, self::JSON_FLAGS),
                     'cells'   => $subtableCells,
                     'editUrl' => 'edit.php?table=' . urlencode($subtableName)
                         . '&id=' . urlencode((string) $subtableRow['id']),

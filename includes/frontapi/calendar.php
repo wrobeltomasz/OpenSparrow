@@ -86,7 +86,14 @@ function frontapi_calendar(FrontApiContext $context): never
                     $rows[] = $row;
                 }
                 pg_free_result($result);
-                $rows = map_fk_display($schema, $tableConfig, $rows, $conn);
+                $rows = map_fk_display($schema, $tableConfig, $rows, $conn, $context->isViewer());
+                if ($context->isViewer()) {
+                    $maskedColumns = masked_columns_for_viewer($tableConfig, true);
+                    foreach ($rows as &$calendarRow) {
+                        $calendarRow = mask_viewer_row($calendarRow, $maskedColumns);
+                    }
+                    unset($calendarRow);
+                }
                 foreach ($rows as $row) {
                     $rawDate = (string) ($row[$dateColumn] ?? '');
                     $hasTime = strlen($rawDate) > 10;
