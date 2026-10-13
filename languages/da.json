@@ -306,7 +306,13 @@
         "insert_link": "Indsæt link til post",
         "select_table": "Vælg tabel",
         "select_record": "Vælg post",
-        "insert": "Indsæt"
+        "insert": "Indsæt",
+        "mention_notification": "{user} nævnte dig i en kommentar",
+        "mention_no_results": "Ingen brugere fundet",
+        "user_info_name": "Navn",
+        "user_info_role": "Rolle",
+        "user_info_email": "E-mail",
+        "user_info_phone": "Telefon"
     },
     "notes": {
         "title": "Noter",
@@ -325,6 +331,11 @@
         "reminder_on": "Påmindelse: {date}",
         "open_record": "Åbn post",
         "error_saving": "Fejl ved lagring af note."
+    },
+    "roles": {
+        "admin": "Administrator",
+        "editor": "Redaktør",
+        "viewer": "Seer"
     },
     "owners": {
         "error_load": "Fejl ved indlæsning af ejer.",

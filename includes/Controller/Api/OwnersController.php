@@ -42,6 +42,7 @@ final class OwnersController
             'mine'     => fn() => $this->myRecords(),
             'set'      => fn() => $this->setOwner(),
             'mass_set' => fn() => $this->massSetOwner(),
+            'user_info' => fn() => $this->userInfo(),
         ], 'api_owners');
     }
 
@@ -346,5 +347,19 @@ final class OwnersController
         set_record_owner($this->conn, $table, $recordId, $ownerId, $changedBy);
 
         jsonSuccess(['changed' => true]);
+    }
+
+    private function userInfo(): void
+    {
+        requireLogin();
+
+        $username = trim($this->request->query('username', ''));
+        if ($username === '' || mb_strlen($username) > 50) {
+            jsonSuccess(['user' => null]);
+        }
+
+        require_once __DIR__ . '/../../user_info.php';
+
+        jsonSuccess(['user' => user_info_fetch($this->conn, $username)]);
     }
 }

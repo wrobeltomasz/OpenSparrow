@@ -310,7 +310,13 @@
         "insert_link": "Įterpti nuorodą į įrašą",
         "select_table": "Pasirinkite lentelę",
         "select_record": "Pasirinkite įrašą",
-        "insert": "Įterpti"
+        "insert": "Įterpti",
+        "mention_notification": "{user} paminėjo jus komentare",
+        "mention_no_results": "Vartotojų nerasta",
+        "user_info_name": "Vardas",
+        "user_info_role": "Vaidmuo",
+        "user_info_email": "El. paštas",
+        "user_info_phone": "Telefonas"
     },
     "notes": {
         "title": "Užrašai",
@@ -329,6 +335,11 @@
         "reminder_on": "Priminimas: {date}",
         "open_record": "Atidaryti įrašą",
         "error_saving": "Klaida išsaugant užrašą."
+    },
+    "roles": {
+        "admin": "Administratorius",
+        "editor": "Redaktorius",
+        "viewer": "Peržiūros"
     },
     "owners": {
         "error_load": "Klaida įkeliant savininką.",

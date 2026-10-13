@@ -5,6 +5,8 @@
 
 import { renderAvatar } from './avatar.js';
 import { I18n } from './i18n.js';
+import { enableMentions } from './comments/mention.js';
+import { enableUserTooltips } from './util/user-tooltip.js';
 
 const POLL_INTERVAL_MS = 15000;
 
@@ -33,6 +35,7 @@ function formatBody(raw, links) {
     s = escHtml(s);
 
     s = s
+        .replace(/(^|[\s(])@([a-zA-Z0-9_.-]{3,50})/g, '$1<span class="c-mention" data-username="$2">@$2</span>')
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.+?)\*/g,     '<em>$1</em>')
         .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
@@ -340,6 +343,10 @@ async function init() {
     thread.className = 'c-thread';
     thread.setAttribute('aria-live', 'polite');
     panel.appendChild(thread);
+    enableUserTooltips(thread, {
+        endpoint: 'api/comments.php?action=user_info&username=',
+        titlePrefix: '@',
+    });
 
     if (!isReadOnly) {
         const toolbarWrap = document.createElement('div');
@@ -389,6 +396,8 @@ async function init() {
         inputArea.appendChild(textarea);
         inputArea.appendChild(sendButton);
         panel.appendChild(inputArea);
+
+        enableMentions(textarea);
 
         function wrapSelection(before, after) {
             const start = textarea.selectionStart;

@@ -310,7 +310,13 @@
         "insert_link": "Wstaw link do rekordu",
         "select_table": "Wybierz tabelę",
         "select_record": "Wybierz rekord",
-        "insert": "Wstaw"
+        "insert": "Wstaw",
+        "mention_notification": "{user} wspomniał(a) o Tobie w komentarzu",
+        "mention_no_results": "Nie znaleziono użytkowników",
+        "user_info_name": "Imię i nazwisko",
+        "user_info_role": "Rola",
+        "user_info_email": "E-mail",
+        "user_info_phone": "Telefon"
     },
     "notes": {
         "title": "Notatki",
@@ -329,6 +335,11 @@
         "reminder_on": "Przypomnienie: {date}",
         "open_record": "Otwórz rekord",
         "error_saving": "Błąd zapisu notatki."
+    },
+    "roles": {
+        "admin": "Administrator",
+        "editor": "Edytor",
+        "viewer": "Obserwator"
     },
     "owners": {
         "error_load": "Błąd ładowania właściciela.",

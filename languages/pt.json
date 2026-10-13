@@ -306,7 +306,13 @@
         "insert_link": "Inserir link para o registo",
         "select_table": "Selecionar tabela",
         "select_record": "Selecionar registo",
-        "insert": "Inserir"
+        "insert": "Inserir",
+        "mention_notification": "{user} mencionou você em um comentário",
+        "mention_no_results": "Nenhum usuário encontrado",
+        "user_info_name": "Nome",
+        "user_info_role": "Função",
+        "user_info_email": "E-mail",
+        "user_info_phone": "Telefone"
     },
     "notes": {
         "title": "Notas",
@@ -325,6 +331,11 @@
         "reminder_on": "Lembrete: {date}",
         "open_record": "Abrir registo",
         "error_saving": "Erro ao guardar a nota."
+    },
+    "roles": {
+        "admin": "Administrador",
+        "editor": "Editor",
+        "viewer": "Leitor"
     },
     "owners": {
         "error_load": "Erro ao carregar o proprietário.",

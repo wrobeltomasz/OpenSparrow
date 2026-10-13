@@ -310,7 +310,13 @@
         "insert_link": "Introduceți link către înregistrare",
         "select_table": "Selectați un tabel",
         "select_record": "Selectați o înregistrare",
-        "insert": "Introduceți"
+        "insert": "Introduceți",
+        "mention_notification": "{user} te-a menționat într-un comentariu",
+        "mention_no_results": "Niciun utilizator găsit",
+        "user_info_name": "Nume",
+        "user_info_role": "Rol",
+        "user_info_email": "E-mail",
+        "user_info_phone": "Telefon"
     },
     "notes": {
         "title": "Note",
@@ -329,6 +335,11 @@
         "reminder_on": "Memento: {date}",
         "open_record": "Deschide înregistrarea",
         "error_saving": "Eroare la salvarea notei."
+    },
+    "roles": {
+        "admin": "Administrator",
+        "editor": "Editor",
+        "viewer": "Vizualizator"
     },
     "owners": {
         "error_load": "Eroare la încărcarea proprietarului.",

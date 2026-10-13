@@ -306,7 +306,13 @@
         "insert_link": "Вмъкване на връзка към запис",
         "select_table": "Изберете таблица",
         "select_record": "Изберете запис",
-        "insert": "Вмъкване"
+        "insert": "Вмъкване",
+        "mention_notification": "{user} ви спомена в коментар",
+        "mention_no_results": "Не са намерени потребители",
+        "user_info_name": "Име",
+        "user_info_role": "Роля",
+        "user_info_email": "Имейл",
+        "user_info_phone": "Телефон"
     },
     "notes": {
         "title": "Бележки",
@@ -325,6 +331,11 @@
         "reminder_on": "Напомняне: {date}",
         "open_record": "Отвори запис",
         "error_saving": "Грешка при запазване на бележката."
+    },
+    "roles": {
+        "admin": "Администратор",
+        "editor": "Редактор",
+        "viewer": "Зрител"
     },
     "owners": {
         "error_load": "Грешка при зареждане на собственика.",

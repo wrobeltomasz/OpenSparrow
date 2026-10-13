@@ -306,7 +306,13 @@
         "insert_link": "Infoga länk till post",
         "select_table": "Välj tabell",
         "select_record": "Välj post",
-        "insert": "Infoga"
+        "insert": "Infoga",
+        "mention_notification": "{user} nämnde dig i en kommentar",
+        "mention_no_results": "Inga användare hittades",
+        "user_info_name": "Namn",
+        "user_info_role": "Roll",
+        "user_info_email": "E-post",
+        "user_info_phone": "Telefon"
     },
     "notes": {
         "title": "Anteckningar",
@@ -325,6 +331,11 @@
         "reminder_on": "Påminnelse: {date}",
         "open_record": "Öppna post",
         "error_saving": "Fel vid sparande av anteckning."
+    },
+    "roles": {
+        "admin": "Administratör",
+        "editor": "Redigerare",
+        "viewer": "Läsare"
     },
     "owners": {
         "error_load": "Fel vid laddning av ägare.",

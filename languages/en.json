@@ -306,7 +306,13 @@
         "insert_link": "Insert record link",
         "select_table": "Select table",
         "select_record": "Select record",
-        "insert": "Insert"
+        "insert": "Insert",
+        "mention_notification": "{user} mentioned you in a comment",
+        "mention_no_results": "No users found",
+        "user_info_name": "Name",
+        "user_info_role": "Role",
+        "user_info_email": "Email",
+        "user_info_phone": "Phone"
     },
     "notes": {
         "title": "Notes",
@@ -325,6 +331,11 @@
         "reminder_on": "Reminder: {date}",
         "open_record": "Open record",
         "error_saving": "Error saving note."
+    },
+    "roles": {
+        "admin": "Admin",
+        "editor": "Editor",
+        "viewer": "Viewer"
     },
     "owners": {
         "error_load": "Error loading owner.",

@@ -310,7 +310,13 @@
         "insert_link": "Vložiť odkaz na záznam",
         "select_table": "Vyberte tabuľku",
         "select_record": "Vyberte záznam",
-        "insert": "Vložiť"
+        "insert": "Vložiť",
+        "mention_notification": "{user} vás spomenul v komentári",
+        "mention_no_results": "Nenašli sa žiadni používatelia",
+        "user_info_name": "Meno",
+        "user_info_role": "Rola",
+        "user_info_email": "E-mail",
+        "user_info_phone": "Telefón"
     },
     "notes": {
         "title": "Poznámky",
@@ -329,6 +335,11 @@
         "reminder_on": "Pripomienka: {date}",
         "open_record": "Otvoriť záznam",
         "error_saving": "Chyba pri ukladaní poznámky."
+    },
+    "roles": {
+        "admin": "Administrátor",
+        "editor": "Editor",
+        "viewer": "Prezerajúci"
     },
     "owners": {
         "error_load": "Chyba pri načítaní vlastníka.",

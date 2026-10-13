@@ -306,7 +306,13 @@
         "insert_link": "Ievietot saiti uz ierakstu",
         "select_table": "Atlasiet tabulu",
         "select_record": "Atlasiet ierakstu",
-        "insert": "Ievietot"
+        "insert": "Ievietot",
+        "mention_notification": "{user} pieminēja jūs komentārā",
+        "mention_no_results": "Lietotāji nav atrasti",
+        "user_info_name": "Vārds",
+        "user_info_role": "Loma",
+        "user_info_email": "E-pasts",
+        "user_info_phone": "Telefons"
     },
     "notes": {
         "title": "Piezīmes",
@@ -325,6 +331,11 @@
         "reminder_on": "Atgādinājums: {date}",
         "open_record": "Atvērt ierakstu",
         "error_saving": "Kļūda, saglabājot piezīmi."
+    },
+    "roles": {
+        "admin": "Administrators",
+        "editor": "Redaktors",
+        "viewer": "Skatītājs"
     },
     "owners": {
         "error_load": "Kļūda ielādējot īpašnieku.",

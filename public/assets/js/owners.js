@@ -5,6 +5,7 @@
 
 import { I18n } from './i18n.js';
 import { apiFetch } from './util/api.js';
+import { enableUserTooltips } from './util/user-tooltip.js';
 
 const table    = window.EDIT_TABLE;
 const recordId = window.EDIT_ID;
@@ -32,12 +33,20 @@ async function loadOwner() {
             hasOwner = false;
         } else {
             hasOwner = true;
-            let label = data.owner.username;
+            current.textContent = '';
+
+            const userSpan = document.createElement('span');
+            userSpan.className = 'ow-user';
+            userSpan.setAttribute('data-username', data.owner.username);
+            userSpan.textContent = data.owner.username;
+            current.appendChild(userSpan);
+
             if (data.owner.changed_at) {
                 const changedAt = new Date(data.owner.changed_at);
-                label += ' ' + I18n.t('owners.last_changed', { date: changedAt.toLocaleDateString() });
+                current.appendChild(document.createTextNode(
+                    ' ' + I18n.t('owners.last_changed', { date: changedAt.toLocaleDateString() })
+                ));
             }
-            current.textContent = label;
         }
 
         if (saveButton) {
@@ -76,15 +85,34 @@ async function loadHistory() {
         data.history.forEach(row => {
             const tr = tbody.insertRow();
             tr.style.borderBottom = '1px solid var(--border-light)';
-            [
-                row.username       || '—',
-                row.changed_by_name || '—',
-                row.changed_at ? new Date(row.changed_at).toLocaleString() : '—',
-            ].forEach(value => {
-                const td = tr.insertCell();
-                td.textContent = value;
-                td.style.padding = '8px 10px';
-            });
+
+            const ownerTd = tr.insertCell();
+            ownerTd.style.padding = '8px 10px';
+            if (row.username) {
+                const userSpan = document.createElement('span');
+                userSpan.className = 'ow-user';
+                userSpan.setAttribute('data-username', row.username);
+                userSpan.textContent = row.username;
+                ownerTd.appendChild(userSpan);
+            } else {
+                ownerTd.textContent = '—';
+            }
+
+            const changedByTd = tr.insertCell();
+            changedByTd.style.padding = '8px 10px';
+            if (row.changed_by_name) {
+                const changedBySpan = document.createElement('span');
+                changedBySpan.className = 'ow-user';
+                changedBySpan.setAttribute('data-username', row.changed_by_name);
+                changedBySpan.textContent = row.changed_by_name;
+                changedByTd.appendChild(changedBySpan);
+            } else {
+                changedByTd.textContent = '—';
+            }
+
+            const dateTd = tr.insertCell();
+            dateTd.textContent = row.changed_at ? new Date(row.changed_at).toLocaleString() : '—';
+            dateTd.style.padding = '8px 10px';
         });
 
         historyElement.textContent = '';
@@ -154,6 +182,12 @@ async function init() {
     if (!panel) return;
 
     await I18n.load();
+
+    enableUserTooltips(panel, { endpoint: 'api/owners.php?action=user_info&username=' });
+    if (historyElement) {
+        enableUserTooltips(historyElement, { endpoint: 'api/owners.php?action=user_info&username=' });
+    }
+
     await loadOwner();
     await loadHistory();
 

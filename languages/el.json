@@ -306,7 +306,13 @@
         "insert_link": "Εισαγωγή συνδέσμου σε εγγραφή",
         "select_table": "Επιλέξτε πίνακα",
         "select_record": "Επιλέξτε εγγραφή",
-        "insert": "Εισαγωγή"
+        "insert": "Εισαγωγή",
+        "mention_notification": "Ο {user} σας ανέφερε σε ένα σχόλιο",
+        "mention_no_results": "Δεν βρέθηκαν χρήστες",
+        "user_info_name": "Όνομα",
+        "user_info_role": "Ρόλος",
+        "user_info_email": "Email",
+        "user_info_phone": "Τηλέφωνο"
     },
     "notes": {
         "title": "Σημειώσεις",
@@ -325,6 +331,11 @@
         "reminder_on": "Υπενθύμιση: {date}",
         "open_record": "Άνοιγμα εγγραφής",
         "error_saving": "Σφάλμα αποθήκευσης σημείωσης."
+    },
+    "roles": {
+        "admin": "Διαχειριστής",
+        "editor": "Συντάκτης",
+        "viewer": "Θεατής"
     },
     "owners": {
         "error_load": "Σφάλμα κατά τη φόρτωση ιδιοκτήτη.",

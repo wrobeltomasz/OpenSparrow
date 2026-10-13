@@ -306,7 +306,13 @@
         "insert_link": "Link zu Datensatz einfügen",
         "select_table": "Tabelle auswählen",
         "select_record": "Datensatz auswählen",
-        "insert": "Einfügen"
+        "insert": "Einfügen",
+        "mention_notification": "{user} hat dich in einem Kommentar erwähnt",
+        "mention_no_results": "Keine Benutzer gefunden",
+        "user_info_name": "Name",
+        "user_info_role": "Rolle",
+        "user_info_email": "E-Mail",
+        "user_info_phone": "Telefon"
     },
     "notes": {
         "title": "Notizen",
@@ -325,6 +331,11 @@
         "reminder_on": "Erinnerung: {date}",
         "open_record": "Datensatz öffnen",
         "error_saving": "Fehler beim Speichern der Notiz."
+    },
+    "roles": {
+        "admin": "Administrator",
+        "editor": "Bearbeiter",
+        "viewer": "Betrachter"
     },
     "owners": {
         "error_load": "Fehler beim Laden des Eigentümers.",

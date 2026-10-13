@@ -310,7 +310,13 @@
         "insert_link": "Umetni poveznicu na zapis",
         "select_table": "Odaberite tablicu",
         "select_record": "Odaberite zapis",
-        "insert": "Umetni"
+        "insert": "Umetni",
+        "mention_notification": "{user} vas je spomenuo u komentaru",
+        "mention_no_results": "Korisnici nisu pronađeni",
+        "user_info_name": "Ime",
+        "user_info_role": "Uloga",
+        "user_info_email": "E-pošta",
+        "user_info_phone": "Telefon"
     },
     "notes": {
         "title": "Bilješke",
@@ -329,6 +335,11 @@
         "reminder_on": "Podsjetnik: {date}",
         "open_record": "Otvori zapis",
         "error_saving": "Greška pri spremanju bilješke."
+    },
+    "roles": {
+        "admin": "Administrator",
+        "editor": "Uređivač",
+        "viewer": "Preglednik"
     },
     "owners": {
         "error_load": "Pogreška pri učitavanju vlasnika.",

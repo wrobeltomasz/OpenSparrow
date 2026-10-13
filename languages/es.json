@@ -306,7 +306,13 @@
         "insert_link": "Insertar enlace al registro",
         "select_table": "Seleccionar tabla",
         "select_record": "Seleccionar registro",
-        "insert": "Insertar"
+        "insert": "Insertar",
+        "mention_notification": "{user} te mencionó en un comentario",
+        "mention_no_results": "No se encontraron usuarios",
+        "user_info_name": "Nombre",
+        "user_info_role": "Rol",
+        "user_info_email": "Correo",
+        "user_info_phone": "Teléfono"
     },
     "notes": {
         "title": "Notas",
@@ -325,6 +331,11 @@
         "reminder_on": "Recordatorio: {date}",
         "open_record": "Abrir registro",
         "error_saving": "Error al guardar la nota."
+    },
+    "roles": {
+        "admin": "Administrador",
+        "editor": "Editor",
+        "viewer": "Lector"
     },
     "owners": {
         "error_load": "Error al cargar el propietario.",

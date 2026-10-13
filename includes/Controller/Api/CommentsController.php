@@ -36,11 +36,13 @@ final class CommentsController
     public function handle(): void
     {
         os_api_dispatch($this->api->action, [
-            'list'   => fn() => $this->listComments(),
-            'mine'   => fn() => $this->myComments(),
-            'add'    => fn() => $this->addComment(),
-            'delete' => fn() => $this->deleteComment(),
-            'counts' => fn() => $this->commentCounts(),
+            'list'         => fn() => $this->listComments(),
+            'mine'         => fn() => $this->myComments(),
+            'add'          => fn() => $this->addComment(),
+            'delete'       => fn() => $this->deleteComment(),
+            'counts'       => fn() => $this->commentCounts(),
+            'mention_users' => fn() => $this->mentionUsers(),
+            'user_info'     => fn() => $this->userInfo(),
         ], 'api_comments');
     }
 
@@ -228,6 +230,17 @@ final class CommentsController
             $comment['avatar_id'] = $comment['avatar_id'] !== null ? (int)$comment['avatar_id'] : null;
         }
 
+        require_once __DIR__ . '/../../comment_mentions.php';
+        comment_mention_notify(
+            $this->conn,
+            $relatedTable,
+            $relatedId,
+            (int)$inserted['id'],
+            $userId,
+            (string)($comment['username'] ?? ''),
+            $rawBody
+        );
+
         $links = is_array($comment) ? $this->resolveRecordLinks([$comment]) : [];
         jsonSuccess(['comment' => $comment, 'links' => $links], 201);
     }
@@ -263,6 +276,13 @@ final class CommentsController
             error_log('api_comments comments_action_delete failed: ' . pg_last_error($this->conn));
             jsonError('Database error.', 500);
         }
+
+        pg_query_params(
+            $this->conn,
+            'DELETE FROM ' . sys_table('users_notifications')
+            . " WHERE source_table = 'comments' AND source_id = \$1",
+            [$id]
+        );
 
         log_user_action($this->conn, $userId, 'COMMENT_DELETE', $row['related_table'], (int)$row['related_id']);
         jsonSuccess(['deleted' => true]);
@@ -368,5 +388,58 @@ final class CommentsController
         }
 
         jsonSuccess(['counts' => $counts]);
+    }
+
+    private function mentionUsers(): void
+    {
+        requireLogin();
+
+        $query = trim($this->request->query('q', ''));
+        $length = mb_strlen($query);
+        if ($length < 2 || $length > 50) {
+            jsonSuccess(['users' => []]);
+        }
+
+        $escaped   = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
+        $contains  = '%' . $escaped . '%';
+        $prefix    = $escaped . '%';
+        $userId    = $this->session->userId();
+
+        $sql = 'SELECT id, username, avatar_id, role FROM ' . sys_table('users')
+            . ' WHERE is_active = TRUE AND id <> $1 AND username ILIKE $2'
+            . ' ORDER BY (username ILIKE $3) DESC, username ASC'
+            . ' LIMIT ' . MENTION_USER_LIMIT;
+
+        $result = pg_query_params($this->conn, $sql, [$userId, $contains, $prefix]);
+        if (!$result) {
+            error_log('api_comments comments_action_mention_users failed: ' . pg_last_error($this->conn));
+            jsonError('Database error.', 500);
+        }
+
+        $users = [];
+        while ($row = pg_fetch_assoc($result)) {
+            $users[] = [
+                'id'        => (int)$row['id'],
+                'username'  => $row['username'],
+                'avatar_id' => $row['avatar_id'] !== null ? (int)$row['avatar_id'] : null,
+                'role'      => $row['role'],
+            ];
+        }
+
+        jsonSuccess(['users' => $users]);
+    }
+
+    private function userInfo(): void
+    {
+        requireLogin();
+
+        $username = trim($this->request->query('username', ''));
+        if ($username === '' || mb_strlen($username) > 50) {
+            jsonSuccess(['user' => null]);
+        }
+
+        require_once __DIR__ . '/../../user_info.php';
+
+        jsonSuccess(['user' => user_info_fetch($this->conn, $username)]);
     }
 }

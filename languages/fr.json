@@ -306,7 +306,13 @@
         "insert_link": "Insérer un lien vers l'enregistrement",
         "select_table": "Sélectionner une table",
         "select_record": "Sélectionner un enregistrement",
-        "insert": "Insérer"
+        "insert": "Insérer",
+        "mention_notification": "{user} vous a mentionné dans un commentaire",
+        "mention_no_results": "Aucun utilisateur trouvé",
+        "user_info_name": "Nom",
+        "user_info_role": "Rôle",
+        "user_info_email": "E-mail",
+        "user_info_phone": "Téléphone"
     },
     "notes": {
         "title": "Notes",
@@ -325,6 +331,11 @@
         "reminder_on": "Rappel : {date}",
         "open_record": "Ouvrir l'enregistrement",
         "error_saving": "Erreur lors de l'enregistrement de la note."
+    },
+    "roles": {
+        "admin": "Administrateur",
+        "editor": "Éditeur",
+        "viewer": "Lecteur"
     },
     "owners": {
         "error_load": "Erreur lors du chargement du propriétaire.",

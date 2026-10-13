@@ -2645,6 +2645,15 @@ thead th.drag-over {
   text-decoration: underline;
 }
 
+.c-mention {
+  display: inline-block;
+  padding: 0 6px;
+  background: var(--accent-light);
+  border-radius: var(--radius-sm);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
 .c-msg-deleted .c-msg-bubble {
   background: var(--bg);
   border-style: dashed;
@@ -2726,6 +2735,41 @@ thead th.drag-over {
   text-align: center;
   color: var(--muted);
   padding: 32px 0;
+}
+
+.c-mention-list {
+  position: absolute;
+  z-index: 1100;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.c-mention-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.c-mention-item.active {
+  background: var(--accent-light);
+}
+
+.c-mention-name {
+  font-weight: 600;
+}
+
+.c-mention-empty {
+  padding: 10px;
+  text-align: center;
+  color: var(--muted);
 }
 
 .c-record-link {
@@ -4363,6 +4407,7 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
 .ow-panel { margin-top: 20px; padding: 16px 20px; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: var(--bg); }
 .ow-section-title { margin: 0 0 10px; font-weight: 700; color: var(--muted); }
 .ow-current { color: var(--text); margin-bottom: 12px; }
+.ow-user { border-bottom: 1px dotted var(--muted); }
 .ow-change { align-items: center; gap: 10px; flex-wrap: wrap; }
 .ow-select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); }
 .ow-history-wrap { margin-top: 20px; }

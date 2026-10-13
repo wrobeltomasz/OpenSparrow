@@ -306,7 +306,13 @@
         "insert_link": "Inserisci link al record",
         "select_table": "Seleziona tabella",
         "select_record": "Seleziona record",
-        "insert": "Inserisci"
+        "insert": "Inserisci",
+        "mention_notification": "{user} ti ha menzionato in un commento",
+        "mention_no_results": "Nessun utente trovato",
+        "user_info_name": "Nome",
+        "user_info_role": "Ruolo",
+        "user_info_email": "Email",
+        "user_info_phone": "Telefono"
     },
     "notes": {
         "title": "Note",
@@ -325,6 +331,11 @@
         "reminder_on": "Promemoria: {date}",
         "open_record": "Apri record",
         "error_saving": "Errore durante il salvataggio della nota."
+    },
+    "roles": {
+        "admin": "Amministratore",
+        "editor": "Redattore",
+        "viewer": "Lettore"
     },
     "owners": {
         "error_load": "Errore nel caricamento del proprietario.",

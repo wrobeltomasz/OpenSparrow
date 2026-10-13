@@ -306,7 +306,13 @@
         "insert_link": "Lisa link kirjele",
         "select_table": "Vali tabel",
         "select_record": "Vali kirje",
-        "insert": "Lisa"
+        "insert": "Lisa",
+        "mention_notification": "{user} mainis sind kommentaaris",
+        "mention_no_results": "Kasutajaid ei leitud",
+        "user_info_name": "Nimi",
+        "user_info_role": "Roll",
+        "user_info_email": "E-post",
+        "user_info_phone": "Telefon"
     },
     "notes": {
         "title": "Märkmed",
@@ -325,6 +331,11 @@
         "reminder_on": "Meeldetuletus: {date}",
         "open_record": "Ava kirje",
         "error_saving": "Viga märkme salvestamisel."
+    },
+    "roles": {
+        "admin": "Administraator",
+        "editor": "Toimetaja",
+        "viewer": "Vaataja"
     },
     "owners": {
         "error_load": "Viga omaniku laadimisel.",

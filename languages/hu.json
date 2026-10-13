@@ -306,7 +306,13 @@
         "insert_link": "Hivatkozás beszúrása a rekordra",
         "select_table": "Válasszon táblát",
         "select_record": "Válasszon rekordot",
-        "insert": "Beszúrás"
+        "insert": "Beszúrás",
+        "mention_notification": "{user} megemlített egy megjegyzésben",
+        "mention_no_results": "Nem találhatók felhasználók",
+        "user_info_name": "Név",
+        "user_info_role": "Szerep",
+        "user_info_email": "E-mail",
+        "user_info_phone": "Telefon"
     },
     "notes": {
         "title": "Jegyzetek",
@@ -325,6 +331,11 @@
         "reminder_on": "Emlékeztető: {date}",
         "open_record": "Rekord megnyitása",
         "error_saving": "Hiba a jegyzet mentésekor."
+    },
+    "roles": {
+        "admin": "Rendszergazda",
+        "editor": "Szerkesztő",
+        "viewer": "Megtekintő"
     },
     "owners": {
         "error_load": "Hiba a tulajdonos betöltésekor.",

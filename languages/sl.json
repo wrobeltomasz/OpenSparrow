@@ -314,7 +314,13 @@
         "insert_link": "Vstavi povezavo do zapisa",
         "select_table": "Izberite tabelo",
         "select_record": "Izberite zapis",
-        "insert": "Vstavi"
+        "insert": "Vstavi",
+        "mention_notification": "{user} vas je omenil v komentarju",
+        "mention_no_results": "Uporabniki niso najdeni",
+        "user_info_name": "Ime",
+        "user_info_role": "Vloga",
+        "user_info_email": "E-pošta",
+        "user_info_phone": "Telefon"
     },
     "notes": {
         "title": "Zapiski",
@@ -333,6 +339,11 @@
         "reminder_on": "Opomnik: {date}",
         "open_record": "Odpri zapis",
         "error_saving": "Napaka pri shranjevanju zapiska."
+    },
+    "roles": {
+        "admin": "Skrbnik",
+        "editor": "Urednik",
+        "viewer": "Ogledovalec"
     },
     "owners": {
         "error_load": "Napaka pri nalaganju lastnika.",

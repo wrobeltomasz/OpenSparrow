@@ -521,6 +521,8 @@ define('COMMENTS_PAGE_LIMIT_MAX', max(1, (int) get_env('COMMENTS_PAGE_LIMIT_MAX'
 
 define('COMMENTS_MINE_LIMIT', max(1, (int) get_env('COMMENTS_MINE_LIMIT', '50')));
 
+define('MENTION_USER_LIMIT', max(1, (int) get_env('MENTION_USER_LIMIT', '8')));
+
 define('NOTIFICATIONS_DROPDOWN_LIMIT', max(1, (int) get_env('NOTIFICATIONS_DROPDOWN_LIMIT', '10')));
 
 define('AUTOMATION_EMAIL_FROM', (static function (): string {
