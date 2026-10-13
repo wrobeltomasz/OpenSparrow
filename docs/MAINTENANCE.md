@@ -364,6 +364,13 @@ where each part can be installed or skipped independently. `public/setup_api.php
 must stay demo-free — do not wire `demo_install_run()` or any `install_demo`
 request field back into it.
 
+`config/demo_meta.json` is the demo's install marker: `demo_status` in
+`public/admin/demo/seed.php` reports the demo as installed purely on the file's
+existence, never on the live database. The file survives a database/schema reset
+(only `demo_uninstall` removes it), so a reset that leaves it behind makes
+**Admin > Demo** show a phantom installation with no structures — remove the file
+to clear it.
+
 ## Per-user frontend access (2026-08-11)
 
 Admins can restrict a frontend user to a subset of the schema tables, the
