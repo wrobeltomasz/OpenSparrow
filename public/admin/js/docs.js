@@ -513,7 +513,8 @@ ${_h3('doc-10d', strings.s10d_head)}
 ${paragraphHtml(strings.s10d_desc)}
 ${_ul([
     `<strong>${strings.s10d_where_label}:</strong> ${strings.s10d_where}`,
-    `<strong>${strings.s10d_perm_label}:</strong> ${strings.s10d_perm}`
+    `<strong>${strings.s10d_perm_label}:</strong> ${strings.s10d_perm}`,
+    `<strong>${strings.s10d_link_label}:</strong> ${strings.s10d_link}`
 ])}
 
 ${_h3('doc-10e', strings.s10e_head)}

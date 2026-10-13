@@ -306,7 +306,11 @@
         "deleted_text": "Komentar obrisan.",
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
-        "unknown_author": "Unknown"
+        "unknown_author": "Unknown",
+        "insert_link": "Umetni poveznicu na zapis",
+        "select_table": "Odaberite tablicu",
+        "select_record": "Odaberite zapis",
+        "insert": "Umetni"
     },
     "notes": {
         "title": "Bilješke",

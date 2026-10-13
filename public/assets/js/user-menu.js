@@ -290,7 +290,14 @@ const MY_COMMENT_SNIPPET_MAX = 140;
 
 let myCommentsPanel = null;
 
-function renderMyComments(bodyElement, comments) {
+function stripRecordLinks(raw, links) {
+    return String(raw ?? '').replace(/\[Record:\s*([a-zA-Z0-9_]+):(\d+)\]/g, (match, table, id) => {
+        const link = (links || {})[table + ':' + id];
+        return link ? link.label : '';
+    });
+}
+
+function renderMyComments(bodyElement, comments, links = {}) {
     bodyElement.textContent = '';
 
     if (!comments.length) {
@@ -310,7 +317,7 @@ function renderMyComments(bodyElement, comments) {
 
         const body = document.createElement('div');
         body.className = 'um-item-body';
-        const raw = comment.body ?? '';
+        const raw = stripRecordLinks(comment.body ?? '', links);
         body.textContent = raw.length > MY_COMMENT_SNIPPET_MAX
             ? `${raw.slice(0, MY_COMMENT_SNIPPET_MAX)}…`
             : raw;
@@ -357,7 +364,7 @@ async function openMyCommentsPanel() {
         if (!result.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
 
         myCommentsPanel.clearStatus();
-        renderMyComments(myCommentsPanel.bodyElement, data.comments ?? []);
+        renderMyComments(myCommentsPanel.bodyElement, data.comments ?? [], data.links ?? {});
     } catch (error) {
         myCommentsPanel.setStatus(error.message, true);
     }

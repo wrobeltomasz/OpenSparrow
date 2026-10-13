@@ -302,7 +302,11 @@
         "deleted_text": "Commentaire supprimé.",
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
-        "unknown_author": "Unknown"
+        "unknown_author": "Unknown",
+        "insert_link": "Insérer un lien vers l'enregistrement",
+        "select_table": "Sélectionner une table",
+        "select_record": "Sélectionner un enregistrement",
+        "insert": "Insérer"
     },
     "notes": {
         "title": "Notes",

@@ -302,7 +302,11 @@
         "deleted_text": "Comentário eliminado.",
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
-        "unknown_author": "Unknown"
+        "unknown_author": "Unknown",
+        "insert_link": "Inserir link para o registo",
+        "select_table": "Selecionar tabela",
+        "select_record": "Selecionar registo",
+        "insert": "Inserir"
     },
     "notes": {
         "title": "Notas",

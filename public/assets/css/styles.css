@@ -2716,10 +2716,85 @@ thead th.drag-over {
   background: var(--accent-mid);
 }
 
+.c-toolbar-btn img {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
 .c-empty {
   text-align: center;
   color: var(--muted);
   padding: 32px 0;
+}
+
+.c-record-link {
+  display: inline-block;
+  padding: 1px 8px;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-mid);
+  border-radius: 999px;
+  color: var(--accent-dark);
+  text-decoration: none;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.c-record-link:hover {
+  background: var(--accent-mid);
+}
+
+.c-link-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 42, 55, 0.45);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.c-link-overlay.open {
+  display: flex;
+}
+
+.c-link-box {
+  background: var(--panel);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 420px;
+  padding: 1.5rem;
+}
+
+.c-link-box h3 {
+  margin: 0 0 1rem;
+  color: var(--text);
+}
+
+.c-link-close {
+  float: right;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.c-link-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+
+.c-link-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .note-form {

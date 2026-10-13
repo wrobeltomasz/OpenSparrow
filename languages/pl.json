@@ -306,7 +306,11 @@
         "deleted_text": "Komentarz usunięty.",
         "bold_title": "Pogrubienie (**tekst**)",
         "italic_title": "Kursywa (*tekst*)",
-        "unknown_author": "Nieznany"
+        "unknown_author": "Nieznany",
+        "insert_link": "Wstaw link do rekordu",
+        "select_table": "Wybierz tabelę",
+        "select_record": "Wybierz rekord",
+        "insert": "Wstaw"
     },
     "notes": {
         "title": "Notatki",

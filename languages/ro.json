@@ -306,7 +306,11 @@
         "deleted_text": "Comentariu șters.",
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
-        "unknown_author": "Unknown"
+        "unknown_author": "Unknown",
+        "insert_link": "Introduceți link către înregistrare",
+        "select_table": "Selectați un tabel",
+        "select_record": "Selectați o înregistrare",
+        "insert": "Introduceți"
     },
     "notes": {
         "title": "Note",

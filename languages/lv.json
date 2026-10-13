@@ -302,7 +302,11 @@
         "deleted_text": "Komentārs dzēsts.",
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
-        "unknown_author": "Unknown"
+        "unknown_author": "Unknown",
+        "insert_link": "Ievietot saiti uz ierakstu",
+        "select_table": "Atlasiet tabulu",
+        "select_record": "Atlasiet ierakstu",
+        "insert": "Ievietot"
     },
     "notes": {
         "title": "Piezīmes",

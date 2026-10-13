@@ -306,7 +306,11 @@
         "deleted_text": "Komentaras ištrintas.",
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
-        "unknown_author": "Unknown"
+        "unknown_author": "Unknown",
+        "insert_link": "Įterpti nuorodą į įrašą",
+        "select_table": "Pasirinkite lentelę",
+        "select_record": "Pasirinkite įrašą",
+        "insert": "Įterpti"
     },
     "notes": {
         "title": "Užrašai",

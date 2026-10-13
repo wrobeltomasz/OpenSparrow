@@ -302,7 +302,11 @@
         "deleted_text": "Kommentar borttagen.",
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
-        "unknown_author": "Unknown"
+        "unknown_author": "Unknown",
+        "insert_link": "Infoga länk till post",
+        "select_table": "Välj tabell",
+        "select_record": "Välj post",
+        "insert": "Infoga"
     },
     "notes": {
         "title": "Anteckningar",

@@ -302,7 +302,11 @@
         "deleted_text": "Το σχόλιο διαγράφηκε.",
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
-        "unknown_author": "Unknown"
+        "unknown_author": "Unknown",
+        "insert_link": "Εισαγωγή συνδέσμου σε εγγραφή",
+        "select_table": "Επιλέξτε πίνακα",
+        "select_record": "Επιλέξτε εγγραφή",
+        "insert": "Εισαγωγή"
     },
     "notes": {
         "title": "Σημειώσεις",

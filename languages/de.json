@@ -302,7 +302,11 @@
         "deleted_text": "Kommentar gelöscht.",
         "bold_title": "Bold (**text**)",
         "italic_title": "Italic (*text*)",
-        "unknown_author": "Unknown"
+        "unknown_author": "Unknown",
+        "insert_link": "Link zu Datensatz einfügen",
+        "select_table": "Tabelle auswählen",
+        "select_record": "Datensatz auswählen",
+        "insert": "Einfügen"
     },
     "notes": {
         "title": "Notizen",
