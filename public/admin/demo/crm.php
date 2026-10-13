@@ -443,7 +443,7 @@ function demo_def_crm($conn): array
                 'first_name' => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'First Name', 'not_null' => true, 'description' => 'Contact first name'],
                 'last_name'  => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'Last Name',  'not_null' => true, 'description' => 'Contact last name'],
                 'email'      => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'Email', 'description' => 'Contact email address'],
-                'phone'      => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'Phone', 'description' => 'Contact phone number'],
+                'phone'      => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'Phone', 'mask_for_viewer' => true, 'description' => 'Contact phone number'],
                 'position'   => ['type' => 'text', 'show_in_grid' => true, 'display_name' => 'Position', 'description' => 'Job title or position at company'],
                 'created_at' => ['type' => 'timestamp', 'show_in_grid' => false, 'show_in_edit' => false, 'readonly' => true, 'display_name' => 'Created At', 'description' => 'Date when contact record was created'],
             ], 'foreign_keys' => [
@@ -751,6 +751,13 @@ function demo_def_crm($conn): array
             ['related_table' => 'contacts', 'related_id' => 3, 'author' => 0, 'body' => 'Michael is only reachable on Tuesdays and Thursdays - avoid Monday calls.'],
             ['related_table' => 'leads', 'related_id' => 2, 'author' => 2, 'body' => 'Marcus from Apex Logistics asked for pricing on the mid-tier package. Passing to sales.'],
             ['related_table' => 'leads', 'related_id' => 6, 'author' => 0, 'body' => 'Marked as Lost - they went with an in-house solution. Worth re-approaching in six months.'],
+            ['related_table' => 'deals', 'related_id' => 4, 'author' => 1, 'body' => 'Main sponsor is [Record: contacts:5] - include him on the renewal reminder.'],
+            ['related_table' => 'deals', 'related_id' => 3, 'author' => 2, 'body' => 'Their ops contact [Record: contacts:4] confirmed the window fits their team.'],
+            ['related_table' => 'companies', 'related_id' => 7, 'author' => 0, 'body' => 'Biggest open opportunity here is [Record: deals:8] - keep the momentum going.'],
+            ['related_table' => 'contacts', 'related_id' => 1, 'author' => 2, 'body' => 'John is the decision maker on [Record: deals:1], loop him in early.'],
+            ['related_table' => 'leads', 'related_id' => 2, 'author' => 1, 'body' => 'Promising inbound - worth a compare against [Record: companies:19] when we quote the mid tier.'],
+            ['related_table' => 'companies', 'related_id' => 2, 'author' => 2, 'body' => 'Related deal [Record: deals:2] is still in negotiation - the account review can wait.'],
+            ['related_table' => 'deals', 'related_id' => 26, 'author' => 0, 'body' => 'Phase 2 is gated by [Record: deals:3]; once that is Won, involve [Record: contacts:9].'],
         ],
 
         'demo_notes' => [
@@ -867,12 +874,16 @@ function demo_def_crm($conn): array
             ['key' => 'calendar'],
             ['key' => 'companies', 'children' => [
                 ['key' => 'contacts'],
+                ['key' => 'deals'],
+                ['key' => 'activities'],
+                ['key' => 'projects'],
             ]],
-            ['key' => 'deals'],
-            ['key' => 'activities'],
             ['key' => 'board'],
             ['key' => 'roadmap'],
             ['key' => 'files'],
+            ['key' => 'workflows'],
+            ['key' => 'views'],
+            ['key' => 'print'],
         ],
         'files_relations' => [
             ['table' => 'companies', 'col1' => 'name',       'col2' => ''],
