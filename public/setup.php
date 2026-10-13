@@ -85,19 +85,19 @@ header(
 
                 <div class="form-group">
                     <label for="db-name"><?= $escape('setup.lbl_dbname') ?></label>
-                    <input type="text" id="db-name" placeholder="opensparrow" value="opensparrow">
+                    <input type="text" id="db-name">
                     <div class="help-text"><?= $escape('setup.help_dbname') ?></div>
                 </div>
 
                 <div class="form-group">
                     <label for="db-user"><?= $escape('setup.lbl_user') ?></label>
-                    <input type="text" id="db-user" placeholder="postgres" value="postgres">
+                    <input type="text" id="db-user">
                     <div class="help-text"><?= $escape('setup.help_user') ?></div>
                 </div>
 
                 <div class="form-group">
                     <label for="db-password"><?= $escape('setup.lbl_password') ?></label>
-                    <input type="password" id="db-password" placeholder="••••••••">
+                    <input type="password" id="db-password">
                 </div>
 
                 <button
@@ -129,7 +129,7 @@ header(
 
                 <div class="form-group">
                     <label for="db-schema"><?= $escape('setup.lbl_schema') ?></label>
-                    <input type="text" id="db-schema" placeholder="app" value="app">
+                    <input type="text" id="db-schema">
                     <div class="help-text"><?= $escape('setup.help_schema') ?></div>
                 </div>
 

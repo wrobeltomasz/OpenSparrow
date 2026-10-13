@@ -210,8 +210,8 @@ On a fresh installation — whenever `config/database.json` does not exist — a
 The wizard walks you through four steps:
 
 1. **Welcome** — intro and requirements overview.
-2. **Database Connection** — enter host, port, database name, username, and password. Click **Test Connection** to verify before proceeding.
-3. **Schema** — choose the PostgreSQL schema name (default: `app`). Optionally tick *Create schema if not exists*.
+2. **Database Connection** — enter host, port, database name, username, and password. Click **Test Connection** to verify before proceeding. Only the host (`localhost`) and port (`5432`) are prefilled — the database name and username start empty.
+3. **Schema** — choose the PostgreSQL schema name (e.g. `app`). Optionally tick *Create schema if not exists*.
 
    > **Destructive option:** the third checkbox, *Drop and recreate this schema*, runs `DROP SCHEMA … CASCADE`. Everything in that schema is permanently deleted, including tables the wizard did not create. Leave it unticked unless you are deliberately wiping a scratch installation.
 4. **Review & Initialize** — confirm settings and click **Initialize System Tables**. The wizard creates all `spw_*` tables, seeds the `admin` account with a **randomly generated password displayed once on this screen** — copy it before leaving the page — and writes `config/database.json`.
