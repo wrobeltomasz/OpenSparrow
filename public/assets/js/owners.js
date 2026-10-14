@@ -70,24 +70,21 @@ async function loadHistory() {
         }
 
         const table_ = document.createElement('table');
-        table_.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+        table_.className = 'ow-history-table';
 
         const thead = table_.createTHead();
         const hrow  = thead.insertRow();
         [I18n.t('owners.col_owner'), I18n.t('owners.col_changed_by'), I18n.t('owners.col_date')].forEach(headerLabel => {
             const th = document.createElement('th');
             th.textContent = headerLabel;
-            th.style.cssText = 'text-align:left;padding:8px 10px;border-bottom:2px solid var(--border-light);color:var(--muted);font-weight:600;';
             hrow.appendChild(th);
         });
 
         const tbody = table_.createTBody();
         data.history.forEach(row => {
             const tr = tbody.insertRow();
-            tr.style.borderBottom = '1px solid var(--border-light)';
 
             const ownerTd = tr.insertCell();
-            ownerTd.style.padding = '8px 10px';
             if (row.username) {
                 const userSpan = document.createElement('span');
                 userSpan.className = 'ow-user';
@@ -99,7 +96,6 @@ async function loadHistory() {
             }
 
             const changedByTd = tr.insertCell();
-            changedByTd.style.padding = '8px 10px';
             if (row.changed_by_name) {
                 const changedBySpan = document.createElement('span');
                 changedBySpan.className = 'ow-user';
@@ -112,7 +108,6 @@ async function loadHistory() {
 
             const dateTd = tr.insertCell();
             dateTd.textContent = row.changed_at ? new Date(row.changed_at).toLocaleString() : '—';
-            dateTd.style.padding = '8px 10px';
         });
 
         historyElement.textContent = '';

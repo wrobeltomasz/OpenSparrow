@@ -120,7 +120,7 @@
   justify-content: center;
   gap: 6px;
   padding: 8px 14px;
-  border: 1px solid var(--accent);
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--accent);
   color: #fff;
@@ -139,6 +139,7 @@
   border-color: var(--accent-dark);
   color: #fff;
   text-decoration: none;
+  box-shadow: var(--shadow-md);
 }
 .btn-action-disabled {
   pointer-events: none;
