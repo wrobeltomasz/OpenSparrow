@@ -1226,11 +1226,10 @@ function startWorkflow(workflow, containerElement, titleElement, appSchema, allW
 
         const finishButton = document.createElement('button');
         finishButton.id = 'wf-finish-btn';
-        finishButton.style.cssText = 'margin-top: 24px; padding: 10px 24px; background: var(--accent); color: white; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 600; box-shadow: var(--shadow-sm); transition: background var(--transition);';
+        finishButton.className = 'btn-save';
+        finishButton.style.marginTop = '24px';
         finishButton.textContent = I18n.t('workflow.finish_return');
 
-        finishButton.addEventListener('mouseenter', () => finishButton.style.background = 'var(--accent-dark)');
-        finishButton.addEventListener('mouseleave', () => finishButton.style.background = 'var(--accent)');
         finishButton.addEventListener('click', () => renderWorkflowsList(allWorkflows, containerElement, titleElement, menuName, appSchema));
 
         wrapper.appendChild(heading);
