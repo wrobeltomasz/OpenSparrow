@@ -67,6 +67,10 @@ function buildMessage(c, links) {
     const author = document.createElement('span');
     author.className = 'c-msg-author';
     author.textContent = c.username ?? I18n.t('comments.unknown_author');
+    if (c.username) {
+        author.dataset.username = c.username;
+        author.dataset.tooltipPrefix = '';
+    }
 
     const time = document.createElement('span');
     time.textContent = formatTime(c.created_at);

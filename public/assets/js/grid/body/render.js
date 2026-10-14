@@ -55,7 +55,6 @@ function handleTooltipOver(event, schema) {
     if (!row) return;
 
     const columns = schema.tables[state.currentTable]?.columns || {};
-    td.style.cursor = 'default';
     const title = row[column + '__display'] ?? row[column] ?? '';
     showRecordTooltip(td, { title, rows: rowsFromRecord(row, columns) });
 }

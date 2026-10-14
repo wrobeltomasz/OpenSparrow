@@ -57,15 +57,17 @@ export function enableUserTooltips(container, { endpoint, titlePrefix = '' } = {
         if (!anchor) return;
         const username = anchor.getAttribute('data-username');
         if (!username) return;
+        anchor.classList.add('os-tip');
 
         const token = ++hoverToken;
         const pendingInfo = fetchUserInfo(username, endpoint);
+        const prefix = anchor.dataset.tooltipPrefix ?? titlePrefix;
 
         setTimeout(() => {
             if (token !== hoverToken) return;
             pendingInfo.then(info => {
                 if (token !== hoverToken) return;
-                showRecordTooltip(anchor, buildUserInfoModel(username, info, titlePrefix), 0);
+                showRecordTooltip(anchor, buildUserInfoModel(username, info, prefix), 0);
             });
         }, 1000);
     });

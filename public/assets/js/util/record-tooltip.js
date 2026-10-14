@@ -100,6 +100,7 @@ function renderTooltipNow(anchor, { title, rows } = {}) {
 }
 
 export function showRecordTooltip(anchor, model = {}, delay = 1000) {
+    anchor.classList.add('os-tip');
     clearTimeout(showTimer);
     const token = ++showToken;
     showTimer = setTimeout(() => {
