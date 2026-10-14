@@ -3951,7 +3951,7 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
     color: var(--muted);
 }
 .me-format-label {
-    font-weight: var(--font-weight-bold);
+    font-weight: 700;
 }
 .me-format-option {
     display: flex;
