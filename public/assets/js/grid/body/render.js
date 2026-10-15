@@ -95,6 +95,10 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
         const highlightColor = matchHighlightRule(row, highlightRules);
 
         if (!isReadOnly) {
+            tr.appendChild(buildActionsCell(row, schema, isReadOnly, onTableReload));
+        }
+
+        if (!isReadOnly) {
             const tdSelect = document.createElement('td');
             tdSelect.className = 'td-select';
             const callback = document.createElement('input');
@@ -142,10 +146,6 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
             tdImage.dataset.imgRowId = String(row['id']);
             tdImage.dataset.imgLabel = imagesConfig.label || I18n.t('images.label');
             tr.appendChild(tdImage);
-        }
-
-        if (!isReadOnly) {
-            tr.appendChild(buildActionsCell(row, schema, isReadOnly, onTableReload));
         }
 
         if (highlightColor) {

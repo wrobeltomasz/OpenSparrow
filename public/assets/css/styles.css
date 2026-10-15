@@ -1017,6 +1017,14 @@ thead th:last-child  { padding-right: 0.6rem; }
   width: 44px;
   min-width: 44px;
   max-width: 44px;
+  text-align: center;
+}
+
+.th-actions-icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  opacity: 0.75;
 }
 
 .td-actions {
@@ -1039,7 +1047,7 @@ thead th:last-child  { padding-right: 0.6rem; }
   display: none;
   position: absolute;
   top: calc(100% + 4px);
-  right: 0;
+  left: 0;
   flex-direction: row;
   align-items: center;
   gap: 2px;

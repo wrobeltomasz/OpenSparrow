@@ -15,6 +15,18 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows, onSortT
     const subtables = schema.tables[state.currentTable]?.subtables || [];
 
     if (!isReadOnly) {
+        const thActions = document.createElement('th');
+        thActions.className = 'th-actions';
+        const thActionsIcon = document.createElement('img');
+        thActionsIcon.className = 'th-actions-icon';
+        thActionsIcon.src = 'assets/icons/material/action_key.svg';
+        thActionsIcon.alt = '';
+        thActionsIcon.title = I18n.t('grid.more_actions');
+        thActions.appendChild(thActionsIcon);
+        headRow.appendChild(thActions);
+    }
+
+    if (!isReadOnly) {
         const thSelect = document.createElement('th');
         thSelect.className = 'th-select';
         const callback = document.createElement('input');
@@ -113,12 +125,6 @@ export function renderThead(schema, isReadOnly, onRerender, getPageRows, onSortT
         thImageLabel.textContent = imagesConfig.label || I18n.t('images.label');
         thImage.appendChild(thImageLabel);
         headRow.appendChild(thImage);
-    }
-
-    if (!isReadOnly) {
-        const thActions = document.createElement('th');
-        thActions.className = 'th-actions';
-        headRow.appendChild(thActions);
     }
 
     thead.appendChild(headRow);
