@@ -206,5 +206,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds native Excel (.xlsx) export next to the existing CSV in the record grid, public share links, views and mass edit. The workbook is built client-side by a dependency-free writer (public/assets/js/export_xlsx.js) that emits a valid OPC package (including docProps/core.xml and docProps/app.xml) with typed cells, XML-safe text, sanitized sheet names and deferred object-URL revocation so downloads are not cut short; every download site now goes through the shared downloadBlob helper and the mass-edit format labels (CSV / Excel) are translated into all 20 locales. Adds a mask_for_viewer flag to schema columns: a column marked with it is visible but its values are blanked for the read-only viewer role across the grid and the frontend modules (list, board, calendar, dashboard, roadmap, m2m and the edit form), while editors and admins keep seeing the real values; the flag is set in the schema editor and needs no migration because it lives in the schema configuration. The grid also gains a record tooltip on drilldown rows, with the hide race fixed so the tooltip does not linger. Fixes Deploy Smoke reliability by authenticating Docker Hub pulls and guarding against 429 rate limits. No database migration and no configuration keys are removed by this release."
+    },
+    "4.3": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Adds [Record: table:id] links in comments with a record picker, and @mentions in comments delivering in-app notifications plus user-info tooltips on record owners and comment authors; every record and user tooltip now shares an os-tip help cursor. Frontend button, font and table styling is unified around the documented design tokens with Excel-like tables in the edit and create forms, and the grid row-actions column moves to the first position. The setup wizard drops its placeholders and default values, keeping only localhost and 5432. The demo CRM viewer phone is masked. No database migration, no removed files and no removed config keys by this release."
     }
 }
