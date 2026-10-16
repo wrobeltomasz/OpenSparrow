@@ -922,7 +922,10 @@ function ragBuildSettingsTab(panel) {
         });
 
         tableElement.appendChild(tbody);
-        modelsTable.appendChild(tableElement);
+        const tableWrap = document.createElement('div');
+        tableWrap.style.cssText = 'overflow-x:auto;';
+        tableWrap.appendChild(tableElement);
+        modelsTable.appendChild(tableWrap);
     }
 
     async function doCheck() {

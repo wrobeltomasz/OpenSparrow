@@ -585,6 +585,7 @@ ${_ul([
 ${_h3('doc-12', strings.s12_head)}
 ${_ul([strings.s12_li1, strings.s12_li2, strings.s12_li3, strings.s12_li4])}
 ${_h4(strings.s12_env_head)}
+<div style="overflow-x:auto">
 <table class="adm-tbl" style="margin-top:10px;">
     <thead><tr>
         <th class="adm-th">${strings.s12_th_var}</th>
@@ -620,6 +621,7 @@ ${_h4(strings.s12_env_head)}
         <tr><td class="adm-td"><code>AUTOMATION_EMAIL_FROM</code></td><td class="adm-td"><em>${strings.env_none}</em></td><td class="adm-td">${strings.env_mailfrom}</td></tr>
     </tbody>
 </table>
+</div>
 ${paragraphHtml(strings.s12_env_note)}
 
 ${_h3('doc-13', strings.s13_head)}

@@ -136,7 +136,10 @@ function buildRulesTab(context) {
                 tr.appendChild(tdAct);
             });
 
-            body.appendChild(tableElement);
+            const tableWrap = document.createElement('div');
+            tableWrap.style.cssText = 'overflow-x:auto;';
+            tableWrap.appendChild(tableElement);
+            body.appendChild(tableWrap);
             buildPreviewBlock(body);
         } else {
             const empty = document.createElement('p');
@@ -702,7 +705,10 @@ function buildSuggestionsTab() {
                 tr.appendChild(actionCell);
             });
 
-            container.appendChild(tableElement);
+            const tableWrap = document.createElement('div');
+            tableWrap.style.cssText = 'overflow-x:auto;';
+            tableWrap.appendChild(tableElement);
+            container.appendChild(tableWrap);
         } catch (error) {
             const messageElement = document.createElement('p');
             messageElement.textContent = 'Failed to load schema: ' + error.message;

@@ -150,7 +150,10 @@ async function loadMigrations(container) {
     summary.textContent = `Total: ${migrations.length} | Applied: ${applied.length} | Pending: ${pending.length}`;
 
     container.innerHTML = '';
-    container.append(table, summary);
+    const tableWrap = document.createElement('div');
+    tableWrap.style.cssText = 'overflow-x:auto;';
+    tableWrap.appendChild(table);
+    container.append(tableWrap, summary);
 }
 
 async function loadReleaseMigrations(container) {

@@ -106,7 +106,10 @@ function buildRunHistorySection() {
             });
 
             container.innerHTML = '';
-            container.appendChild(tableElement);
+            const tableWrap = document.createElement('div');
+            tableWrap.style.cssText = 'overflow-x:auto;';
+            tableWrap.appendChild(tableElement);
+            container.appendChild(tableWrap);
         } catch (error) {
             container.textContent = 'Request failed: ' + error.message;
         }

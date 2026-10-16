@@ -116,7 +116,7 @@ function renderIndexAdvisor(body, data) {
 
     byTable.forEach((rows, tableKey) => {
         const group = document.createElement('div');
-        group.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px; overflow:hidden;';
+        group.style.cssText = 'margin-bottom:16px; border:1px solid var(--border); border-radius:6px;';
 
         const groupHeader = document.createElement('div');
         groupHeader.style.cssText = 'padding:8px 12px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono);  font-weight:var(--font-weight-bold);';

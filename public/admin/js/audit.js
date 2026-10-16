@@ -171,6 +171,7 @@ export async function renderAuditEditor(context) {
             <h3>Table: spw_record_snapshots</h3>
         </div>
         <div class="adm-sec-body">
+            <div style="overflow-x:auto">
             <table class="adm-tbl">
                 <thead>
                     <tr>
@@ -188,6 +189,7 @@ export async function renderAuditEditor(context) {
                     <tr><td class="adm-td">created_at</td><td class="adm-td">timestamp</td><td class="adm-td">When the snapshot was saved</td></tr>
                 </tbody>
             </table>
+            </div>
         </div>
     `;
     wrap.appendChild(schemaSection);

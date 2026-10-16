@@ -1002,7 +1002,6 @@ function buildAutomationsTab(panel, mode, shared) {
 
             const table = document.createElement('table');
             table.className   = 'adm-tbl';
-            table.style.width = '100%';
             const thead = document.createElement('thead');
             thead.innerHTML = `<tr>
                 <th class="adm-th">Time</th>
@@ -1044,7 +1043,10 @@ function buildAutomationsTab(panel, mode, shared) {
                 tbody.appendChild(tr);
             }
             table.appendChild(tbody);
-            cardBody.appendChild(table);
+            const tableWrap = document.createElement('div');
+            tableWrap.style.cssText = 'overflow-x:auto;';
+            tableWrap.appendChild(table);
+            cardBody.appendChild(tableWrap);
         } catch (_) {
             loading.textContent = 'Failed to load run history.';
         }

@@ -121,6 +121,7 @@ function buildSkeleton() {
                 <button type="button" id="f-refresh" class="btn btn-success btn-sm">Refresh</button>
             </div>
             <div id="f-status" style="color:var(--muted);margin-bottom:8px"></div>
+            <div style="overflow-x:auto">
             <table class="adm-tbl" id="f-table">
                 <thead>
                     <tr>
@@ -138,6 +139,7 @@ function buildSkeleton() {
                     <tr><td colspan="8" class="adm-td" style="color:var(--muted)">Loading...</td></tr>
                 </tbody>
             </table>
+            </div>
             <div id="f-pages" style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap"></div>
             </div>
         </div>

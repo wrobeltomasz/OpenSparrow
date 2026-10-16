@@ -687,7 +687,10 @@ export async function renderCsvImportPage(context) {
                 tr.append(headerCell, sampleCell, nullCell, typeCell);
             });
 
-            mappingContainer.appendChild(tableElement);
+            const tableWrap = document.createElement('div');
+            tableWrap.style.cssText = 'overflow-x:auto;';
+            tableWrap.appendChild(tableElement);
+            mappingContainer.appendChild(tableWrap);
             return;
         }
 
@@ -744,8 +747,11 @@ export async function renderCsvImportPage(context) {
             tr.append(headerCell, sampleCell, columnCell);
         });
 
-        mappingContainer.appendChild(tableElement);
-        rebuildConflictOptions();
+            const tableWrap = document.createElement('div');
+            tableWrap.style.cssText = 'overflow-x:auto;';
+            tableWrap.appendChild(tableElement);
+            mappingContainer.appendChild(tableWrap);
+            rebuildConflictOptions();
         validateConflict();
     }
 
@@ -1102,7 +1108,10 @@ export async function renderCsvImportPage(context) {
             });
 
             histContainer.innerHTML = '';
-            histContainer.appendChild(tableElement);
+            const tableWrap = document.createElement('div');
+            tableWrap.style.cssText = 'overflow-x:auto;';
+            tableWrap.appendChild(tableElement);
+            histContainer.appendChild(tableWrap);
         } catch (_) {
             histContainer.innerHTML = '<p style="color:var(--error);">Failed to load history.</p>';
         }
