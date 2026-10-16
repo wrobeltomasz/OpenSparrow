@@ -271,7 +271,7 @@ function buildSetupSection() {
     content.appendChild(guideBlock(
         'Shared hosting — HTTP trigger (no CLI cron)',
         `wget -q -O /dev/null "${window.location.origin}/cron.php?token=CRON_SECRET"`,
-        'Set the CRON_SECRET environment variable first (empty disables the endpoint). Works with cPanel cron jobs, cron-job.org, EasyCron, UptimeRobot, or a host-specific launcher file (e.g. home.pl cron-hourly.php).'
+        'Set the CRON_SECRET environment variable first (empty disables the endpoint). Works with cPanel cron jobs, cron-job.org, EasyCron, UptimeRobot, or a host-specific launcher file.'
     ));
 
     const note = document.createElement('p');
