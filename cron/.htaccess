@@ -1,0 +1,10 @@
+# Deny all direct web access to this directory. Holds CLI-only workers
+# that must never run over HTTP.
+# Covers both Apache 2.4+ (mod_authz_core) and 2.2 (mod_access_compat / mod_authz_host).
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

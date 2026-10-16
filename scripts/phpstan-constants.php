@@ -49,6 +49,7 @@ define('FORWARDED_HEADER_PRIORITY', explode(',', (string) getenv('FORWARDED_HEAD
 define('TRUSTED_PROXY_IPS', explode(',', (string) getenv('TRUSTED_PROXY_IPS')));
 define('DEMO_MODE', getenv('DEMO_MODE') === 'true');
 define('SETUP_ENABLED', getenv('SETUP_ENABLED') === 'true');
+define('CRON_SECRET', (string) getenv('CRON_SECRET'));
 define('FILES_MAX_SIZE_MB', (int) getenv('FILES_MAX_SIZE_MB'));
 define('FILES_PAGE_LIMIT', (int) getenv('FILES_PAGE_LIMIT'));
 define('FILES_PAGE_LIMIT_MAX', (int) getenv('FILES_PAGE_LIMIT_MAX'));

@@ -505,6 +505,8 @@ define('DEMO_MODE', get_env('DEMO_MODE', 'false') === 'true');
 
 define('SETUP_ENABLED', get_env('SETUP_ENABLED', 'true') === 'true');
 
+define('CRON_SECRET', get_env('CRON_SECRET', ''));
+
 define('FILES_MAX_SIZE_MB', max(1, (int) get_env('FILES_MAX_SIZE_MB', '20')));
 
 define('FILES_PAGE_LIMIT', max(1, (int) get_env('FILES_PAGE_LIMIT', '25')));

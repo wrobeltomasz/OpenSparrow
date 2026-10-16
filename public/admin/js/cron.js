@@ -268,6 +268,12 @@ function buildSetupSection() {
         'Adjust sleep interval (seconds) as needed.'
     ));
 
+    content.appendChild(guideBlock(
+        'Shared hosting — HTTP trigger (no CLI cron)',
+        `wget -q -O /dev/null "${window.location.origin}/cron.php?token=CRON_SECRET"`,
+        'Set the CRON_SECRET environment variable first (empty disables the endpoint). Works with cPanel cron jobs, cron-job.org, EasyCron, UptimeRobot, or a host-specific launcher file (e.g. home.pl cron-hourly.php).'
+    ));
+
     const note = document.createElement('p');
     note.style.cssText = '  margin-top:4px;';
     note.textContent = 'The script logs each run to spw_users_notifications_log. Use Manual Run (above) to test immediately.';

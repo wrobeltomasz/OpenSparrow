@@ -187,6 +187,28 @@ Each release ZIP is built automatically by GitHub Actions and includes all PHP, 
 
 > **Note:** The ZIP contains no pre-configured JSON files except `database.json.example`. Your `config/database.json` is created on first setup and is never overwritten during updates; all other configuration lives in the database (`spw_config`) — existing configuration is always preserved.
 
+#### Scheduling the notification cron (shared hosting)
+
+The notification worker (`cron/cron_notifications.php`) is **CLI-only** and lives outside the web root, so a shared host that cannot run a real cron daemon cannot invoke it directly. Instead, OpenSparrow ships a token-protected HTTP trigger at `cron.php` (part of the `public/` tree, so it is web-accessible in either of the layouts above).
+
+1. Set the `CRON_SECRET` environment variable (or export it in your host's PHP settings) to a long random value — `openssl rand -base64 32`. Empty disables the endpoint.
+2. Schedule a request to it from whatever scheduler your host offers:
+
+   - **cPanel / Plesk "cron job"** with `wget`/`curl`:
+     ```
+     wget -q -O /dev/null "https://crm.example.com/cron.php?token=YOUR_SECRET"
+     curl -f -s "https://crm.example.com/cron.php?token=YOUR_SECRET"
+     ```
+   - **External URL cron** (cron-job.org, EasyCron, UptimeRobot, n8n): point a GET at `https://crm.example.com/cron.php?token=YOUR_SECRET` on the desired interval.
+   - **home.pl** and similar hosts that auto-run a specially named file in `public_html`: upload a launcher such as `cron-hourly.php` containing:
+     ```php
+     <?php
+     system('curl -f -s "https://crm.example.com/cron.php?token=YOUR_SECRET"');
+     ```
+     (name it `cron-5min.php`, `cron-daily.php`, `cron-1545.php`, etc. per the host's schedule rules).
+
+The endpoint returns plain text of the run and re-uses the same deduplication as the CLI worker, so overlapping runs are harmless. On a VPS or Docker you can keep using the CLI worker directly (`php …/cron/cron_notifications.php`).
+
 ### Path D — Local development (no Docker)
 
 ```bash
@@ -314,6 +336,7 @@ All variables are read by `includes/config.php` on every request — the single 
 | `ERROR_LOG_PATH` | *(auto)* | Destination of every `error_log()` message — the app's only diagnostic channel, since `display_errors` is forced off outside development. When unset it resolves to `storage/logs/app.log`, created on first run alongside a `.htaccess` denying HTTP access. Set it explicitly to log outside `STORAGE_PATH`; if the target directory is missing or not writable the value is refused and logged, and the `php.ini` destination is kept. |
 | `DEMO_MODE` | `false` | Set `true` to block all write operations in the admin API (safe for public demos). |
 | `SETUP_ENABLED` | `true` | Second, independent lock on the installation wizard. Set `false` once the installation is finished: `setup.php` then redirects to the login page and `setup_api.php` answers 403, regardless of whether `config/database.json` exists. That file is otherwise the *only* thing standing between the public internet and a wizard that creates an admin account. Fail-closed — any value other than `true` disables the wizard. |
+| `CRON_SECRET` | *(empty)* | Secret token that unlocks the notification cron over HTTP at `cron.php`. Empty (the default) keeps the endpoint disabled — every request answers 403. Set it to a long random value (e.g. `openssl rand -base64 32`) and schedule `https://crm.example.com/cron.php?token=<secret>` from any URL-based cron service (cPanel, cron-job.org, EasyCron, UptimeRobot) or a host-specific launcher (see Path C). The token is compared in constant time. |
 | `RECORD_SNAPSHOTS_ENABLED` | `false` | Enable record snapshot capture after every INSERT/UPDATE. Overrides the admin panel toggle stored in the `settings` configuration. |
 | `FILES_MAX_SIZE_MB` | `20` | Default upload size limit when not set in the `files` configuration. |
 | `THUMBNAIL_MAX_WIDTH` | `300` | Max thumbnail width in pixels. |

@@ -102,6 +102,7 @@ parameters:
         - RAG_RATE_LIMIT_PER_MIN
         - RAG_MAX_CONCURRENT
         - RAG_PAGE_CONTEXT_MAX_CHARS
+        - CRON_SECRET
 
     # The baseline records what was already there on the day PHPStan was introduced.
     # It is a ratchet: it may shrink, never grow. When a change would add an entry,
