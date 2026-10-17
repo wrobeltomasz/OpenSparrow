@@ -318,22 +318,56 @@ if ($action === 'set_logo_enabled') {
 if ($action === 'upload_logo') {
     require_not_demo();
 
-    if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+    $base64 = (string) ($body['data_base64'] ?? '');
+    $decodedBytes = null;
+    $mimeType = 'application/octet-stream';
+
+    if ($base64 !== '') {
+        if (str_starts_with($base64, 'data:')) {
+            $commaPosition = strpos($base64, ',');
+            if ($commaPosition !== false) {
+                $base64 = substr($base64, $commaPosition + 1);
+            }
+        }
+        if ($base64 === '' || strlen($base64) > 3 * 1024 * 1024) {
+            admin_err('Logo is too large or invalid.');
+        }
+        $decodedBytes = base64_decode($base64, true);
+        if ($decodedBytes === false || $decodedBytes === '') {
+            admin_err('Invalid image data.');
+        }
+        if (strlen($decodedBytes) > 2 * 1024 * 1024) {
+            admin_err('Logo must be 2 MB or smaller.');
+        }
+    } elseif (isset($_FILES['file'])) {
+        if ($_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+            admin_err(match ((int) $_FILES['file']['error']) {
+                UPLOAD_ERR_INI_SIZE   => 'Logo is too large (exceeds upload_max_filesize).',
+                UPLOAD_ERR_FORM_SIZE  => 'Logo is too large (exceeds the form limit).',
+                UPLOAD_ERR_PARTIAL    => 'Logo was only partially uploaded — please retry.',
+                UPLOAD_ERR_NO_FILE    => 'No file was uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Server temporary directory is missing. '
+                    . 'Set upload_tmp_dir in the hosting panel to a writable path.',
+                UPLOAD_ERR_CANT_WRITE => 'Server could not write the uploaded file (temp directory permissions).',
+                UPLOAD_ERR_EXTENSION  => 'A server extension blocked the upload.',
+                default               => 'Upload failed (PHP error code ' . (int) $_FILES['file']['error'] . ').',
+            });
+        }
+        if ($_FILES['file']['size'] > 2 * 1024 * 1024) {
+            admin_err('Logo must be 2 MB or smaller.');
+        }
+        $decodedBytes = @file_get_contents($_FILES['file']['tmp_name']);
+    } else {
         admin_err('No file received or upload error.');
     }
 
-    $upload = $_FILES['file'];
-
-    $maxBytes = 2 * 1024 * 1024;
-    if ($upload['size'] > $maxBytes) {
-        admin_err('Logo must be 2 MB or smaller.');
-    }
-
     $allowedMimes = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
-    $mimeType = 'application/octet-stream';
-    if (class_exists('finfo')) {
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mimeType = $finfo->file($upload['tmp_name']) ?: 'application/octet-stream';
+    if ($decodedBytes !== null) {
+        if (class_exists('finfo')) {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->buffer($decodedBytes) ?: 'application/octet-stream';
+        }
     }
     if (!isset($allowedMimes[$mimeType])) {
         admin_err('Only PNG, JPEG or WEBP images are allowed.');
@@ -349,8 +383,14 @@ if ($action === 'upload_logo') {
     $extension         = $allowedMimes[$mimeType];
     $filename    = 'logo-' . bin2hex(random_bytes(8)) . '.' . $extension;
     $destination = $uploadDirectory . '/' . $filename;
-    if (!move_uploaded_file($upload['tmp_name'], $destination)) {
-        admin_err('Failed to save the uploaded file.');
+    if ($base64 !== '') {
+        if (file_put_contents($destination, $decodedBytes) === false) {
+            admin_err('Failed to save the uploaded file.');
+        }
+    } else {
+        if (!move_uploaded_file($_FILES['file']['tmp_name'], $destination)) {
+            admin_err('Failed to save the uploaded file.');
+        }
     }
 
     $settings     = admin_read_settings();

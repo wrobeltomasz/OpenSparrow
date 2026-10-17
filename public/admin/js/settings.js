@@ -9,6 +9,15 @@ import { createPageHeader, buildInnerTabs, buildSectionCard, el } from './ui.js'
 import { renderDatabaseSection } from './database.js';
 import { renderAuditEditor } from './audit.js';
 
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+    });
+}
+
 export async function renderSettingsPage(context) {
     const { workspaceEl: workspaceElement } = context;
     workspaceElement.innerHTML = '<h3>Loading settings…</h3>';
@@ -385,14 +394,13 @@ export async function renderSettingsPage(context) {
             showStatusPill(logoPillAnchor, 'Choose a file first.', 'error');
             return;
         }
-        const formData = new FormData();
-        formData.append('file', chosenFile);
 
         logoUploadButton.disabled = true;
         try {
+            const dataUrl  = await readFileAsDataUrl(chosenFile);
             const response = await apiFetch('api.php?action=upload_logo', {
                 method: 'POST',
-                body: formData,
+                body: { data_base64: dataUrl },
             });
             const result = await response.json();
             if (result.status === 'success') {
