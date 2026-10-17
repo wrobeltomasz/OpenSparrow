@@ -349,7 +349,8 @@
         "hide": "Ukryj",
         "hide_confirm": "Ukryć tę wiadomość?",
         "error_load": "Błąd ładowania czatu.",
-        "error_send": "Błąd wysyłania wiadomości."
+        "error_send": "Błąd wysyłania wiadomości.",
+        "new_message": "Nowa wiadomość od {user}"
     },
     "roles": {
         "admin": "Administrator",

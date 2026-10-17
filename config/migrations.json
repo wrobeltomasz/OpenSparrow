@@ -212,5 +212,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds [Record: table:id] links in comments with a record picker, and @mentions in comments delivering in-app notifications plus user-info tooltips on record owners and comment authors; every record and user tooltip now shares an os-tip help cursor. Frontend button, font and table styling is unified around the documented design tokens with Excel-like tables in the edit and create forms, and the grid row-actions column moves to the first position. The setup wizard drops its placeholders and default values, keeping only localhost and 5432. The demo CRM viewer phone is masked. No database migration, no removed files and no removed config keys by this release."
+    },
+    "4.4": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Adds one-to-one user chat served by api/chat.php and opened from the Chat entry in the avatar menu, with immediate in-app bell notifications, demo seed data, and the 4.4_user_chat database migration creating spw_chat_messages. The notification cron is refactored into a shared runner reused by the CLI entry and a new token-protected HTTP trigger (public/cron.php, unlocked by the CRON_SECRET environment variable) for shared hosts without a CLI cron. Admin tables now size to content and scroll horizontally. No removed files and no removed config keys by this release."
     }
 }

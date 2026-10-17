@@ -345,7 +345,8 @@
         "hide": "Peida",
         "hide_confirm": "Peita see sõnum?",
         "error_load": "Viga vestluse laadimisel.",
-        "error_send": "Viga sõnumi saatmisel."
+        "error_send": "Viga sõnumi saatmisel.",
+        "new_message": "Uus sõnum kasutajalt {user}"
     },
     "roles": {
         "admin": "Administraator",

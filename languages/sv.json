@@ -345,7 +345,8 @@
         "hide": "Dölj",
         "hide_confirm": "Dölj detta meddelande?",
         "error_load": "Fel vid laddning av chatten.",
-        "error_send": "Fel vid sändning av meddelande."
+        "error_send": "Fel vid sändning av meddelande.",
+        "new_message": "Nytt meddelande från {user}"
     },
     "roles": {
         "admin": "Administratör",

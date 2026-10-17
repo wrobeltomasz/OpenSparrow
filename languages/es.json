@@ -345,7 +345,8 @@
         "hide": "Ocultar",
         "hide_confirm": "¿Ocultar este mensaje?",
         "error_load": "Error al cargar el chat.",
-        "error_send": "Error al enviar el mensaje."
+        "error_send": "Error al enviar el mensaje.",
+        "new_message": "Nuevo mensaje de {user}"
     },
     "roles": {
         "admin": "Administrador",

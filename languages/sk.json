@@ -349,7 +349,8 @@
         "hide": "Skryť",
         "hide_confirm": "Skryť túto správu?",
         "error_load": "Chyba pri načítaní chatu.",
-        "error_send": "Chyba pri odosielaní správy."
+        "error_send": "Chyba pri odosielaní správy.",
+        "new_message": "Nová správa od {user}"
     },
     "roles": {
         "admin": "Administrátor",

@@ -345,7 +345,8 @@
         "hide": "Masquer",
         "hide_confirm": "Masquer ce message ?",
         "error_load": "Erreur de chargement de la discussion.",
-        "error_send": "Erreur d'envoi du message."
+        "error_send": "Erreur d'envoi du message.",
+        "new_message": "Nouveau message de {user}"
     },
     "roles": {
         "admin": "Administrateur",
