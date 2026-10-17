@@ -139,6 +139,7 @@
         "my_comments": "Mano komentarai",
         "my_comments_empty": "Dar neparašėte nė vieno komentaro.",
         "notes": "Mano užrašai",
+        "chat": "Pokalbis",
         "close": "Uždaryti",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -335,6 +336,20 @@
         "reminder_on": "Priminimas: {date}",
         "open_record": "Atidaryti įrašą",
         "error_saving": "Klaida išsaugant užrašą."
+    },
+    "chat": {
+        "title": "Pokalbis",
+        "empty": "Pokalbių dar nėra.",
+        "search": "Ieškoti naudotojų…",
+        "no_users": "Naudotojų nerasta",
+        "back": "Atgal",
+        "you": "Jūs",
+        "placeholder": "Parašykite žinutę…",
+        "send": "Siųsti",
+        "hide": "Slėpti",
+        "hide_confirm": "Slėpti šią žinutę?",
+        "error_load": "Klaida įkeliant pokalbį.",
+        "error_send": "Klaida siunčiant žinutę."
     },
     "roles": {
         "admin": "Administratorius",

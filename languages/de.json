@@ -139,6 +139,7 @@
         "my_comments": "Meine Kommentare",
         "my_comments_empty": "Sie haben noch keine Kommentare geschrieben.",
         "notes": "Meine Notizen",
+        "chat": "Chat",
         "close": "Schließen",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -331,6 +332,20 @@
         "reminder_on": "Erinnerung: {date}",
         "open_record": "Datensatz öffnen",
         "error_saving": "Fehler beim Speichern der Notiz."
+    },
+    "chat": {
+        "title": "Chat",
+        "empty": "Noch keine Unterhaltungen.",
+        "search": "Benutzer suchen…",
+        "no_users": "Keine Benutzer gefunden",
+        "back": "Zurück",
+        "you": "Du",
+        "placeholder": "Nachricht schreiben…",
+        "send": "Senden",
+        "hide": "Ausblenden",
+        "hide_confirm": "Diese Nachricht ausblenden?",
+        "error_load": "Fehler beim Laden des Chats.",
+        "error_send": "Fehler beim Senden der Nachricht."
     },
     "roles": {
         "admin": "Administrator",

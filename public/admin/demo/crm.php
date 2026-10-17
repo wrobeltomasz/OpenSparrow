@@ -771,6 +771,19 @@ function demo_def_crm($conn): array
             ['author' => 2, 'related_table' => 'deals', 'related_id' => 7, 'body' => 'Schedule a check-in call about the infrastructure buildout timeline.', 'reminder_date' => null],
         ],
 
+        'demo_chat' => [
+            ['sender' => 1, 'recipient' => 0, 'hours_ago' => 96, 'body' => 'Hey Anna, did you get the updated numbers for the Acme renewal?'],
+            ['sender' => 0, 'recipient' => 1, 'hours_ago' => 94, 'body' => 'Just got them this morning. Value went up to 45k — they added the onboarding package.'],
+            ['sender' => 1, 'recipient' => 0, 'hours_ago' => 91, 'body' => 'Nice. Can you send me the final scope before I flag it to the client?'],
+            ['sender' => 0, 'recipient' => 1, 'hours_ago' => 90, 'body' => 'Sent. Also added the renewal clause they asked for.'],
+            ['sender' => 1, 'recipient' => 0, 'hours_ago' => 50, 'body' => 'Perfect. I will schedule the kickoff once legal signs off.'],
+            ['sender' => 0, 'recipient' => 1, 'hours_ago' => 48, 'body' => 'Great, I will hold the proposal until then.'],
+            ['sender' => 0, 'recipient' => 2, 'hours_ago' => 26, 'body' => 'Julia, please tag all Acme support tickets as high priority this week.'],
+            ['sender' => 0, 'recipient' => 2, 'hours_ago' => 25, 'body' => 'Also keep an eye on the DataStream account — they reorganized their procurement team.'],
+            ['sender' => 1, 'recipient' => 0, 'hours_ago' => 5, 'body' => 'Quick heads-up: Global Solutions is up for renewal in Q4. Want to start the account review early?'],
+            ['sender' => 0, 'recipient' => 1, 'hours_ago' => 4, 'body' => 'Agreed. Let us put it on the agenda for the Monday sync.'],
+        ],
+
         'demo_files' => [
             [
                 'related_table' => 'deals', 'related_id' => 1, 'author' => 0,

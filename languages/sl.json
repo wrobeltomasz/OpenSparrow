@@ -139,6 +139,7 @@
         "my_comments": "Moji komentarji",
         "my_comments_empty": "Niste še napisali nobenega komentarja.",
         "notes": "Moji zapiski",
+        "chat": "Klepet",
         "close": "Zapri",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -339,6 +340,20 @@
         "reminder_on": "Opomnik: {date}",
         "open_record": "Odpri zapis",
         "error_saving": "Napaka pri shranjevanju zapiska."
+    },
+    "chat": {
+        "title": "Klepet",
+        "empty": "Še ni pogovorov.",
+        "search": "Iskanje uporabnikov…",
+        "no_users": "Ni najdenih uporabnikov",
+        "back": "Nazaj",
+        "you": "Vi",
+        "placeholder": "Napišite sporočilo…",
+        "send": "Pošlji",
+        "hide": "Skrij",
+        "hide_confirm": "Skriti to sporočilo?",
+        "error_load": "Napaka pri nalaganju klepeta.",
+        "error_send": "Napaka pri pošiljanju sporočila."
     },
     "roles": {
         "admin": "Skrbnik",

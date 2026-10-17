@@ -513,3 +513,35 @@ function system_tables_external_api_log_ddl(callable $ident): array
         "COMMENT ON COLUMN $externalApiLogTable.created_at IS 'Request time.'",
     ];
 }
+
+function system_tables_user_chat_ddl(callable $ident): array
+{
+    $chatMessagesTable = $ident('chat_messages');
+    $usersTable        = $ident('users');
+
+    return [
+        "CREATE TABLE IF NOT EXISTS $chatMessagesTable (
+            id serial4 NOT NULL,
+            sender_id int4 NULL,
+            recipient_id int4 NULL,
+            body text NOT NULL,
+            created_at timestamp DEFAULT now() NOT NULL,
+            is_visible bool DEFAULT true NOT NULL,
+            CONSTRAINT spw_chat_messages_pkey PRIMARY KEY (id),
+            CONSTRAINT spw_chat_messages_body_len CHECK (char_length(body) <= 4000),
+            CONSTRAINT spw_chat_messages_sender_fkey FOREIGN KEY (sender_id)
+                REFERENCES $usersTable(id) ON DELETE SET NULL,
+            CONSTRAINT spw_chat_messages_recipient_fkey FOREIGN KEY (recipient_id)
+                REFERENCES $usersTable(id) ON DELETE SET NULL
+        )",
+        "CREATE INDEX IF NOT EXISTS idx_spw_chat_messages_sender ON $chatMessagesTable (sender_id, created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_spw_chat_messages_recipient ON $chatMessagesTable (recipient_id, created_at)",
+        "COMMENT ON TABLE $chatMessagesTable IS 'One-to-one user messages. A message is visible to its sender and recipient only; hiding a message flips is_visible without deleting the row.'",
+        "COMMENT ON COLUMN $chatMessagesTable.id IS 'Surrogate primary key.'",
+        "COMMENT ON COLUMN $chatMessagesTable.sender_id IS 'Author. FK to spw_users(id) ON DELETE SET NULL.'",
+        "COMMENT ON COLUMN $chatMessagesTable.recipient_id IS 'Recipient. FK to spw_users(id) ON DELETE SET NULL.'",
+        "COMMENT ON COLUMN $chatMessagesTable.body IS 'Message text. CHECK char_length(body) <= 4000.'",
+        "COMMENT ON COLUMN $chatMessagesTable.created_at IS 'Send time.'",
+        "COMMENT ON COLUMN $chatMessagesTable.is_visible IS 'Soft-hide marker. A hidden message stays in the table but is not rendered in the chat thread.'",
+    ];
+}

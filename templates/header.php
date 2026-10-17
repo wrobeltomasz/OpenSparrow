@@ -31,6 +31,7 @@ $agentEnabled = rag_chat_enabled();
 $myRecordsLabel      = htmlspecialchars(t('header.my_records'), ENT_QUOTES, 'UTF-8');
 $myCommentsLabel     = htmlspecialchars(t('header.my_comments'), ENT_QUOTES, 'UTF-8');
 $notesTable          = htmlspecialchars(t('header.notes'), ENT_QUOTES, 'UTF-8');
+$chatLabel           = htmlspecialchars(t('header.chat'), ENT_QUOTES, 'UTF-8');
 $logoutLabel         = htmlspecialchars(t('auth.logout'), ENT_QUOTES, 'UTF-8');
 
 $sidebarJsVersion = asset_version(__DIR__ . '/../public/assets/js/sidebar.js');
@@ -122,6 +123,9 @@ if ($logoEnabled) {
                 <button class="user-avatar-menu-item" id="notesBtn" data-cy="notes" role="menuitem">
                     <?= $notesTable ?>
                 </button>
+                <button class="user-avatar-menu-item" id="chatBtn" data-cy="chat" role="menuitem">
+                    <?= $chatLabel ?>
+                </button>
                 <div class="user-avatar-menu-divider"></div>
                 <button class="user-avatar-menu-item danger" id="logoutBtn" data-cy="logout" role="menuitem">
                     <?= $logoutLabel ?>
@@ -137,6 +141,7 @@ if ($logoEnabled) {
 <?= os_inline_globals([
     'CHAT_BUBBLE_ENABLED' => defined('CHAT_BUBBLE_ENABLED') && CHAT_BUBBLE_ENABLED,
     'CHAT_ENABLED'        => $agentEnabled,
+    'CURRENT_USER_ID'     => os_session_get('user_id', 0),
 ], $cspNonce ?? '') ?>
 <script type="module" src="assets/js/agent-panel.js?v=<?= $agentJsVersion ?>"<?= $nonceAttribute ?>></script>
 <div class="app-container">

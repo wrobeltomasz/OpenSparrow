@@ -139,6 +139,7 @@
         "my_comments": "Moje komentáre",
         "my_comments_empty": "Zatiaľ ste nenapísali žiadne komentáre.",
         "notes": "Moje poznámky",
+        "chat": "Chat",
         "close": "Zatvoriť",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -335,6 +336,20 @@
         "reminder_on": "Pripomienka: {date}",
         "open_record": "Otvoriť záznam",
         "error_saving": "Chyba pri ukladaní poznámky."
+    },
+    "chat": {
+        "title": "Chat",
+        "empty": "Zatiaľ žiadne konverzácie.",
+        "search": "Hľadať používateľov…",
+        "no_users": "Nenašli sa žiadni používatelia",
+        "back": "Späť",
+        "you": "Vy",
+        "placeholder": "Napíšte správu…",
+        "send": "Odoslať",
+        "hide": "Skryť",
+        "hide_confirm": "Skryť túto správu?",
+        "error_load": "Chyba pri načítaní chatu.",
+        "error_send": "Chyba pri odosielaní správy."
     },
     "roles": {
         "admin": "Administrátor",

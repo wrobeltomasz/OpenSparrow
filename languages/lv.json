@@ -139,6 +139,7 @@
         "my_comments": "Mani komentāri",
         "my_comments_empty": "Jūs vēl neesat rakstījis nevienu komentāru.",
         "notes": "Manas piezīmes",
+        "chat": "Tērzēšana",
         "close": "Aizvērt",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -331,6 +332,20 @@
         "reminder_on": "Atgādinājums: {date}",
         "open_record": "Atvērt ierakstu",
         "error_saving": "Kļūda, saglabājot piezīmi."
+    },
+    "chat": {
+        "title": "Tērzēšana",
+        "empty": "Sarunu vēl nav.",
+        "search": "Meklēt lietotājus…",
+        "no_users": "Lietotāji nav atrasti",
+        "back": "Atpakaļ",
+        "you": "Jūs",
+        "placeholder": "Rakstiet ziņojumu…",
+        "send": "Nosūtīt",
+        "hide": "Paslēpt",
+        "hide_confirm": "Paslēpt šo ziņojumu?",
+        "error_load": "Kļūda, ielādējot tērzēšanu.",
+        "error_send": "Kļūda, nosūtot ziņojumu."
     },
     "roles": {
         "admin": "Administrators",

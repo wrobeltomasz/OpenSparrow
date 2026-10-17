@@ -139,6 +139,7 @@
         "my_comments": "Saját hozzászólásaim",
         "my_comments_empty": "Még nem írt hozzászólást.",
         "notes": "Saját jegyzeteim",
+        "chat": "Csevegés",
         "close": "Bezárás",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -331,6 +332,20 @@
         "reminder_on": "Emlékeztető: {date}",
         "open_record": "Rekord megnyitása",
         "error_saving": "Hiba a jegyzet mentésekor."
+    },
+    "chat": {
+        "title": "Csevegés",
+        "empty": "Még nincsenek beszélgetések.",
+        "search": "Felhasználók keresése…",
+        "no_users": "Nem található felhasználó",
+        "back": "Vissza",
+        "you": "Te",
+        "placeholder": "Írjon üzenetet…",
+        "send": "Küldés",
+        "hide": "Elrejtés",
+        "hide_confirm": "Elrejti ezt az üzenetet?",
+        "error_load": "Hiba a csevegés betöltésekor.",
+        "error_send": "Hiba az üzenet küldésekor."
     },
     "roles": {
         "admin": "Rendszergazda",

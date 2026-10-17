@@ -139,6 +139,7 @@
         "my_comments": "Mes commentaires",
         "my_comments_empty": "Vous n'avez pas encore écrit de commentaire.",
         "notes": "Mes notes",
+        "chat": "Discussion",
         "close": "Fermer",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -331,6 +332,20 @@
         "reminder_on": "Rappel : {date}",
         "open_record": "Ouvrir l'enregistrement",
         "error_saving": "Erreur lors de l'enregistrement de la note."
+    },
+    "chat": {
+        "title": "Discussion",
+        "empty": "Aucune conversation.",
+        "search": "Rechercher des utilisateurs…",
+        "no_users": "Aucun utilisateur trouvé",
+        "back": "Retour",
+        "you": "Vous",
+        "placeholder": "Écrire un message…",
+        "send": "Envoyer",
+        "hide": "Masquer",
+        "hide_confirm": "Masquer ce message ?",
+        "error_load": "Erreur de chargement de la discussion.",
+        "error_send": "Erreur d'envoi du message."
     },
     "roles": {
         "admin": "Administrateur",

@@ -124,6 +124,23 @@ function demo_install_run(
             }
         }
 
+        $chatTable = sys_table('chat_messages');
+        foreach (($withUsers ? $demoData['demo_chat'] : []) as $message) {
+            $createdAt = date('Y-m-d H:i:s', strtotime('-' . (int) $message['hours_ago'] . ' hours'));
+            $result = pg_query_params($conn, "
+                INSERT INTO $chatTable (sender_id, recipient_id, body, created_at)
+                VALUES (\$1, \$2, \$3, \$4)
+            ", [
+                $demoUserIds[$message['sender']],
+                $demoUserIds[$message['recipient']],
+                $message['body'],
+                $createdAt,
+            ]);
+            if ($result === false) {
+                admin_db_fail($conn, "demo_install:demo_chat:{$type}");
+            }
+        }
+
         $recordOwnersTable = sys_table('record_owners');
         $ownerChangedBy = (int) ($_SESSION['user_id'] ?? 0);
         foreach (($withUsers ? $demoData['demo_record_owners'] : []) as $recordOwner) {
@@ -780,6 +797,12 @@ if ($action === 'demo_uninstall') {
                 [$idList]
             );
             @pg_query_params($conn, 'DELETE FROM ' . sys_table('notes') . ' WHERE user_id = ANY($1::int[])', [$idList]);
+            @pg_query_params(
+                $conn,
+                'DELETE FROM ' . sys_table('chat_messages')
+                    . ' WHERE sender_id = ANY($1::int[]) OR recipient_id = ANY($1::int[])',
+                [$idList]
+            );
             @pg_query_params(
                 $conn,
                 'DELETE FROM ' . sys_table('users_notifications') . ' WHERE user_id = ANY($1::int[])',

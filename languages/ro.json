@@ -139,6 +139,7 @@
         "my_comments": "Comentariile mele",
         "my_comments_empty": "Nu ați scris încă niciun comentariu.",
         "notes": "Notele mele",
+        "chat": "Chat",
         "close": "Închide",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -335,6 +336,20 @@
         "reminder_on": "Memento: {date}",
         "open_record": "Deschide înregistrarea",
         "error_saving": "Eroare la salvarea notei."
+    },
+    "chat": {
+        "title": "Chat",
+        "empty": "Nicio conversație încă.",
+        "search": "Caută utilizatori…",
+        "no_users": "Nu s-au găsit utilizatori",
+        "back": "Înapoi",
+        "you": "Tu",
+        "placeholder": "Scrie un mesaj…",
+        "send": "Trimite",
+        "hide": "Ascunde",
+        "hide_confirm": "Ascundeți acest mesaj?",
+        "error_load": "Eroare la încărcarea chatului.",
+        "error_send": "Eroare la trimiterea mesajului."
     },
     "roles": {
         "admin": "Administrator",

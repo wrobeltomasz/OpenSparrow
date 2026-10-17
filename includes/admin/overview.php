@@ -145,6 +145,7 @@ if ($action === 'overview') {
             '3.3_user_contact',
             '3.3_clickstats',
             '3.6_external_api_log',
+            '4.4_user_chat',
         ];
         $pendingMigrations = count(array_filter(
             $knownMigrations,

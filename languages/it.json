@@ -139,6 +139,7 @@
         "my_comments": "I miei commenti",
         "my_comments_empty": "Non hai ancora scritto commenti.",
         "notes": "Le mie note",
+        "chat": "Chat",
         "close": "Chiudi",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -331,6 +332,20 @@
         "reminder_on": "Promemoria: {date}",
         "open_record": "Apri record",
         "error_saving": "Errore durante il salvataggio della nota."
+    },
+    "chat": {
+        "title": "Chat",
+        "empty": "Nessuna conversazione.",
+        "search": "Cerca utenti…",
+        "no_users": "Nessun utente trovato",
+        "back": "Indietro",
+        "you": "Tu",
+        "placeholder": "Scrivi un messaggio…",
+        "send": "Invia",
+        "hide": "Nascondi",
+        "hide_confirm": "Nascondere questo messaggio?",
+        "error_load": "Errore nel caricamento della chat.",
+        "error_send": "Errore nell'invio del messaggio."
     },
     "roles": {
         "admin": "Amministratore",

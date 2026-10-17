@@ -139,6 +139,7 @@
         "my_comments": "Moji komentari",
         "my_comments_empty": "Još niste napisali nijedan komentar.",
         "notes": "Moje bilješke",
+        "chat": "Razgovor",
         "close": "Zatvori",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -335,6 +336,20 @@
         "reminder_on": "Podsjetnik: {date}",
         "open_record": "Otvori zapis",
         "error_saving": "Greška pri spremanju bilješke."
+    },
+    "chat": {
+        "title": "Razgovor",
+        "empty": "Još nema razgovora.",
+        "search": "Traži korisnike…",
+        "no_users": "Nema pronađenih korisnika",
+        "back": "Natrag",
+        "you": "Vi",
+        "placeholder": "Napišite poruku…",
+        "send": "Pošalji",
+        "hide": "Sakrij",
+        "hide_confirm": "Sakriti ovu poruku?",
+        "error_load": "Pogreška pri učitavanju razgovora.",
+        "error_send": "Pogreška pri slanju poruke."
     },
     "roles": {
         "admin": "Administrator",

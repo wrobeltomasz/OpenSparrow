@@ -139,6 +139,7 @@
         "my_comments": "Mina kommentarer",
         "my_comments_empty": "Du har inte skrivit några kommentarer än.",
         "notes": "Mina anteckningar",
+        "chat": "Chatt",
         "close": "Stäng",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -331,6 +332,20 @@
         "reminder_on": "Påminnelse: {date}",
         "open_record": "Öppna post",
         "error_saving": "Fel vid sparande av anteckning."
+    },
+    "chat": {
+        "title": "Chatt",
+        "empty": "Inga konversationer ännu.",
+        "search": "Sök användare…",
+        "no_users": "Inga användare hittades",
+        "back": "Tillbaka",
+        "you": "Du",
+        "placeholder": "Skriv ett meddelande…",
+        "send": "Skicka",
+        "hide": "Dölj",
+        "hide_confirm": "Dölj detta meddelande?",
+        "error_load": "Fel vid laddning av chatten.",
+        "error_send": "Fel vid sändning av meddelande."
     },
     "roles": {
         "admin": "Administratör",

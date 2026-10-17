@@ -216,6 +216,7 @@ if ($action === 'init_database') {
             system_tables_user_contact_ddl(static fn(string $name): string => table_ident($schema, 'spw_' . $name)),
             system_tables_clickstats_ddl(static fn(string $name): string => table_ident($schema, 'spw_' . $name)),
             system_tables_external_api_log_ddl(static fn(string $name): string => table_ident($schema, 'spw_' . $name)),
+            system_tables_user_chat_ddl(static fn(string $name): string => table_ident($schema, 'spw_' . $name)),
             [
 
                 "ALTER TABLE " . table_ident($schema, 'spw_notes') . " ALTER COLUMN reminder_date TYPE timestamp",
@@ -226,6 +227,7 @@ if ($action === 'init_database') {
                 "INSERT INTO $migrationsTable (name) VALUES ('3.3_user_contact') ON CONFLICT (name) DO NOTHING",
                 "INSERT INTO $migrationsTable (name) VALUES ('3.3_clickstats') ON CONFLICT (name) DO NOTHING",
                 "INSERT INTO $migrationsTable (name) VALUES ('3.6_external_api_log') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $migrationsTable (name) VALUES ('4.4_user_chat') ON CONFLICT (name) DO NOTHING",
             ]
         );
 

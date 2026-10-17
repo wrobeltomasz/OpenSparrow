@@ -139,6 +139,7 @@
         "my_comments": "Minu kommentaarid",
         "my_comments_empty": "Te pole veel ühtegi kommentaari kirjutanud.",
         "notes": "Minu märkmed",
+        "chat": "Vestlus",
         "close": "Sulge",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -331,6 +332,20 @@
         "reminder_on": "Meeldetuletus: {date}",
         "open_record": "Ava kirje",
         "error_saving": "Viga märkme salvestamisel."
+    },
+    "chat": {
+        "title": "Vestlus",
+        "empty": "Vestlusi veel pole.",
+        "search": "Otsi kasutajaid…",
+        "no_users": "Kasutajaid ei leitud",
+        "back": "Tagasi",
+        "you": "Sina",
+        "placeholder": "Kirjuta sõnum…",
+        "send": "Saada",
+        "hide": "Peida",
+        "hide_confirm": "Peita see sõnum?",
+        "error_load": "Viga vestluse laadimisel.",
+        "error_send": "Viga sõnumi saatmisel."
     },
     "roles": {
         "admin": "Administraator",

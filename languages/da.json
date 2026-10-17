@@ -139,6 +139,7 @@
         "my_comments": "Mine kommentarer",
         "my_comments_empty": "Du har endnu ikke skrevet nogen kommentarer.",
         "notes": "Mine noter",
+        "chat": "Chat",
         "close": "Luk",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -331,6 +332,20 @@
         "reminder_on": "Påmindelse: {date}",
         "open_record": "Åbn post",
         "error_saving": "Fejl ved lagring af note."
+    },
+    "chat": {
+        "title": "Chat",
+        "empty": "Ingen samtaler endnu.",
+        "search": "Søg efter brugere…",
+        "no_users": "Ingen brugere fundet",
+        "back": "Tilbage",
+        "you": "Dig",
+        "placeholder": "Skriv en besked…",
+        "send": "Send",
+        "hide": "Skjul",
+        "hide_confirm": "Skjul denne besked?",
+        "error_load": "Fejl ved indlæsning af chat.",
+        "error_send": "Fejl ved afsendelse af besked."
     },
     "roles": {
         "admin": "Administrator",

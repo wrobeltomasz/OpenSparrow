@@ -7,6 +7,7 @@ import { showToast } from './toast.js';
 import { I18n } from './i18n.js';
 import { BulkPanel } from './bulk_panel.js';
 import { openNotesPanel } from './notes-panel.js';
+import { openChatPanel } from './chat-panel.js';
 import { formatDateTime } from './util/format-value.js';
 import { escHtml } from './util/esc.js';
 import { AVATAR_COLORS, avatarColor, renderAvatar } from './avatar.js';
@@ -424,6 +425,11 @@ function initUserMenu() {
         openNotesPanel();
     });
 
+    document.getElementById('chatBtn')?.addEventListener('click', () => {
+        toggle(false);
+        openChatPanel();
+    });
+
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
         window.location.href = 'logout.php';
     });
@@ -432,4 +438,7 @@ function initUserMenu() {
 document.addEventListener('DOMContentLoaded', async () => {
     await I18n.load();
     initUserMenu();
+    if (new URLSearchParams(window.location.search).has('chat')) {
+        openChatPanel();
+    }
 });

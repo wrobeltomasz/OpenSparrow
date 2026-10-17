@@ -139,6 +139,7 @@
         "my_comments": "Moje komentarze",
         "my_comments_empty": "Nie napisałeś jeszcze żadnych komentarzy.",
         "notes": "Moje notatki",
+        "chat": "Czat",
         "close": "Zamknij",
         "avatar_option": "Kolor {n}",
         "avatar_options": "Kolory awatara",
@@ -335,6 +336,20 @@
         "reminder_on": "Przypomnienie: {date}",
         "open_record": "Otwórz rekord",
         "error_saving": "Błąd zapisu notatki."
+    },
+    "chat": {
+        "title": "Czat",
+        "empty": "Brak rozmów.",
+        "search": "Szukaj użytkowników…",
+        "no_users": "Nie znaleziono użytkowników",
+        "back": "Wstecz",
+        "you": "Ty",
+        "placeholder": "Napisz wiadomość…",
+        "send": "Wyślij",
+        "hide": "Ukryj",
+        "hide_confirm": "Ukryć tę wiadomość?",
+        "error_load": "Błąd ładowania czatu.",
+        "error_send": "Błąd wysyłania wiadomości."
     },
     "roles": {
         "admin": "Administrator",

@@ -139,6 +139,7 @@
         "my_comments": "My comments",
         "my_comments_empty": "You have not written any comments yet.",
         "notes": "My notes",
+        "chat": "Chat",
         "close": "Close",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
@@ -331,6 +332,20 @@
         "reminder_on": "Reminder: {date}",
         "open_record": "Open record",
         "error_saving": "Error saving note."
+    },
+    "chat": {
+        "title": "Chat",
+        "empty": "No conversations yet.",
+        "search": "Search users…",
+        "no_users": "No users found",
+        "back": "Back",
+        "you": "You",
+        "placeholder": "Write a message…",
+        "send": "Send",
+        "hide": "Hide",
+        "hide_confirm": "Hide this message?",
+        "error_load": "Error loading chat.",
+        "error_send": "Error sending message."
     },
     "roles": {
         "admin": "Admin",
