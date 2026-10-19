@@ -64,6 +64,8 @@ if ($action === 'clickstats_log') {
 
         $element = trim(os_request()->query('element'));
         $user    = trim(os_request()->query('user'));
+        $from    = trim(os_request()->query('from'));
+        $to      = trim(os_request()->query('to'));
         $page    = min(CLICKSTATS_MAX_PAGE, max(1, (int) (os_request()->queryAll()['page'] ?? 1)));
 
         $where  = [];
@@ -75,6 +77,14 @@ if ($action === 'clickstats_log') {
         if ($user !== '') {
             $parameters[] = '%' . $user . '%';
             $where[]  = 'u.username ILIKE $' . count($parameters);
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+            $parameters[] = $from;
+            $where[]  = 'c.created_at >= $' . count($parameters) . '::date';
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+            $parameters[] = $to;
+            $where[]  = "c.created_at < ($" . count($parameters) . "::date + INTERVAL '1 day')";
         }
         $whereSql = $where === [] ? '' : ' WHERE ' . implode(' AND ', $where);
 
@@ -116,9 +126,22 @@ if ($action === 'clickstats_log') {
             array_slice($parameters, 0, count($parameters) - 2)
         );
 
+        $pagesResult = @pg_query_params(
+            $conn,
+            "SELECT COALESCE(c.page, '') AS page, COUNT(*) AS clicks
+               FROM {$table} c
+               LEFT JOIN {$users} u ON u.id = c.user_id
+               {$whereSql}
+              GROUP BY c.page
+              ORDER BY clicks DESC, c.page ASC
+              LIMIT " . CLICKSTATS_TOP_LIMIT,
+            array_slice($parameters, 0, count($parameters) - 2)
+        );
+
         admin_ok([
             'rows'  => admin_fetch_all($rowsResult),
             'top'   => $topResult ? admin_fetch_all($topResult) : [],
+            'pages' => $pagesResult ? admin_fetch_all($pagesResult) : [],
             'total' => $total,
             'page'  => $page,
             'limit' => CLICKSTATS_LOG_LIMIT,

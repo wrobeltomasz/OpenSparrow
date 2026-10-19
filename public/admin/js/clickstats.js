@@ -9,6 +9,22 @@ import { buildInnerTabs, buildSectionCard, createPageHeader, el, mkTable, mkThea
 
 const MAX_RETENTION_DAYS = 3650;
 
+const PAGE_ICONS = {
+    'index.php': 'table.svg',
+    'files.php': 'folder_open.svg',
+    'print.php': 'print.svg',
+    'views.php': 'table_chart_view.svg',
+    'board.php': 'account_tree.svg',
+    'calendar.php': 'calendar_month.svg',
+    'dashboard.php': 'dashboard.svg',
+    'roadmap.php': 'timeline.svg',
+    'login.php': 'login.svg',
+    'edit.php': 'edit_square.svg',
+    'create.php': 'add_box.svg',
+};
+
+const PAGE_ICON_FALLBACK = 'web.svg';
+
 export async function renderClickstatsPage(context) {
     const { workspaceEl: workspaceElement } = context;
     workspaceElement.innerHTML = '<h3>Loading click statistics...</h3>';
@@ -40,7 +56,7 @@ export async function renderClickstatsPage(context) {
         version: data.version ?? null,
         tableExists: data.table_exists ?? false,
         total: data.total,
-        filters: { element: '', user: '' },
+        filters: { element: '', user: '', from: '', to: '' },
         page: 1,
     };
 
@@ -55,13 +71,15 @@ export async function renderClickstatsPage(context) {
         + 'no request is made, so the application behaves exactly as if the module did not exist.'
     ));
 
-    const [logPanel, topPanel, settingsPanel] = buildInnerTabs(wrap, [
+    const [logPanel, topPanel, pagesPanel, settingsPanel] = buildInnerTabs(wrap, [
         { label: 'Log', icon: 'material/list.svg' },
         { label: 'Top Elements', icon: 'material/leaderboard.svg' },
+        { label: 'Pages', icon: 'material/web.svg' },
         { label: 'Settings', icon: 'material/settings.svg' },
     ]);
     renderLog(logPanel, state);
     renderTopPanel(topPanel);
+    renderPagesPanel(pagesPanel);
     renderSettings(settingsPanel, state);
 }
 
@@ -189,6 +207,19 @@ function checkboxRow(title, description, checked) {
     return { row, input };
 }
 
+function dateField(labelText) {
+    const wrap = el('span');
+    wrap.style.cssText = 'display:inline-flex; align-items:center; gap:6px;';
+    const label = el('span', '', labelText);
+    label.style.color = 'var(--muted)';
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'adm-input';
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+    return { wrap, input };
+}
+
 function renderLog(panel, state) {
     const content = el('div');
     panel.appendChild(content);
@@ -207,12 +238,15 @@ function renderLog(panel, state) {
     userFilter.className = 'adm-input w-160';
     userFilter.placeholder = 'Filter by user';
 
+    const fromField = dateField('From');
+    const toField = dateField('To');
+
     const applyButton = el('button', 'btn btn-secondary', 'Apply');
     const clearButton = el('button', 'btn btn-secondary', 'Clear Filters');
     const purgeButton = el('button', 'btn btn-danger', 'Clear Log');
     const pillAnchor = el('span');
 
-    filterBar.append(elementFilter, userFilter, applyButton, clearButton, purgeButton, pillAnchor);
+    filterBar.append(elementFilter, userFilter, fromField.wrap, toField.wrap, applyButton, clearButton, purgeButton, pillAnchor);
     content.appendChild(filterBar);
 
     const retentionBar = el('div');
@@ -252,6 +286,8 @@ function renderLog(panel, state) {
         });
         if (state.filters.element) parameters.set('element', state.filters.element);
         if (state.filters.user) parameters.set('user', state.filters.user);
+        if (state.filters.from) parameters.set('from', state.filters.from);
+        if (state.filters.to) parameters.set('to', state.filters.to);
 
         let data;
         try {
@@ -287,13 +323,17 @@ function renderLog(panel, state) {
     applyButton.addEventListener('click', () => {
         state.filters.element = elementFilter.value.trim();
         state.filters.user = userFilter.value.trim();
+        state.filters.from = fromField.input.value;
+        state.filters.to = toField.input.value;
         state.page = 1;
         load();
     });
     clearButton.addEventListener('click', () => {
         elementFilter.value = '';
         userFilter.value = '';
-        state.filters = { element: '', user: '' };
+        fromField.input.value = '';
+        toField.input.value = '';
+        state.filters = { element: '', user: '', from: '', to: '' };
         state.page = 1;
         load();
     });
@@ -356,14 +396,17 @@ function renderTopPanel(panel) {
     userFilter.className = 'adm-input w-160';
     userFilter.placeholder = 'Filter by user';
 
+    const fromField = dateField('From');
+    const toField = dateField('To');
+
     const applyButton = el('button', 'btn btn-secondary', 'Apply');
     const clearButton = el('button', 'btn btn-secondary', 'Clear Filters');
     const pillAnchor = el('span');
 
-    filterBar.append(elementFilter, userFilter, applyButton, clearButton, pillAnchor);
+    filterBar.append(elementFilter, userFilter, fromField.wrap, toField.wrap, applyButton, clearButton, pillAnchor);
     content.appendChild(filterBar);
 
-    const filters = { element: '', user: '' };
+    const filters = { element: '', user: '', from: '', to: '' };
 
     const { card, body } = buildSectionCard(
         'Top Elements',
@@ -376,6 +419,8 @@ function renderTopPanel(panel) {
         const parameters = new URLSearchParams({ action: 'clickstats_log', page: '1' });
         if (filters.element) parameters.set('element', filters.element);
         if (filters.user) parameters.set('user', filters.user);
+        if (filters.from) parameters.set('from', filters.from);
+        if (filters.to) parameters.set('to', filters.to);
 
         let data;
         try {
@@ -417,13 +462,139 @@ function renderTopPanel(panel) {
     applyButton.addEventListener('click', () => {
         filters.element = elementFilter.value.trim();
         filters.user = userFilter.value.trim();
+        filters.from = fromField.input.value;
+        filters.to = toField.input.value;
         load();
     });
     clearButton.addEventListener('click', () => {
         elementFilter.value = '';
         userFilter.value = '';
+        fromField.input.value = '';
+        toField.input.value = '';
         filters.element = '';
         filters.user = '';
+        filters.from = '';
+        filters.to = '';
+        load();
+    });
+
+    load();
+}
+
+function pageIcon(page) {
+    const name = PAGE_ICONS[page] || PAGE_ICON_FALLBACK;
+    const image = document.createElement('img');
+    image.src = '../assets/icons/material/' + name;
+    image.alt = '';
+    image.style.cssText = 'width:24px;height:24px;opacity:.75;display:block;margin:0 auto 8px;';
+    return image;
+}
+
+function renderPagesPanel(panel) {
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '';
+
+    const filterBar = el('div');
+    filterBar.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
+
+    const elementFilter = document.createElement('input');
+    elementFilter.type = 'search';
+    elementFilter.className = 'adm-input w-220';
+    elementFilter.placeholder = 'Filter by element';
+
+    const userFilter = document.createElement('input');
+    userFilter.type = 'search';
+    userFilter.className = 'adm-input w-160';
+    userFilter.placeholder = 'Filter by user';
+
+    const fromField = dateField('From');
+    const toField = dateField('To');
+
+    const applyButton = el('button', 'btn btn-secondary', 'Apply');
+    const clearButton = el('button', 'btn btn-secondary', 'Clear Filters');
+    const pillAnchor = el('span');
+
+    filterBar.append(elementFilter, userFilter, fromField.wrap, toField.wrap, applyButton, clearButton, pillAnchor);
+    content.appendChild(filterBar);
+
+    const filters = { element: '', user: '', from: '', to: '' };
+
+    const { card, body } = buildSectionCard(
+        'Pages',
+        'Clicks aggregated by the page they happened on.'
+    );
+    content.appendChild(card);
+
+    async function load() {
+        body.innerHTML = '<p>Loading...</p>';
+        const parameters = new URLSearchParams({ action: 'clickstats_log', page: '1' });
+        if (filters.element) parameters.set('element', filters.element);
+        if (filters.user) parameters.set('user', filters.user);
+        if (filters.from) parameters.set('from', filters.from);
+        if (filters.to) parameters.set('to', filters.to);
+
+        let data;
+        try {
+            const response = await apiFetch('api.php?' + parameters.toString());
+            data = await response.json();
+        } catch (error) {
+            body.innerHTML = '<p style="color:var(--error);">Request failed.</p>';
+            return;
+        }
+        if (data.status !== 'success') {
+            body.innerHTML = '';
+            body.appendChild(el('p', '', data.error || 'Could not load the statistics.')).style.color = 'var(--error)';
+            return;
+        }
+        if (data.note) {
+            body.innerHTML = '';
+            body.appendChild(el('p', '', data.note));
+            return;
+        }
+
+        const pages = data.pages || [];
+        body.innerHTML = '';
+        if (pages.length === 0) {
+            body.appendChild(el('p', '', 'Nothing to show.'));
+            return;
+        }
+
+        const grid = el('div');
+        grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px;';
+        pages.forEach(row => {
+            const pageName = row.page || '';
+            const tile = el('div');
+            tile.style.cssText = 'text-align:center; padding:16px 10px; border:1px solid var(--border); '
+                + 'border-radius:8px; background:var(--bg);';
+            tile.appendChild(pageIcon(pageName));
+            const value = el('div', '', String(row.clicks));
+            value.style.cssText = 'font-size:22px; font-weight:var(--font-weight-bold); line-height:1.2;';
+            const label = el('div', '', pageName || 'Unknown page');
+            label.style.cssText = 'font-weight:var(--font-weight-bold); margin-top:4px; word-break:break-all;';
+            tile.appendChild(value);
+            tile.appendChild(label);
+            grid.appendChild(tile);
+        });
+        body.appendChild(grid);
+    }
+
+    applyButton.addEventListener('click', () => {
+        filters.element = elementFilter.value.trim();
+        filters.user = userFilter.value.trim();
+        filters.from = fromField.input.value;
+        filters.to = toField.input.value;
+        load();
+    });
+    clearButton.addEventListener('click', () => {
+        elementFilter.value = '';
+        userFilter.value = '';
+        fromField.input.value = '';
+        toField.input.value = '';
+        filters.element = '';
+        filters.user = '';
+        filters.from = '';
+        filters.to = '';
         load();
     });
 
