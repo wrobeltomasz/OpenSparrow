@@ -346,7 +346,8 @@
         "hide_confirm": "Nascondere questo messaggio?",
         "error_load": "Errore nel caricamento della chat.",
         "error_send": "Errore nell'invio del messaggio.",
-        "new_message": "Nuovo messaggio da {user}"
+        "new_message": "Nuovo messaggio da {user}",
+        "message_user": "Messaggio"
     },
     "roles": {
         "admin": "Amministratore",

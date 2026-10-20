@@ -346,7 +346,8 @@
         "hide_confirm": "Skjul denne besked?",
         "error_load": "Fejl ved indlæsning af chat.",
         "error_send": "Fejl ved afsendelse af besked.",
-        "new_message": "Ny besked fra {user}"
+        "new_message": "Ny besked fra {user}",
+        "message_user": "Besked"
     },
     "roles": {
         "admin": "Administrator",

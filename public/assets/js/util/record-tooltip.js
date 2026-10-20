@@ -15,6 +15,11 @@ export function getRecordTooltip() {
         element = document.createElement('div');
         element.id = TOOLTIP_ID;
         element.style.cssText = TOOLTIP_STYLE;
+        element.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+        element.addEventListener('mouseleave', () => {
+            clearTimeout(hideTimer);
+            element.style.display = 'none';
+        });
         document.body.appendChild(element);
     }
     return element;
@@ -47,20 +52,40 @@ export function rowsFromRecord(rowData = {}, columns = {}) {
 
 let showTimer = null;
 let showToken = 0;
+let hideTimer = null;
 
 export function currentShowToken() {
     return showToken;
 }
 
-function renderTooltipNow(anchor, { title, rows } = {}) {
+function renderTooltipNow(anchor, { title, rows, chat } = {}) {
     const element = getRecordTooltip();
+    clearTimeout(hideTimer);
     element.innerHTML = '';
 
     if (title !== undefined && title !== null && title !== '') {
         const header = document.createElement('div');
         header.style.cssText = 'font-weight:bold;font-size:14px;margin-bottom:8px;'
-            + 'border-bottom:1px solid var(--border-light);padding-bottom:5px;';
-        header.textContent = String(title);
+            + 'border-bottom:1px solid var(--border-light);padding-bottom:5px;'
+            + 'display:flex;align-items:center;justify-content:space-between;gap:8px;';
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = String(title);
+        header.appendChild(titleSpan);
+
+        if (chat && typeof chat.onClick === 'function') {
+            const chatButton = document.createElement('button');
+            chatButton.type = 'button';
+            chatButton.className = 'os-chat-tip-btn';
+            chatButton.setAttribute('aria-label', chat.label ?? '');
+            chatButton.title = chat.label ?? '';
+            const chatIcon = document.createElement('img');
+            chatIcon.src = 'assets/icons/material/chat.svg';
+            chatIcon.alt = '';
+            chatButton.appendChild(chatIcon);
+            chatButton.addEventListener('click', chat.onClick);
+            header.appendChild(chatButton);
+        }
+
         element.appendChild(header);
     }
 
@@ -88,6 +113,7 @@ function renderTooltipNow(anchor, { title, rows } = {}) {
         element.appendChild(rowDiv);
     });
 
+    element.style.pointerEvents = chat ? 'auto' : 'none';
     element.style.display = 'block';
 
     const rect = anchor.getBoundingClientRect();
@@ -116,5 +142,13 @@ export function hideRecordTooltip(unlessSupersededBy = null) {
         showTimer = null;
     }
     const element = document.getElementById(TOOLTIP_ID);
-    if (element) element.style.display = 'none';
+    if (!element) return;
+    if (element.style.pointerEvents === 'auto') {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => {
+            element.style.display = 'none';
+        }, 150);
+    } else {
+        element.style.display = 'none';
+    }
 }

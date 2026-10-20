@@ -350,7 +350,8 @@
         "hide_confirm": "Slėpti šią žinutę?",
         "error_load": "Klaida įkeliant pokalbį.",
         "error_send": "Klaida siunčiant žinutę.",
-        "new_message": "Nauja žinutė nuo {user}"
+        "new_message": "Nauja žinutė nuo {user}",
+        "message_user": "Žinutė"
     },
     "roles": {
         "admin": "Administratorius",

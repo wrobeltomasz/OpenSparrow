@@ -346,7 +346,8 @@
         "hide_confirm": "Elrejti ezt az üzenetet?",
         "error_load": "Hiba a csevegés betöltésekor.",
         "error_send": "Hiba az üzenet küldésekor.",
-        "new_message": "Új üzenet tőle: {user}"
+        "new_message": "Új üzenet tőle: {user}",
+        "message_user": "Üzenet"
     },
     "roles": {
         "admin": "Rendszergazda",

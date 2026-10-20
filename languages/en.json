@@ -346,7 +346,8 @@
         "hide_confirm": "Hide this message?",
         "error_load": "Error loading chat.",
         "error_send": "Error sending message.",
-        "new_message": "New message from {user}"
+        "new_message": "New message from {user}",
+        "message_user": "Message"
     },
     "roles": {
         "admin": "Admin",

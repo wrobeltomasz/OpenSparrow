@@ -350,7 +350,8 @@
         "hide_confirm": "Ascundeți acest mesaj?",
         "error_load": "Eroare la încărcarea chatului.",
         "error_send": "Eroare la trimiterea mesajului.",
-        "new_message": "Mesaj nou de la {user}"
+        "new_message": "Mesaj nou de la {user}",
+        "message_user": "Mesaj"
     },
     "roles": {
         "admin": "Administrator",

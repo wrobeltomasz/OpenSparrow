@@ -346,7 +346,8 @@
         "hide_confirm": "Paslēpt šo ziņojumu?",
         "error_load": "Kļūda, ielādējot tērzēšanu.",
         "error_send": "Kļūda, nosūtot ziņojumu.",
-        "new_message": "Jauns ziņojums no {user}"
+        "new_message": "Jauns ziņojums no {user}",
+        "message_user": "Ziņojums"
     },
     "roles": {
         "admin": "Administrators",

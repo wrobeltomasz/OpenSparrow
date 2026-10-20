@@ -300,7 +300,7 @@ function buildConversationList(bodyElement, onOpenConversation, onStartChat) {
     return { element: list, reload };
 }
 
-export async function openChatPanel() {
+export async function openChatPanel(peer = null) {
     if (!panel) {
         panel = new BulkPanel({ id: 'chatPanel', title: I18n.t('chat.title'), showApply: false });
         enableUserTooltips(panel.bodyElement, {
@@ -331,5 +331,9 @@ export async function openChatPanel() {
         content.appendChild(buildThread(peer, showConversations));
     }
 
-    showConversations();
+    if (peer) {
+        showThread({ id: peer.id, username: peer.username, avatar_id: peer.avatar_id });
+    } else {
+        showConversations();
+    }
 }

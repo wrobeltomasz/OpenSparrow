@@ -354,7 +354,8 @@
         "hide_confirm": "Skriti to sporočilo?",
         "error_load": "Napaka pri nalaganju klepeta.",
         "error_send": "Napaka pri pošiljanju sporočila.",
-        "new_message": "Novo sporočilo od {user}"
+        "new_message": "Novo sporočilo od {user}",
+        "message_user": "Sporočilo"
     },
     "roles": {
         "admin": "Skrbnik",

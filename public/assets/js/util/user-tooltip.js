@@ -39,14 +39,30 @@ function roleLabel(role) {
 
 function buildUserInfoModel(username, info, titlePrefix) {
     const rows = [];
+    let chat = null;
     if (info) {
         const fullName = [info.first_name, info.last_name].filter(Boolean).join(' ');
         if (fullName) rows.push({ label: I18n.t('comments.user_info_name'), value: fullName });
         if (info.role) rows.push({ label: I18n.t('comments.user_info_role'), value: roleLabel(info.role) });
         if (info.email) rows.push({ label: I18n.t('comments.user_info_email'), value: info.email });
         if (info.phone) rows.push({ label: I18n.t('comments.user_info_phone'), value: info.phone });
+
+        if (info.id && String(info.id) !== String(window.CURRENT_USER_ID ?? '')) {
+            const peer = {
+                id: info.id,
+                username: info.username ?? username,
+                avatar_id: info.avatar_id ?? null,
+            };
+            chat = {
+                id: peer.id,
+                username: peer.username,
+                avatar_id: peer.avatar_id,
+                label: I18n.t('chat.message_user'),
+                onClick: () => import('../chat-panel.js').then(module => module.openChatPanel(peer)),
+            };
+        }
     }
-    return { title: titlePrefix + username, rows };
+    return { title: titlePrefix + username, rows, chat };
 }
 
 export function enableUserTooltips(container, { endpoint, titlePrefix = '' } = {}) {
