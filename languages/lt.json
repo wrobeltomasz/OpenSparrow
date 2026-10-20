@@ -374,7 +374,10 @@
         "saved": "Savininkas išsaugotas.",
         "network_error": "Tinklo klaida.",
         "section_owner": "Įrašo savininkas",
-        "section_history": "Paskyrimo istorija"
+        "section_history": "Paskyrimo istorija",
+        "section_last_edit": "Paskutinis redagavimas",
+        "last_edited_on": "(paskutinį kartą redaguota: {date})",
+        "no_edit_history": "Redagavimo istorijos nėra."
     },
     "print": {
         "loading": "Įkeliami spaudiniai…",

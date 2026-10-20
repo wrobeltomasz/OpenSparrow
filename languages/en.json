@@ -370,7 +370,10 @@
         "saved": "Owner saved.",
         "network_error": "Network error.",
         "section_owner": "Record Owner",
-        "section_history": "Assignment History"
+        "section_history": "Assignment History",
+        "section_last_edit": "Last edit",
+        "last_edited_on": "(last edited: {date})",
+        "no_edit_history": "No edit history."
     },
     "print": {
         "loading": "Loading printouts…",

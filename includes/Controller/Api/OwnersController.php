@@ -38,6 +38,7 @@ final class OwnersController
         os_api_dispatch($this->api->action, [
             'get'      => fn() => $this->currentOwner(),
             'history'  => fn() => $this->ownerHistory(),
+            'last_edit' => fn() => $this->lastEdit(),
             'editors'  => fn() => $this->eligibleOwners(),
             'mine'     => fn() => $this->myRecords(),
             'set'      => fn() => $this->setOwner(),
@@ -122,6 +123,48 @@ final class OwnersController
         }
 
         jsonSuccess(['history' => $rows]);
+    }
+
+    private function lastEdit(): void
+    {
+        requireLogin();
+
+        $table    = validatedTable(trim($this->request->query('table')));
+        $recordId = (int) $this->request->query('id', '0');
+
+        if ($recordId <= 0) {
+            jsonError('id must be a positive integer.', 400);
+        }
+
+        $sql = "
+        SELECT u.username, u.avatar_id, l.created_at, l.action
+        FROM " . sys_table('users_log') . " l
+        LEFT JOIN " . sys_table('users') . " u ON u.id = l.user_id
+        WHERE l.target_table = \$1 AND l.record_id = \$2
+          AND l.action IN ('UPDATE', 'INSERT')
+        ORDER BY l.created_at DESC, l.id DESC
+        LIMIT 1
+    ";
+
+        $result = pg_query_params($this->conn, $sql, [$table, $recordId]);
+        if (!$result) {
+            error_log('[api_owners owners_action_last_edit] ' . pg_last_error($this->conn));
+            jsonError('Database error.', 500);
+        }
+
+        $row = pg_fetch_assoc($result);
+        if (!$row) {
+            jsonSuccess(['last_edit' => null]);
+        }
+
+        $lastEdit = [
+            'username'   => $row['username'],
+            'avatar_id'  => $row['avatar_id'] !== null ? (int)$row['avatar_id'] : null,
+            'created_at' => $row['created_at'],
+            'action'     => $row['action'],
+        ];
+
+        jsonSuccess(['last_edit' => $lastEdit]);
     }
 
     private function eligibleOwners(): void

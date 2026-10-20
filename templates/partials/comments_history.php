@@ -25,6 +25,14 @@ $historyPanel ??= [];
                 <span id="ow-status"></span>
             </div>
         </div>
+        <div id="ow-last-edit-wrap" class="ow-last-edit-wrap">
+            <h3 class="ow-section-title"><?=
+                htmlspecialchars($historyPanel['lastEditTitle'], ENT_QUOTES, 'UTF-8')
+            ?></h3>
+            <div id="ow-last-edit" class="ow-last-edit"><?=
+                htmlspecialchars($historyPanel['loadingText'], ENT_QUOTES, 'UTF-8')
+            ?></div>
+        </div>
         <div id="ow-history" class="ow-history-wrap">
             <h3 class="ow-section-title"><?=
                 htmlspecialchars($historyPanel['historyTitle'], ENT_QUOTES, 'UTF-8')

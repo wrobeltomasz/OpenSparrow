@@ -370,7 +370,10 @@
         "saved": "Ejer gemt.",
         "network_error": "Netværksfejl.",
         "section_owner": "Postens ejer",
-        "section_history": "Tildelingshistorik"
+        "section_history": "Tildelingshistorik",
+        "section_last_edit": "Seneste redigering",
+        "last_edited_on": "(senest redigeret: {date})",
+        "no_edit_history": "Ingen redigeringshistorik."
     },
     "print": {
         "loading": "Indlæser udskrifter…",

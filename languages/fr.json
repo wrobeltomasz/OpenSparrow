@@ -370,7 +370,10 @@
         "saved": "Propriétaire sauvegardé.",
         "network_error": "Erreur réseau.",
         "section_owner": "Propriétaire de l'enregistrement",
-        "section_history": "Historique des assignations"
+        "section_history": "Historique des assignations",
+        "section_last_edit": "Dernière modification",
+        "last_edited_on": "(dernière modification : {date})",
+        "no_edit_history": "Aucun historique de modification."
     },
     "print": {
         "loading": "Chargement des impressions…",

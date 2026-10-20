@@ -374,7 +374,10 @@
         "saved": "Właściciel zapisany.",
         "network_error": "Błąd sieci.",
         "section_owner": "Właściciel rekordu",
-        "section_history": "Historia przypisania"
+        "section_history": "Historia przypisania",
+        "section_last_edit": "Ostatnia edycja",
+        "last_edited_on": "(ostatnia edycja: {date})",
+        "no_edit_history": "Brak historii edycji."
     },
     "print": {
         "loading": "Ładowanie wydruków…",

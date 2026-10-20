@@ -370,7 +370,10 @@
         "saved": "Tulajdonos mentve.",
         "network_error": "Hálózati hiba.",
         "section_owner": "Rekord tulajdonosa",
-        "section_history": "Hozzárendelési előzmények"
+        "section_history": "Hozzárendelési előzmények",
+        "section_last_edit": "Utolsó szerkesztés",
+        "last_edited_on": "(utoljára szerkesztve: {date})",
+        "no_edit_history": "Nincs szerkesztési előzmény."
     },
     "print": {
         "loading": "Nyomtatások betöltése…",

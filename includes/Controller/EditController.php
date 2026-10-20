@@ -456,6 +456,7 @@ final class EditController
         return [
             'ownerTitle'       => t('owners.section_owner'),
             'historyTitle'     => t('owners.section_history'),
+            'lastEditTitle'    => t('owners.section_last_edit'),
             'changeOwnerLabel' => t('owners.change_owner'),
             'loadingText'      => t('common.loading'),
         ];

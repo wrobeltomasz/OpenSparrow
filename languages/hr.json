@@ -374,7 +374,10 @@
         "saved": "Vlasnik spremljen.",
         "network_error": "Mrežna pogreška.",
         "section_owner": "Vlasnik zapisa",
-        "section_history": "Povijest dodjela"
+        "section_history": "Povijest dodjela",
+        "section_last_edit": "Posljednja izmjena",
+        "last_edited_on": "(posljednja izmjena: {date})",
+        "no_edit_history": "Nema povijesti izmjena."
     },
     "print": {
         "loading": "Učitavanje ispisa…",

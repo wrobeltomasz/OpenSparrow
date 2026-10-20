@@ -370,7 +370,10 @@
         "saved": "Īpašnieks saglabāts.",
         "network_error": "Tīkla kļūda.",
         "section_owner": "Ieraksta īpašnieks",
-        "section_history": "Iecelšanas vēsture"
+        "section_history": "Iecelšanas vēsture",
+        "section_last_edit": "Pēdējā rediģēšana",
+        "last_edited_on": "(pēdējoreiz rediģēts: {date})",
+        "no_edit_history": "Rediģēšanas vēstures nav."
     },
     "print": {
         "loading": "Notiek izdruku ielāde…",

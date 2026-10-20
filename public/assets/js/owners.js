@@ -13,6 +13,7 @@ const userRole = window.USER_ROLE;
 const csrf     = window.CSRF_TOKEN;
 
 const panel     = document.getElementById('ow-panel');
+const lastEdit  = document.getElementById('ow-last-edit');
 const current   = document.getElementById('ow-current');
 const changeElement  = document.getElementById('ow-change');
 const select    = document.getElementById('ow-select');
@@ -117,6 +118,36 @@ async function loadHistory() {
     }
 }
 
+async function loadLastEdit() {
+    if (!lastEdit) return;
+    try {
+        const result  = await fetch(`api/owners.php?action=last_edit&table=${encodeURIComponent(table)}&id=${encodeURIComponent(recordId)}`);
+        const data = await result.json();
+        if (!data.success || !data.last_edit) {
+            lastEdit.textContent = I18n.t('owners.no_edit_history');
+            return;
+        }
+
+        lastEdit.textContent = '';
+
+        if (data.last_edit.username) {
+            const userSpan = document.createElement('span');
+            userSpan.className = 'ow-user';
+            userSpan.setAttribute('data-username', data.last_edit.username);
+            userSpan.textContent = data.last_edit.username;
+            lastEdit.appendChild(userSpan);
+        }
+
+        if (data.last_edit.created_at) {
+            lastEdit.appendChild(document.createTextNode(
+                ' ' + I18n.t('owners.last_edited_on', { date: new Date(data.last_edit.created_at).toLocaleString() })
+            ));
+        }
+    } catch {
+        lastEdit.textContent = I18n.t('owners.no_edit_history');
+    }
+}
+
 async function loadEditors() {
     const result  = await fetch('api/owners.php?action=editors');
     const data = await result.json();
@@ -182,9 +213,13 @@ async function init() {
     if (historyElement) {
         enableUserTooltips(historyElement, { endpoint: 'api/owners.php?action=user_info&username=' });
     }
+    if (lastEdit) {
+        enableUserTooltips(lastEdit, { endpoint: 'api/owners.php?action=user_info&username=' });
+    }
 
     await loadOwner();
     await loadHistory();
+    await loadLastEdit();
 
     if (userRole === 'editor' || userRole === 'admin') {
         await loadEditors();

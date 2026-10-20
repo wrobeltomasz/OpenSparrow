@@ -4673,6 +4673,8 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
 .ow-select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); }
 .ow-history-wrap { margin-top: 20px; }
 .ow-history-body { color: var(--muted); }
+.ow-last-edit-wrap { margin-top: 20px; }
+.ow-last-edit { color: var(--text); }
 
 .ow-history-table {
   width: 100%;

@@ -370,7 +370,10 @@
         "saved": "Ägare sparad.",
         "network_error": "Nätverksfel.",
         "section_owner": "Postens ägare",
-        "section_history": "Tilldelningshistorik"
+        "section_history": "Tilldelningshistorik",
+        "section_last_edit": "Senaste redigering",
+        "last_edited_on": "(senast redigerad: {date})",
+        "no_edit_history": "Ingen redigeringshistorik."
     },
     "print": {
         "loading": "Läser in utskrifter…",

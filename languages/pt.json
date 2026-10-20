@@ -370,7 +370,10 @@
         "saved": "Proprietário guardado.",
         "network_error": "Erro de rede.",
         "section_owner": "Proprietário do registo",
-        "section_history": "Histórico de atribuições"
+        "section_history": "Histórico de atribuições",
+        "section_last_edit": "Última edição",
+        "last_edited_on": "(última edição: {date})",
+        "no_edit_history": "Sem histórico de edição."
     },
     "print": {
         "loading": "A carregar impressões…",

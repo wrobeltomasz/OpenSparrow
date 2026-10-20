@@ -370,7 +370,10 @@
         "saved": "Proprietario salvato.",
         "network_error": "Errore di rete.",
         "section_owner": "Proprietario del record",
-        "section_history": "Cronologia assegnazioni"
+        "section_history": "Cronologia assegnazioni",
+        "section_last_edit": "Ultima modifica",
+        "last_edited_on": "(ultima modifica: {date})",
+        "no_edit_history": "Nessuna cronologia di modifica."
     },
     "print": {
         "loading": "Caricamento delle stampe…",

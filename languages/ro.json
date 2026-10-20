@@ -374,7 +374,10 @@
         "saved": "Proprietar salvat.",
         "network_error": "Eroare de rețea.",
         "section_owner": "Proprietarul înregistrării",
-        "section_history": "Istoricul atribuirilor"
+        "section_history": "Istoricul atribuirilor",
+        "section_last_edit": "Ultima editare",
+        "last_edited_on": "(editat ultima dată: {date})",
+        "no_edit_history": "Nu există istoric de editare."
     },
     "print": {
         "loading": "Se încarcă rapoartele de tipărit…",

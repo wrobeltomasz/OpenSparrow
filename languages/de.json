@@ -370,7 +370,10 @@
         "saved": "Eigentümer gespeichert.",
         "network_error": "Netzwerkfehler.",
         "section_owner": "Datensatzeigentümer",
-        "section_history": "Zuweisungsverlauf"
+        "section_history": "Zuweisungsverlauf",
+        "section_last_edit": "Letzte Bearbeitung",
+        "last_edited_on": "(zuletzt bearbeitet: {date})",
+        "no_edit_history": "Keine Bearbeitungshistorie."
     },
     "print": {
         "loading": "Ausdrucke werden geladen…",

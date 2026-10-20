@@ -374,7 +374,10 @@
         "saved": "Vlastník uložený.",
         "network_error": "Chyba siete.",
         "section_owner": "Vlastník záznamu",
-        "section_history": "História priradení"
+        "section_history": "História priradení",
+        "section_last_edit": "Posledná úprava",
+        "last_edited_on": "(posledná úprava: {date})",
+        "no_edit_history": "Žiadna história úprav."
     },
     "print": {
         "loading": "Načítavanie tlačových zostáv…",

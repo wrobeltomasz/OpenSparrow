@@ -378,7 +378,10 @@
         "saved": "Lastnik shranjen.",
         "network_error": "Omrežna napaka.",
         "section_owner": "Lastnik zapisa",
-        "section_history": "Zgodovina dodelitev"
+        "section_history": "Zgodovina dodelitev",
+        "section_last_edit": "Zadnje urejanje",
+        "last_edited_on": "(zadnjič urejeno: {date})",
+        "no_edit_history": "Ni zgodovine urejanja."
     },
     "print": {
         "loading": "Nalaganje izpisov…",

@@ -370,7 +370,10 @@
         "saved": "Propietario guardado.",
         "network_error": "Error de red.",
         "section_owner": "Propietario del registro",
-        "section_history": "Historial de asignaciones"
+        "section_history": "Historial de asignaciones",
+        "section_last_edit": "Última edición",
+        "last_edited_on": "(última edición: {date})",
+        "no_edit_history": "Sin historial de ediciones."
     },
     "print": {
         "loading": "Cargando impresiones…",
