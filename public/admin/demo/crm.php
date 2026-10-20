@@ -715,9 +715,9 @@ function demo_def_crm($conn): array
         ],
 
         'demo_users' => [
-            ['username' => 'demo.anna',  'role' => 'editor', 'avatar_id' => 3],
-            ['username' => 'demo.marek', 'role' => 'editor', 'avatar_id' => 9],
-            ['username' => 'demo.julia', 'role' => 'viewer', 'avatar_id' => 15],
+            ['username' => 'demo.anna',  'role' => 'editor', 'avatar_id' => 3,  'first_name' => 'Anna',  'last_name' => 'Kowalska',   'email' => 'anna.kowalska@demo.opensparrow.org',   'phone' => '+48 600 100 100'],
+            ['username' => 'demo.marek', 'role' => 'editor', 'avatar_id' => 9,  'first_name' => 'Marek', 'last_name' => 'Nowak',      'email' => 'marek.nowak@demo.opensparrow.org',     'phone' => '+48 600 200 200'],
+            ['username' => 'demo.julia', 'role' => 'viewer', 'avatar_id' => 15, 'first_name' => 'Julia', 'last_name' => 'Wiśniewska', 'email' => 'julia.wisniewska@demo.opensparrow.org', 'phone' => '+48 600 300 300'],
         ],
 
         'demo_comments' => [

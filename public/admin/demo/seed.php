@@ -72,13 +72,16 @@ function demo_install_run(
             $hash = password_hash($salt . $demoUserPassword, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
             $result = pg_query_params($conn, "
                 INSERT INTO $usersTable (
-                    username, password_hash, salt, password_algo, password_params, is_active, role, avatar_id
+                    username, password_hash, salt, password_algo, password_params, is_active, role, avatar_id,
+                    first_name, last_name, email, phone
                 )
-                VALUES (\$1, \$2, \$3, 'argon2id', \$4, true, \$5, \$6)
+                VALUES (\$1, \$2, \$3, 'argon2id', \$4, true, \$5, \$6, \$7, \$8, \$9, \$10)
                 ON CONFLICT (username) DO UPDATE SET
                     password_hash = EXCLUDED.password_hash, salt = EXCLUDED.salt,
                     password_params = EXCLUDED.password_params, is_active = true, role = EXCLUDED.role,
-                    avatar_id = EXCLUDED.avatar_id
+                    avatar_id = EXCLUDED.avatar_id,
+                    first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name,
+                    email = EXCLUDED.email, phone = EXCLUDED.phone
                 RETURNING id
             ", [
                 $demoUser['username'],
@@ -87,6 +90,10 @@ function demo_install_run(
                 json_encode(ARGON2_OPTIONS),
                 $demoUser['role'],
                 $demoUser['avatar_id'],
+                $demoUser['first_name'] ?? null,
+                $demoUser['last_name'] ?? null,
+                $demoUser['email'] ?? null,
+                $demoUser['phone'] ?? null,
             ]);
             if ($result === false) {
                 admin_db_fail($conn, "demo_install:demo_users:{$type}");
