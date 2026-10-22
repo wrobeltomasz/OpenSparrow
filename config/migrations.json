@@ -218,5 +218,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds one-to-one user chat served by api/chat.php and opened from the Chat entry in the avatar menu, with immediate in-app bell notifications, demo seed data, and the 4.4_user_chat database migration creating spw_chat_messages. The notification cron is refactored into a shared runner reused by the CLI entry and a new token-protected HTTP trigger (public/cron.php, unlocked by the CRON_SECRET environment variable) for shared hosts without a CLI cron. Admin tables now size to content and scroll horizontally. No removed files and no removed config keys by this release."
+    },
+    "4.5": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Adds a Pages tab to Click Statistics with a per-page click breakdown and a From/To date-range filter across the Log, Top Elements and Pages tabs. The Record History tab now shows the last-edited-by username and date, read from the audit log (spw_users_log) via a new owners last_edit API action. User tooltips gain a chat shortcut that opens a direct conversation, and the demo CRM users are seeded with contact fields (name, email, phone) so those tooltips show full info. Branding logo upload now sends the image as JSON base64 through php://input, bypassing hosts whose upload_tmp_dir is unwritable. No database migration, no removed files and no removed config keys by this release."
     }
 }
