@@ -159,7 +159,7 @@ async function renderProductionPanel(panel) {
 
     section(content, 'Security');
     content.appendChild(card('DEMO_MODE = false', data.demo_mode_off,
-        data.demo_mode_off ? 'Write actions are not restricted by demo mode.' : 'DEMO_MODE is on — every write action is blocked. Unset it for production.'));
+        data.demo_mode_off ? 'Admin write actions are not restricted by demo mode.' : 'DEMO_MODE is on — admin write actions are blocked. Unset it for production.'));
     content.appendChild(card('SECURE_COOKIES = true', data.secure_cookies_on,
         data.secure_cookies_on ? 'Session cookies require HTTPS.' : 'Off — only correct on plain HTTP. Set true behind TLS.'));
     content.appendChild(card('HTTPS detected', data.https_detected,

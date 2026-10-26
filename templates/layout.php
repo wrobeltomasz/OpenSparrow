@@ -16,7 +16,7 @@ require_once __DIR__ . '/../includes/page_helpers.php';
 $moduleGraph = os_fe_module_graph();
 
 $clickstatsOn = false;
-if (!empty(os_session_get('user_id')) && !(defined('DEMO_MODE') && DEMO_MODE)) {
+if (!empty(os_session_get('user_id'))) {
     try {
         require_once __DIR__ . '/../includes/clickstats.php';
         $clickstatsOn = clickstats_settings(60)['enabled'];

@@ -1831,8 +1831,7 @@ three pieces had to survive intact:
 
 - **CSRF from the body**, not a header — `navigator.sendBeacon` cannot set headers, so the
   entry point boots with `csrf => 'manual'` and the controller calls
-  `os_require_csrf('body', $payload)` itself, *after* decoding the payload and *before*
-  `require_not_demo()`.
+  `os_require_csrf('body', $payload)` itself, *after* decoding the payload.
 - **`gate => false`** at boot, with the reason recorded in the scope inventory. The stored
   table label is still checked with `user_can_access('tables', …)`, and a name outside the
   scope becomes `NULL` rather than an error — statistics must never fail a request.

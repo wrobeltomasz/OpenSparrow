@@ -42,7 +42,6 @@ final class ClickstatsController
         }
 
         os_require_csrf('body', $payload);
-        require_not_demo();
 
         $config = clickstats_settings();
         if (!$config['enabled']) {

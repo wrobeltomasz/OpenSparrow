@@ -557,7 +557,7 @@ Data Management → CSV Import — bulk-imports rows from a .csv file into any s
 - **Serve only `public/`:** set the web server document root to the `public/` directory. All backend code, configuration and storage live above it and cannot be reached over HTTP; the per-folder `.htaccess` `Deny from all` rules ship as defense-in-depth.
 - **Storage permissions:** `config/` and `storage/` must be writable by the web-server user.
 - **Backups:** Keep regular `pg_dump` snapshots — they cover configuration too, since it lives in `spw_config`.
-- **Demo mode:** Set `DEMO_MODE=true` to block all write operations in the admin API.
+- **Demo mode:** Set `DEMO_MODE=true` to block all write operations in the admin panel API. Frontend record edits (grid, comments, files, chat) stay enabled so visitors can try the app; those only touch the resettable demo data, never configuration or credentials.
 
 #### Environment variables
 
@@ -576,7 +576,7 @@ Data Management → CSV Import — bulk-imports rows from a .csv file into any s
 | `LOGIN_RATE_LIMIT_WINDOW_MINUTES` | `15` | How far back failed logins are counted towards the threshold. The lockout that follows lasts `LOGIN_LOCKOUT_MINUTES`. |
 | `PASSWORD_MIN_LENGTH` | `12` | Shortest password the system will accept anywhere. The Users policy may raise it, never lower it. |
 | `ADMIN_PURGE_MAX_DAYS` | `3650` | Longest retention window an admin log purge will accept, in days. |
-| `DEMO_MODE` | `false` | Block all write operations in admin API. |
+| `DEMO_MODE` | `false` | Block all write operations in the admin panel API. |
 | `FILES_MAX_SIZE_MB` | `20` | Default upload size limit. |
 | `RECORD_SNAPSHOTS_ENABLED` | `false` | Enable record snapshots system-wide. |
 | `PGSCHEMA` | `app` | Schema for `spw_*` tables. |
