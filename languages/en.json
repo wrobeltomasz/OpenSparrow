@@ -374,7 +374,12 @@
         "section_history": "Assignment History",
         "section_last_edit": "Last edit",
         "last_edited_on": "(last edited: {date})",
-        "no_edit_history": "No edit history."
+        "no_edit_history": "No edit history.",
+        "section_changes": "Last change",
+        "no_changes": "No recorded changes.",
+        "col_column": "Column",
+        "col_before": "Before",
+        "col_after": "After"
     },
     "print": {
         "loading": "Loading printouts…",

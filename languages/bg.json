@@ -374,7 +374,12 @@
         "section_history": "История на назначенията",
         "section_last_edit": "Последна редакция",
         "last_edited_on": "(последно редактирано: {date})",
-        "no_edit_history": "Няма история на редакциите."
+        "no_edit_history": "Няма история на редакциите.",
+        "section_changes": "Последна промяна",
+        "no_changes": "Няма записани промени.",
+        "col_column": "Колона",
+        "col_before": "Преди",
+        "col_after": "След"
     },
     "print": {
         "loading": "Зареждане на разпечатки…",

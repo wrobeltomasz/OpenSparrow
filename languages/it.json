@@ -374,7 +374,12 @@
         "section_history": "Cronologia assegnazioni",
         "section_last_edit": "Ultima modifica",
         "last_edited_on": "(ultima modifica: {date})",
-        "no_edit_history": "Nessuna cronologia di modifica."
+        "no_edit_history": "Nessuna cronologia di modifica.",
+        "section_changes": "Ultima modifica",
+        "no_changes": "Nessuna modifica registrata.",
+        "col_column": "Colonna",
+        "col_before": "Prima",
+        "col_after": "Dopo"
     },
     "print": {
         "loading": "Caricamento delle stampe…",

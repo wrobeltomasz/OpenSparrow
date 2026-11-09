@@ -378,7 +378,12 @@
         "section_history": "Povijest dodjela",
         "section_last_edit": "Posljednja izmjena",
         "last_edited_on": "(posljednja izmjena: {date})",
-        "no_edit_history": "Nema povijesti izmjena."
+        "no_edit_history": "Nema povijesti izmjena.",
+        "section_changes": "Posljednja promjena",
+        "no_changes": "Nema zabilježenih promjena.",
+        "col_column": "Stupac",
+        "col_before": "Prije",
+        "col_after": "Poslije"
     },
     "print": {
         "loading": "Učitavanje ispisa…",

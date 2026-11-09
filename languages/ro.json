@@ -378,7 +378,12 @@
         "section_history": "Istoricul atribuirilor",
         "section_last_edit": "Ultima editare",
         "last_edited_on": "(editat ultima dată: {date})",
-        "no_edit_history": "Nu există istoric de editare."
+        "no_edit_history": "Nu există istoric de editare.",
+        "section_changes": "Ultima modificare",
+        "no_changes": "Nicio modificare înregistrată.",
+        "col_column": "Coloană",
+        "col_before": "Înainte",
+        "col_after": "După"
     },
     "print": {
         "loading": "Se încarcă rapoartele de tipărit…",

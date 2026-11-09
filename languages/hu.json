@@ -374,7 +374,12 @@
         "section_history": "Hozzárendelési előzmények",
         "section_last_edit": "Utolsó szerkesztés",
         "last_edited_on": "(utoljára szerkesztve: {date})",
-        "no_edit_history": "Nincs szerkesztési előzmény."
+        "no_edit_history": "Nincs szerkesztési előzmény.",
+        "section_changes": "Utolsó módosítás",
+        "no_changes": "Nincs rögzített módosítás.",
+        "col_column": "Oszlop",
+        "col_before": "Előtte",
+        "col_after": "Utána"
     },
     "print": {
         "loading": "Nyomtatások betöltése…",

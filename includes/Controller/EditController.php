@@ -157,6 +157,13 @@ final class EditController
         $historyPanel   = $this->historyPanel();
         $tabs           = $this->tabs($tableConfig, $subtablePanels, $imagesPanel);
 
+        $changePreview = RECORD_SNAPSHOTS_ENABLED
+            ? $this->changePreview($table, $id, $rawSchema)
+            : [];
+        $historyPanel['changesEnabled'] = RECORD_SNAPSHOTS_ENABLED;
+        $historyPanel['changeRows']     = $changePreview['rows'] ?? [];
+        $historyPanel['changeDate']     = $changePreview['date'] ?? '';
+
         $formHeading   = t('form.edit_record', ['table' => $tableConfig->displayName]);
         $formSaved     = $this->request->query('saved') === '1';
         $formError     = $error;
@@ -451,6 +458,41 @@ final class EditController
         ];
     }
 
+    private function changePreview(string $table, int $id, array $rawSchema): array
+    {
+        $recent = $this->snapshots->recentChanges($table, $id);
+        if ($recent === null) {
+            return [];
+        }
+
+        $columnConfigs = $rawSchema['tables'][$table]['columns'] ?? [];
+        $maskedColumns = $this->maskedColumns($rawSchema, $table);
+
+        $rows = [];
+        foreach ($recent['changes'] as $change) {
+            $columnName = $change['column'];
+            if (!isset($columnConfigs[$columnName]) || in_array($columnName, $maskedColumns, true)) {
+                continue;
+            }
+            $rows[] = [
+                'column' => $columnConfigs[$columnName]['display_name'] ?? $columnName,
+                'old'    => $change['old'],
+                'new'    => $change['new'],
+            ];
+        }
+
+        $date = $recent['changed_at'] ?? '';
+        if ($date !== '') {
+            $timestamp = strtotime($date);
+            $date = $timestamp === false ? $date : date('Y-m-d H:i', $timestamp);
+        }
+
+        return [
+            'rows' => $rows,
+            'date' => $date,
+        ];
+    }
+
     private function historyPanel(): array
     {
         return [
@@ -459,6 +501,11 @@ final class EditController
             'lastEditTitle'    => t('owners.section_last_edit'),
             'changeOwnerLabel' => t('owners.change_owner'),
             'loadingText'      => t('common.loading'),
+            'changesTitle'     => t('owners.section_changes'),
+            'noChangesText'    => t('owners.no_changes'),
+            'colColumn'        => t('owners.col_column'),
+            'colBefore'        => t('owners.col_before'),
+            'colAfter'         => t('owners.col_after'),
         ];
     }
 

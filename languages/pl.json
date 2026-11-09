@@ -378,7 +378,12 @@
         "section_history": "Historia przypisania",
         "section_last_edit": "Ostatnia edycja",
         "last_edited_on": "(ostatnia edycja: {date})",
-        "no_edit_history": "Brak historii edycji."
+        "no_edit_history": "Brak historii edycji.",
+        "section_changes": "Ostatnia zmiana",
+        "no_changes": "Brak zapisanych zmian.",
+        "col_column": "Kolumna",
+        "col_before": "Przed",
+        "col_after": "Po"
     },
     "print": {
         "loading": "Ładowanie wydruków…",

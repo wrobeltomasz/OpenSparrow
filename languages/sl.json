@@ -382,7 +382,12 @@
         "section_history": "Zgodovina dodelitev",
         "section_last_edit": "Zadnje urejanje",
         "last_edited_on": "(zadnjič urejeno: {date})",
-        "no_edit_history": "Ni zgodovine urejanja."
+        "no_edit_history": "Ni zgodovine urejanja.",
+        "section_changes": "Zadnja sprememba",
+        "no_changes": "Ni zabeleženih sprememb.",
+        "col_column": "Stolpec",
+        "col_before": "Prej",
+        "col_after": "Potem"
     },
     "print": {
         "loading": "Nalaganje izpisov…",

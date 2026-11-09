@@ -374,7 +374,12 @@
         "section_history": "Iecelšanas vēsture",
         "section_last_edit": "Pēdējā rediģēšana",
         "last_edited_on": "(pēdējoreiz rediģēts: {date})",
-        "no_edit_history": "Rediģēšanas vēstures nav."
+        "no_edit_history": "Rediģēšanas vēstures nav.",
+        "section_changes": "Pēdējās izmaiņas",
+        "no_changes": "Nav saglabātu izmaiņu.",
+        "col_column": "Kolonna",
+        "col_before": "Pirms",
+        "col_after": "Pēc"
     },
     "print": {
         "loading": "Notiek izdruku ielāde…",

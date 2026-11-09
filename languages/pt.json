@@ -374,7 +374,12 @@
         "section_history": "Histórico de atribuições",
         "section_last_edit": "Última edição",
         "last_edited_on": "(última edição: {date})",
-        "no_edit_history": "Sem histórico de edição."
+        "no_edit_history": "Sem histórico de edição.",
+        "section_changes": "Última alteração",
+        "no_changes": "Sem alterações registadas.",
+        "col_column": "Coluna",
+        "col_before": "Antes",
+        "col_after": "Depois"
     },
     "print": {
         "loading": "A carregar impressões…",

@@ -374,7 +374,12 @@
         "section_history": "Tildelingshistorik",
         "section_last_edit": "Seneste redigering",
         "last_edited_on": "(senest redigeret: {date})",
-        "no_edit_history": "Ingen redigeringshistorik."
+        "no_edit_history": "Ingen redigeringshistorik.",
+        "section_changes": "Seneste ændring",
+        "no_changes": "Ingen registrerede ændringer.",
+        "col_column": "Kolonne",
+        "col_before": "Før",
+        "col_after": "Efter"
     },
     "print": {
         "loading": "Indlæser udskrifter…",

@@ -378,7 +378,12 @@
         "section_history": "Historie přiřazení",
         "section_last_edit": "Poslední úprava",
         "last_edited_on": "(poslední úprava: {date})",
-        "no_edit_history": "Žádná historie úprav."
+        "no_edit_history": "Žádná historie úprav.",
+        "section_changes": "Poslední změna",
+        "no_changes": "Žádné zaznamenané změny.",
+        "col_column": "Sloupec",
+        "col_before": "Před",
+        "col_after": "Po"
     },
     "print": {
         "loading": "Načítání tiskových sestav…",

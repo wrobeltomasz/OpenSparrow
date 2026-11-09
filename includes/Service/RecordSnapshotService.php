@@ -45,4 +45,59 @@ final class RecordSnapshotService
             [$logId, $table, $recordId, $json]
         );
     }
+
+    public function recentChanges(string $table, int $recordId): ?array
+    {
+        $result = pg_query_params(
+            $this->conn,
+            'SELECT snapshot, created_at FROM ' . \sys_table('record_snapshots')
+                . ' WHERE table_name = $1 AND record_id = $2 ORDER BY id DESC LIMIT 2',
+            [$table, $recordId]
+        );
+        if (!$result) {
+            return null;
+        }
+        $rows = pg_fetch_all($result);
+        if (!$rows || count($rows) < 2) {
+            return null;
+        }
+
+        $current  = json_decode($rows[0]['snapshot'], true);
+        $previous = json_decode($rows[1]['snapshot'], true);
+        if (!is_array($current) || !is_array($previous)) {
+            return null;
+        }
+
+        $changes = [];
+        foreach ($current as $column => $value) {
+            $before = $previous[$column] ?? null;
+            if ($before === $value) {
+                continue;
+            }
+            $changes[] = [
+                'column' => $column,
+                'old'    => self::displayValue($before),
+                'new'    => self::displayValue($value),
+            ];
+        }
+
+        return [
+            'changed_at' => $rows[0]['created_at'] ?? null,
+            'changes'    => $changes,
+        ];
+    }
+
+    private static function displayValue(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+        if (is_array($value)) {
+            return (string) json_encode($value, JSON_UNESCAPED_UNICODE);
+        }
+        return (string) $value;
+    }
 }

@@ -374,7 +374,12 @@
         "section_history": "Historique des assignations",
         "section_last_edit": "Dernière modification",
         "last_edited_on": "(dernière modification : {date})",
-        "no_edit_history": "Aucun historique de modification."
+        "no_edit_history": "Aucun historique de modification.",
+        "section_changes": "Dernière modification",
+        "no_changes": "Aucune modification enregistrée.",
+        "col_column": "Colonne",
+        "col_before": "Avant",
+        "col_after": "Après"
     },
     "print": {
         "loading": "Chargement des impressions…",

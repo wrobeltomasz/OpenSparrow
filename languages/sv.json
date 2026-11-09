@@ -374,7 +374,12 @@
         "section_history": "Tilldelningshistorik",
         "section_last_edit": "Senaste redigering",
         "last_edited_on": "(senast redigerad: {date})",
-        "no_edit_history": "Ingen redigeringshistorik."
+        "no_edit_history": "Ingen redigeringshistorik.",
+        "section_changes": "Senaste ändring",
+        "no_changes": "Inga registrerade ändringar.",
+        "col_column": "Kolumn",
+        "col_before": "Före",
+        "col_after": "Efter"
     },
     "print": {
         "loading": "Läser in utskrifter…",

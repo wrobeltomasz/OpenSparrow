@@ -374,7 +374,12 @@
         "section_history": "Zuweisungsverlauf",
         "section_last_edit": "Letzte Bearbeitung",
         "last_edited_on": "(zuletzt bearbeitet: {date})",
-        "no_edit_history": "Keine Bearbeitungshistorie."
+        "no_edit_history": "Keine Bearbeitungshistorie.",
+        "section_changes": "Letzte Änderung",
+        "no_changes": "Keine aufgezeichneten Änderungen.",
+        "col_column": "Spalte",
+        "col_before": "Vorher",
+        "col_after": "Nachher"
     },
     "print": {
         "loading": "Ausdrucke werden geladen…",

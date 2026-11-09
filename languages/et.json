@@ -374,7 +374,12 @@
         "section_history": "Määramise ajalugu",
         "section_last_edit": "Viimane muudatus",
         "last_edited_on": "(viimati muudetud: {date})",
-        "no_edit_history": "Muudatuste ajalugu puudub."
+        "no_edit_history": "Muudatuste ajalugu puudub.",
+        "section_changes": "Viimane muudatus",
+        "no_changes": "Muudatusi pole salvestatud.",
+        "col_column": "Veerg",
+        "col_before": "Enne",
+        "col_after": "Pärast"
     },
     "print": {
         "loading": "Väljatrükkide laadimine…",

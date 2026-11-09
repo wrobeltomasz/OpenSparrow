@@ -374,7 +374,12 @@
         "section_history": "Historial de asignaciones",
         "section_last_edit": "Última edición",
         "last_edited_on": "(última edición: {date})",
-        "no_edit_history": "Sin historial de ediciones."
+        "no_edit_history": "Sin historial de ediciones.",
+        "section_changes": "Último cambio",
+        "no_changes": "Sin cambios registrados.",
+        "col_column": "Columna",
+        "col_before": "Antes",
+        "col_after": "Después"
     },
     "print": {
         "loading": "Cargando impresiones…",
