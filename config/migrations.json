@@ -224,5 +224,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds a Pages tab to Click Statistics with a per-page click breakdown and a From/To date-range filter across the Log, Top Elements and Pages tabs. The Record History tab now shows the last-edited-by username and date, read from the audit log (spw_users_log) via a new owners last_edit API action. User tooltips gain a chat shortcut that opens a direct conversation, and the demo CRM users are seeded with contact fields (name, email, phone) so those tooltips show full info. Branding logo upload now sends the image as JSON base64 through php://input, bypassing hosts whose upload_tmp_dir is unwritable. No database migration, no removed files and no removed config keys by this release."
+    },
+    "4.6": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Adds per-table write permissions on top of the existing per-user frontend access: a user_table_access entry can now carry a perms map (e.g. {\"orders\": [\"create\",\"edit\"]}) that narrows which write operations an editor may perform per table, while the tables list stays the read grant. The Access tab in System -> Users gains per-table Create/Edit/Delete checkboxes, an empty mask means read-only, and a missing mask keeps full CRUD (no existing account loses a write). The mask gates the grid routes, the create/edit forms, mass edit, data cleanup and workflow procedure steps; owner-scoped endpoints (owners, comments, files, chat) still gate on role only. The frontend write preamble now binds the required operation to the same matched route that dispatches the handler (matchWriteRoute), closing an authorization bypass where a request could be authorised for one operation and executed as another. The Record History tab now shows a 'Last change' diff of the two most recent record snapshots (spw_record_snapshots). Click statistics are now recorded in demo mode, and the DEMO_MODE scope is documented as blocking admin-panel writes only, leaving frontend record edits enabled. Admin docs and the README are updated accordingly. No database migration, no removed files and no removed config keys by this release."
     }
 }
