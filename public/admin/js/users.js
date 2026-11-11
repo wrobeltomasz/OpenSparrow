@@ -174,6 +174,153 @@ function renderScopeSection(panel, scope, allItems, selected, hiddenChildren = {
     return () => boxes.filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
 }
 
+function renderTableAccessSection(panel, scope, allItems, selected, perms, hiddenChildren = {}) {
+    const names = Object.keys(allItems)
+        .sort((left, right) => (allItems[left] || left).localeCompare(allItems[right] || right));
+
+    const { card, body } = buildSectionCard(
+        scope.title,
+        names.length === 0 ? scope.empty
+            : 'Tick Read/List to grant access, then untick individual operations to narrow what the user may do. '
+            + 'Leaving all three operations ticked means full create/edit/delete.'
+    );
+    panel.appendChild(card);
+
+    if (names.length === 0) {
+        return { tables: () => [], perms: () => ({}) };
+    }
+
+    const badge = el('div', 'ta-badge');
+    badge.style.marginBottom = '10px';
+    body.appendChild(badge);
+
+    const tableWrap = el('div');
+    tableWrap.style.cssText = 'overflow-x:auto;';
+    body.appendChild(tableWrap);
+
+    const tableElement = mkTable();
+    mkThead(tableElement, ['Read/List', 'Create', 'Edit', 'Delete', 'Display Name', 'Name']);
+    const tbody = tableElement.createTBody();
+
+    const rows = {};
+    names.forEach(name => {
+        const row = tbody.insertRow();
+
+        const readCell = el('td', 'adm-td');
+        const readBox = el('input', 'adm-check ta-item');
+        readBox.type = 'checkbox';
+        readBox.value = name;
+        readBox.checked = selected.has(name);
+        readCell.appendChild(readBox);
+        row.appendChild(readCell);
+
+        const opBoxes = [];
+        [['create', 'Create'], ['edit', 'Edit'], ['delete', 'Delete']].forEach(([operation, label]) => {
+            const cell = el('td', 'adm-td');
+            const box = el('input', 'adm-check ta-op');
+            box.type = 'checkbox';
+            box.dataset.op = operation;
+            box.title = label;
+            cell.appendChild(box);
+            row.appendChild(cell);
+            opBoxes.push(box);
+        });
+
+        const displayCell = el('td', 'adm-td');
+        displayCell.appendChild(el('strong', '', allItems[name] || name));
+        row.appendChild(displayCell);
+
+        const nameCell = el('td', 'adm-td');
+        nameCell.appendChild(el('code', '', name));
+        row.appendChild(nameCell);
+
+        rows[name] = { readBox, opBoxes };
+    });
+
+    tableWrap.appendChild(tableElement);
+
+    const applyOperations = (rowEntry, ticked) => {
+        rowEntry.opBoxes.forEach(box => {
+            box.disabled = !ticked;
+            if (ticked) {
+                const stored = perms[rowEntry.readBox.value];
+                box.checked = stored === undefined ? true : stored.includes(box.dataset.op);
+            } else {
+                box.checked = false;
+            }
+        });
+    };
+
+    Object.values(rows).forEach(rowEntry => {
+        applyOperations(rowEntry, rowEntry.readBox.checked);
+        rowEntry.readBox.addEventListener('change', () => applyOperations(rowEntry, rowEntry.readBox.checked));
+    });
+
+    const buttonRow = el('div');
+    buttonRow.style.cssText = 'display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;';
+    const allButton = el('button', 'btn btn-secondary btn-sm', 'Select All');
+    const noneButton = el('button', 'btn btn-secondary btn-sm', 'Select None');
+    buttonRow.append(allButton, noneButton);
+    body.appendChild(buttonRow);
+
+    const note = el('p', 'help-text ta-note');
+    note.style.marginTop = '10px';
+    body.appendChild(note);
+
+    const readBoxes = Object.values(rows).map(entry => entry.readBox);
+
+    const refreshBadge = () => {
+        const selectedCount = readBoxes.filter(box => box.checked).length;
+        badge.innerHTML = selectedCount === 0
+            ? '<span class="adm-badge adm-badge-ok">Full access (no restriction)</span>'
+            : `<span class="adm-badge">Restricted to ${selectedCount} of ${readBoxes.length} ${escHtml(scope.noun)}</span>`;
+    };
+
+    const refreshNote = () => {
+        const extra = [...new Set(
+            readBoxes.filter(box => box.checked)
+                .flatMap(box => (Array.isArray(hiddenChildren[box.value]) ? hiddenChildren[box.value] : []))
+        )].sort();
+        note.textContent = extra.length === 0
+            ? ''
+            : 'Hidden helper tables granted along with the ticked ones: ' + extra.join(', ');
+    };
+
+    const refresh = () => { refreshBadge(); refreshNote(); };
+    readBoxes.forEach(box => box.addEventListener('change', refresh));
+    refresh();
+
+    allButton.addEventListener('click', () => {
+        Object.values(rows).forEach(rowEntry => {
+            rowEntry.readBox.checked = true;
+            rowEntry.opBoxes.forEach(box => { box.disabled = false; box.checked = true; });
+        });
+        refresh();
+    });
+    noneButton.addEventListener('click', () => {
+        Object.values(rows).forEach(rowEntry => {
+            rowEntry.readBox.checked = false;
+            rowEntry.opBoxes.forEach(box => { box.disabled = true; box.checked = false; });
+        });
+        refresh();
+    });
+
+    return {
+        tables: () => readBoxes.filter(box => box.checked).map(box => box.value),
+        perms: () => {
+            const result = {};
+            Object.values(rows).forEach(rowEntry => {
+                if (!rowEntry.readBox.checked) return;
+                const checked = rowEntry.opBoxes.filter(box => box.checked).map(box => box.dataset.op);
+                if (checked.length < rowEntry.opBoxes.length) {
+                    result[rowEntry.readBox.value] = checked;
+                }
+            });
+            return result;
+        },
+    };
+}
+
 async function loadUserAccess(panel, anchorCard, selectElement) {
     const userId = selectElement.value;
 
@@ -199,15 +346,26 @@ async function loadUserAccess(panel, anchorCard, selectElement) {
     statusLine.remove();
     const scopes  = Array.isArray(data.scopes) ? data.scopes : [];
     const readers = {};
+    let tableReader = null;
     scopes.forEach(scope => {
-        readers[scope.key] = renderScopeSection(
-            panel,
-            scope,
-            (data.items || {})[scope.key] || {},
-            new Set((data.selected || {})[scope.key] || []),
-
-            scope.key === 'tables' ? (data.hidden_children || {}) : {}
-        );
+        if (scope.key === 'tables') {
+            tableReader = renderTableAccessSection(
+                panel,
+                scope,
+                (data.items || {})[scope.key] || {},
+                new Set((data.selected || {})[scope.key] || []),
+                (data.selected || {}).perms || {},
+                data.hidden_children || {}
+            );
+        } else {
+            readers[scope.key] = renderScopeSection(
+                panel,
+                scope,
+                (data.items || {})[scope.key] || {},
+                new Set((data.selected || {})[scope.key] || []),
+                {}
+            );
+        }
     });
 
     const saveRow = el('div', 'users-access-save-row');
@@ -218,7 +376,11 @@ async function loadUserAccess(panel, anchorCard, selectElement) {
 
     saveElement.addEventListener('click', async () => {
         const payload = { user_id: parseInt(userId, 10) };
-        scopes.forEach(scope => { payload[scope.key] = readers[scope.key](); });
+        scopes.forEach(scope => { if (scope.key !== 'tables') payload[scope.key] = readers[scope.key](); });
+        if (tableReader) {
+            payload.tables = tableReader.tables();
+            payload.perms = tableReader.perms();
+        }
         try {
             const response = await apiFetch('api.php?action=user_tables_save', {
                 method: 'POST',

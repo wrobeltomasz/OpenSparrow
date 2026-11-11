@@ -3,6 +3,12 @@
         "name": "Português",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Guardar",
         "cancel": "Cancelar",
@@ -290,7 +296,8 @@
         "image_limit": "Pode anexar até {max} imagens.",
         "image_upload_error": "Falha no envio da imagem: {msg}",
         "procedure_running": "A executar…",
-        "procedure_error": "Falha na validação: {msg}"
+        "procedure_error": "Falha na validação: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Eliminar",

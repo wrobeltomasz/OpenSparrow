@@ -3,6 +3,12 @@
         "name": "Italiano",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Salva",
         "cancel": "Annulla",
@@ -290,7 +296,8 @@
         "image_limit": "Puoi allegare fino a {max} immagini.",
         "image_upload_error": "Caricamento immagine non riuscito: {msg}",
         "procedure_running": "Esecuzione…",
-        "procedure_error": "Convalida non riuscita: {msg}"
+        "procedure_error": "Convalida non riuscita: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Elimina",

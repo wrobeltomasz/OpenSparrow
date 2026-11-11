@@ -3,6 +3,12 @@
         "name": "Română",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Salvează",
         "cancel": "Anulează",
@@ -294,7 +300,8 @@
         "image_limit": "Puteți atașa până la {max} imagini.",
         "image_upload_error": "Încărcarea imaginii a eșuat: {msg}",
         "procedure_running": "Se execută…",
-        "procedure_error": "Validarea a eșuat: {msg}"
+        "procedure_error": "Validarea a eșuat: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Șterge",

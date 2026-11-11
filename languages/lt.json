@@ -3,6 +3,12 @@
         "name": "Lietuvių",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Išsaugoti",
         "cancel": "Atšaukti",
@@ -294,7 +300,8 @@
         "image_limit": "Galite pridėti iki {max} paveikslėlių.",
         "image_upload_error": "Nepavyko įkelti paveikslėlio: {msg}",
         "procedure_running": "Vykdoma…",
-        "procedure_error": "Patikra nepavyko: {msg}"
+        "procedure_error": "Patikra nepavyko: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Ištrinti",

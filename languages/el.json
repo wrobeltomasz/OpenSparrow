@@ -3,6 +3,12 @@
         "name": "Ελληνικά",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Αποθήκευση",
         "cancel": "Ακύρωση",
@@ -290,7 +296,8 @@
         "image_limit": "Μπορείτε να επισυνάψετε έως {max} εικόνες.",
         "image_upload_error": "Η μεταφόρτωση εικόνας απέτυχε: {msg}",
         "procedure_running": "Εκτελείται…",
-        "procedure_error": "Η επικύρωση απέτυχε: {msg}"
+        "procedure_error": "Η επικύρωση απέτυχε: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Διαγραφή",

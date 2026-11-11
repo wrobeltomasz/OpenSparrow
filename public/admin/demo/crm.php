@@ -714,6 +714,14 @@ function demo_def_crm($conn): array
             'projects'  => ['name'],
         ],
 
+        'demo_user_access' => [
+            [
+                'user_index' => 1,
+                'tables' => ['companies', 'contacts', 'deals', 'activities', 'leads', 'projects'],
+                'perms' => ['deals' => []],
+            ],
+        ],
+
         'demo_users' => [
             ['username' => 'demo.anna',  'role' => 'editor', 'avatar_id' => 3,  'first_name' => 'Anna',  'last_name' => 'Kowalska',   'email' => 'anna.kowalska@demo.opensparrow.org',   'phone' => '+48 600 100 100'],
             ['username' => 'demo.marek', 'role' => 'editor', 'avatar_id' => 9,  'first_name' => 'Marek', 'last_name' => 'Nowak',      'email' => 'marek.nowak@demo.opensparrow.org',     'phone' => '+48 600 200 200'],

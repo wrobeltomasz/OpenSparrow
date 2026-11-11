@@ -6,6 +6,7 @@
 import { apiFetch } from './util/api.js';
 import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/record-tooltip.js';
 import { enablePointerDrag, registerDropTarget } from './util/touch-dnd.js';
+import { showToast } from './toast.js';
 
 let _i18nBundle = {};
 async function fetchI18n() {
@@ -372,11 +373,13 @@ async function moveCard(id, newStatus, oldStatus) {
         if (!result.ok || data.error) {
             card.status = oldStatus;
             render();
+            showToast(data.error || t('common.error_generic'), 'error');
             console.error('Failed to move card:', data.error ?? result.status);
         }
     } catch (error) {
         card.status = oldStatus;
         render();
+        showToast(t('common.error_generic'), 'error');
         console.error('Network error during card move:', error);
     }
 }

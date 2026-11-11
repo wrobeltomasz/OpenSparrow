@@ -3,6 +3,12 @@
         "name": "Deutsch",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Speichern",
         "cancel": "Abbrechen",
@@ -290,7 +296,8 @@
         "image_limit": "Sie können bis zu {max} Bilder anhängen.",
         "image_upload_error": "Bild-Upload fehlgeschlagen: {msg}",
         "procedure_running": "Wird ausgeführt…",
-        "procedure_error": "Validierung fehlgeschlagen: {msg}"
+        "procedure_error": "Validierung fehlgeschlagen: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Löschen",

@@ -30,7 +30,12 @@ function frontapi_workflow_procedure(FrontApiContext $context): never
         }
 
         if (!workflow_tables_in_scope($workflow)) {
-            jsonError('Forbidden: no access to this workflow.', 403);
+            require_once __DIR__ . '/../i18n.php';
+            jsonError(t('workflow.no_access'), 403);
+        }
+        if (!workflow_tables_writable($workflow)) {
+            require_once __DIR__ . '/../i18n.php';
+            jsonError(t('permissions.no_edit'), 403);
         }
         $procedureConfig = $workflow['steps'][$stepIndex]['procedure'] ?? null;
         break;

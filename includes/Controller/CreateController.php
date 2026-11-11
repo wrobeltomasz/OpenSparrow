@@ -80,11 +80,6 @@ final class CreateController
     public function handle(array $pageMeta): void
     {
         $cspNonce   = (string) ($pageMeta['nonce'] ?? '');
-        $isReadOnly = $this->session->role() !== 'editor';
-
-        if ($isReadOnly && $this->request->isPost()) {
-            throw new ForbiddenException('Read-only access');
-        }
 
         $table = os_validated_table_name($this->request->query('table'));
 
@@ -92,6 +87,12 @@ final class CreateController
             throw new BadRequestException('Invalid table.');
         }
         os_require_table_access($table);
+
+        $isReadOnly = $this->session->role() !== 'editor' || !user_can_operate($table, 'create');
+
+        if ($isReadOnly && $this->request->isPost()) {
+            throw new ForbiddenException('Read-only access');
+        }
 
         $tableConfig   = $this->schemas->table($table);
         $rawSchema  = $this->schemas->raw();

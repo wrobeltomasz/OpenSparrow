@@ -466,6 +466,8 @@ const USER_ACCESS_SCOPES = [
     ],
 ];
 
+const USER_ACCESS_OPERATIONS = ['create', 'edit', 'delete'];
+
 function access_scope(string $scope): array
 {
     if (!isset(USER_ACCESS_SCOPES[$scope])) {
@@ -668,6 +670,56 @@ function require_table_access(string $table, ?int $userId = null): void
     require_access('tables', $table, $userId);
 }
 
+function user_allowed_operations(string $table, ?int $userId = null): ?array
+{
+    $isSelf = ($userId === null);
+
+    $userId ??= (int) ($_SESSION['user_id'] ?? 0);
+    if ($userId <= 0) {
+        return null;
+    }
+
+    if ($isSelf && ($_SESSION['role'] ?? '') === 'admin') {
+        return null;
+    }
+
+    require_once __DIR__ . '/config_store.php';
+    $config = config_get('user_table_access') ?? [];
+    $entry  = $config['users'][(string) $userId] ?? null;
+
+    if (is_array($entry) && array_is_list($entry)) {
+        return null;
+    }
+
+    $operations = is_array($entry['perms'][$table] ?? null) ? $entry['perms'][$table] : null;
+    if (!is_array($operations)) {
+        return null;
+    }
+
+    return array_values(array_unique(array_filter($operations, 'is_string')));
+}
+
+function user_can_operate(string $table, string $operation, ?int $userId = null): bool
+{
+    $allowed = user_allowed_operations($table, $userId);
+    return $allowed === null || in_array($operation, $allowed, true);
+}
+
+function require_table_operation(string $table, string $operation, ?int $userId = null): void
+{
+    require_table_access($table, $userId);
+    if (!user_can_operate($table, $operation, $userId)) {
+        require_once __DIR__ . '/i18n.php';
+        $key = match ($operation) {
+            'create' => 'permissions.no_create',
+            'edit'   => 'permissions.no_edit',
+            'delete' => 'permissions.no_delete',
+            default  => 'permissions.denied',
+        };
+        jsonError(t($key), 403);
+    }
+}
+
 function require_view_access(string $view, ?int $userId = null): void
 {
     require_access('views', $view, $userId);
@@ -723,6 +775,20 @@ function workflow_tables_in_scope(mixed $workflow, ?int $userId = null): bool
     foreach ((array) ($workflow['steps'] ?? []) as $step) {
         $stepTable = is_array($step) ? (string) ($step['table'] ?? '') : '';
         if ($stepTable !== '' && !user_can_access_table($stepTable, $userId)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function workflow_tables_writable(mixed $workflow, ?int $userId = null): bool
+{
+    if (!is_array($workflow)) {
+        return false;
+    }
+    foreach ((array) ($workflow['steps'] ?? []) as $step) {
+        $stepTable = is_array($step) ? (string) ($step['table'] ?? '') : '';
+        if ($stepTable !== '' && !user_can_operate($stepTable, 'edit', $userId)) {
             return false;
         }
     }

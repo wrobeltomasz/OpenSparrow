@@ -3,6 +3,12 @@
         "name": "Hrvatski",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Spremi",
         "cancel": "Odustani",
@@ -294,7 +300,8 @@
         "image_limit": "Možete priložiti do {max} slika.",
         "image_upload_error": "Slanje slike nije uspjelo: {msg}",
         "procedure_running": "Izvršavanje…",
-        "procedure_error": "Provjera nije uspjela: {msg}"
+        "procedure_error": "Provjera nije uspjela: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Obriši",

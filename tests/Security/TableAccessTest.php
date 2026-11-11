@@ -225,6 +225,66 @@ final class TableAccessTest extends TestCase
         config_cache($key, ['value' => $value, 'version' => 1], true);
     }
 
+    public function testNoPermsEntryMeansFullOperations(): void
+    {
+        $this->seedTables('140', ['orders']);
+        $_SESSION['user_id'] = 140;
+
+        $this->assertNull(user_allowed_operations('orders'));
+        $this->assertTrue(user_can_operate('orders', 'create'));
+        $this->assertTrue(user_can_operate('orders', 'edit'));
+        $this->assertTrue(user_can_operate('orders', 'delete'));
+    }
+
+    public function testPermsNarrowOperations(): void
+    {
+        $this->seed(['141' => ['tables' => ['orders'], 'perms' => ['orders' => ['create', 'edit']]]]);
+        $_SESSION['user_id'] = 141;
+
+        $this->assertSame(['create', 'edit'], user_allowed_operations('orders'));
+        $this->assertTrue(user_can_operate('orders', 'create'));
+        $this->assertTrue(user_can_operate('orders', 'edit'));
+        $this->assertFalse(user_can_operate('orders', 'delete'));
+    }
+
+    public function testEmptyPermsMeansReadOnly(): void
+    {
+        $this->seed(['142' => ['tables' => ['orders'], 'perms' => ['orders' => []]]]);
+        $_SESSION['user_id'] = 142;
+
+        $this->assertSame([], user_allowed_operations('orders'));
+        $this->assertFalse(user_can_operate('orders', 'create'));
+        $this->assertFalse(user_can_operate('orders', 'delete'));
+    }
+
+    public function testLegacyBareListMeansFullOperations(): void
+    {
+        $this->seed(['143' => ['orders', 'clients']]);
+        $_SESSION['user_id'] = 143;
+
+        $this->assertNull(user_allowed_operations('orders'));
+        $this->assertTrue(user_can_operate('orders', 'delete'));
+    }
+
+    public function testOperationsAreIndependentAcrossTables(): void
+    {
+        $this->seed(['145' => ['tables' => ['orders', 'clients'], 'perms' => ['orders' => ['create']]]]);
+        $_SESSION['user_id'] = 145;
+
+        $this->assertTrue(user_can_operate('orders', 'create'));
+        $this->assertFalse(user_can_operate('orders', 'delete'));
+        $this->assertTrue(user_can_operate('clients', 'delete'), 'A table without a mask stays full.');
+    }
+
+    public function testRequireTableOperationThrowsWhenDenied(): void
+    {
+        $this->seed(['144' => ['tables' => ['orders'], 'perms' => ['orders' => ['create']]]]);
+        $_SESSION['user_id'] = 144;
+
+        $this->expectException(\App\Exception\HttpException::class);
+        require_table_operation('orders', 'delete');
+    }
+
     public function testScopeItemsNormaliseBothConfigShapes(): void
     {
         $this->seedConfig('views', ['views' => ['v_sales' => ['display_name' => 'Sales']]]);

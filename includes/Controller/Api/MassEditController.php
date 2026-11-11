@@ -72,7 +72,7 @@ final class MassEditController
             throw new BadRequestException('Unknown table');
         }
 
-        require_table_access($tableName);
+        require_table_operation($tableName, 'edit');
 
         $columns = $tableConfig['columns'] ?? [];
 
@@ -95,7 +95,7 @@ final class MassEditController
         return [$tableConfig, $tableName, $columns[$columnName], $columnSql, $qualifiedTable, $columnName];
     }
 
-    private function validatedTable(array $body): array
+    private function validatedTable(array $body, string $operation): array
     {
         $tableName = $body['table'] ?? '';
 
@@ -105,7 +105,7 @@ final class MassEditController
             throw new BadRequestException('Unknown table');
         }
 
-        require_table_access($tableName);
+        require_table_operation($tableName, $operation);
 
         return [$tableConfig, $tableName];
     }
@@ -271,7 +271,7 @@ final class MassEditController
     {
         [$body, $rowIds] = $this->selectedRows();
 
-        [$tableConfig, $tableName] = $this->validatedTable($body);
+        [$tableConfig, $tableName] = $this->validatedTable($body, 'create');
 
         $duplicateColumns = [];
         foreach ($tableConfig['columns'] as $columnName => $columnConfig) {
@@ -356,7 +356,7 @@ final class MassEditController
     {
         [$body, $rowIds] = $this->selectedRows();
 
-        [$tableConfig, $tableName] = $this->validatedTable($body);
+        [$tableConfig, $tableName] = $this->validatedTable($body, 'delete');
 
         $schemaName = $tableConfig['schema'] ?? 'public';
         $qualifiedTable     = pg_ident($schemaName) . '.' . pg_ident($tableName);

@@ -34,6 +34,7 @@ final class RequestScopeInventoryTest extends TestCase
         'require_print_access(', 'os_require_access(', 'os_require_table_access(',
         'validatedTable(', 'user_can_access(', 'user_can_access_table(',
         'user_can_access_view(', 'user_can_access_print(',
+        'require_table_operation(', 'user_can_operate(',
     ];
 
     private static string $root;

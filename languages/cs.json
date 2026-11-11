@@ -3,6 +3,12 @@
         "name": "Čeština",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Uložit",
         "cancel": "Zrušit",
@@ -294,7 +300,8 @@
         "image_limit": "Můžete připojit až {max} obrázků.",
         "image_upload_error": "Nahrání obrázku se nezdařilo: {msg}",
         "procedure_running": "Probíhá…",
-        "procedure_error": "Ověření selhalo: {msg}"
+        "procedure_error": "Ověření selhalo: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Smazat",

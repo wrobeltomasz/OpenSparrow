@@ -3,6 +3,12 @@
         "name": "Polski",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "Brak uprawnień do dodania",
+        "no_edit": "Brak uprawnień do edycji",
+        "no_delete": "Brak uprawnień do usunięcia",
+        "denied": "Brak uprawnień"
+    },
     "common": {
         "save": "Zapisz",
         "cancel": "Anuluj",
@@ -294,7 +300,8 @@
         "image_limit": "Można dołączyć maksymalnie {max} zdjęć.",
         "image_upload_error": "Przesyłanie zdjęcia nie powiodło się: {msg}",
         "procedure_running": "Wykonywanie…",
-        "procedure_error": "Walidacja nie powiodła się: {msg}"
+        "procedure_error": "Walidacja nie powiodła się: {msg}",
+        "no_access": "Brak dostępu do tego workflow"
     },
     "comments": {
         "delete": "Usuń",

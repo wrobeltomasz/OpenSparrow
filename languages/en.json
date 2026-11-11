@@ -3,6 +3,12 @@
         "name": "English",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Save",
         "cancel": "Cancel",
@@ -290,7 +296,8 @@
         "image_limit": "You can attach up to {max} images.",
         "image_upload_error": "Image upload failed: {msg}",
         "procedure_running": "Running…",
-        "procedure_error": "Validation failed: {msg}"
+        "procedure_error": "Validation failed: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Delete",

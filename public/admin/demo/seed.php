@@ -101,6 +101,37 @@ function demo_install_run(
             $demoUserIds[$userIndex] = (int) pg_fetch_result($result, 0, 'id');
         }
 
+        $demoAccessUserIds = [];
+        if ($withUsers && !empty($demoData['demo_user_access']) && is_array($demoData['demo_user_access'])) {
+            require_once __DIR__ . '/../../../includes/config_store.php';
+            $accessConfig = config_get('user_table_access') ?? [];
+            if (!is_array($accessConfig) || !isset($accessConfig['users'])) {
+                $accessConfig = ['users' => []];
+            }
+            foreach ($demoData['demo_user_access'] as $accessEntry) {
+                $userIndex = $accessEntry['user_index'] ?? null;
+                $permissions = is_array($accessEntry['perms'] ?? null) ? $accessEntry['perms'] : [];
+                $tables = is_array($accessEntry['tables'] ?? null) ? $accessEntry['tables'] : null;
+                if (!is_int($userIndex) || !isset($demoUserIds[$userIndex])) {
+                    continue;
+                }
+                $demoUserId = (string) $demoUserIds[$userIndex];
+                $entry = [];
+                if ($tables !== null) {
+                    $entry['tables'] = $tables;
+                }
+                if ($permissions !== []) {
+                    $entry['perms'] = $permissions;
+                }
+                $accessConfig['users'][$demoUserId] = $entry;
+                $demoAccessUserIds[] = (int) $demoUserId;
+            }
+            if ($demoAccessUserIds !== []) {
+                $accessActorId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+                config_save('user_table_access', $accessConfig, null, $accessActorId);
+            }
+        }
+
         $fallbackUserId = (int) ($_SESSION['user_id'] ?? 0);
         $authorId = static fn(int $userIndex): int => $demoUserIds[$userIndex] ?? $fallbackUserId;
 
@@ -673,6 +704,7 @@ function demo_install_run(
             'roadmap_ids'    => array_column($demoData['roadmap']['roadmaps'] ?? [], 'id'),
             'demo_user_ids'  => $demoUserIds,
             'demo_usernames' => $withUsers ? array_column($demoData['demo_users'], 'username') : [],
+            'user_access_user_ids' => $demoAccessUserIds,
             'audit_log_ids'  => $auditLogIds,
             'snapshots_enabled_by_demo' => $snapshotsEnabledByDemo,
             'demo_file_ids'  => $demoFileIds,
@@ -830,6 +862,21 @@ if ($action === 'demo_uninstall') {
 
         require_once __DIR__ . '/../../../includes/config_store.php';
         $cleanUserId = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
+
+        $demoAccessUserIds = $meta['user_access_user_ids'] ?? [];
+        if (!empty($demoAccessUserIds)) {
+            $accessConfig = config_get('user_table_access') ?? [];
+            if (is_array($accessConfig) && !empty($accessConfig['users'])) {
+                foreach ($demoAccessUserIds as $accessUserId) {
+                    unset($accessConfig['users'][(string) $accessUserId]);
+                }
+                if (empty($accessConfig['users'])) {
+                    config_delete('user_table_access', $cleanUserId);
+                } else {
+                    config_save('user_table_access', $accessConfig, null, $cleanUserId);
+                }
+            }
+        }
 
         if (!empty($meta['snapshots_enabled_by_demo'])) {
             $settingsConfig = config_get('settings') ?? [];

@@ -452,6 +452,7 @@ function admin_user_access_entry(int $userId): array
         $list        = is_array($entry[$scope] ?? null) ? $entry[$scope] : [];
         $output[$scope] = array_values(array_filter($list, 'is_string'));
     }
+    $output['perms'] = is_array($entry['perms'] ?? null) ? $entry['perms'] : [];
     return $output;
 }
 
@@ -476,6 +477,34 @@ function admin_hidden_children_map(array $tables): array
         }
     }
     return $map;
+}
+
+function admin_clean_permissions(mixed $submitted, array $assignableTables, array $stored): array
+{
+    if (!is_array($submitted)) {
+        return $stored;
+    }
+
+    $output = [];
+    foreach ($submitted as $table => $operations) {
+        if (!is_string($table) || !isset($assignableTables[$table]) || !is_array($operations)) {
+            continue;
+        }
+
+        $seen = [];
+        foreach ($operations as $operation) {
+            if (is_string($operation) && in_array($operation, USER_ACCESS_OPERATIONS, true)) {
+                $seen[$operation] = true;
+            }
+        }
+
+        $clean = array_values(array_keys($seen));
+        if ($clean !== USER_ACCESS_OPERATIONS) {
+            $output[$table] = $clean;
+        }
+    }
+
+    return $output;
 }
 
 if ($action === 'user_tables_get') {
@@ -543,7 +572,13 @@ if ($action === 'user_tables_save') {
 
         $clean[$scope] = array_map('strval', array_keys($seen));
     }
-    $clean = merge_user_access_selection($clean, admin_user_access_entry($userId));
+    $stored = admin_user_access_entry($userId);
+    $clean  = merge_user_access_selection($clean, $stored);
+    $clean['perms'] = admin_clean_permissions(
+        $data['perms'] ?? null,
+        $assignable['tables'],
+        $stored['perms'] ?? []
+    );
 
     try {
         require_once __DIR__ . '/../../includes/db.php';

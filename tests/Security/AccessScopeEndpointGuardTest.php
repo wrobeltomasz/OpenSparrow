@@ -255,6 +255,18 @@ final class AccessScopeEndpointGuardTest extends TestCase
         );
     }
 
+    public function testWorkflowProcedureRequiresWriteOnStepTables(): void
+    {
+        $source = $this->code(self::WF_PROC_MODULE);
+
+        $this->assertCodeHas(
+            'workflow_tables_writable($workflow)',
+            $source,
+            'workflow_procedure must require write (edit) permission on the step tables, '
+            . 'not read access alone — the CALL writes to them.'
+        );
+    }
+
     public function testWorkflowPageAppliesTheStepTableRule(): void
     {
         $this->assertCodeHas(
@@ -335,6 +347,63 @@ final class AccessScopeEndpointGuardTest extends TestCase
             $source,
             'The Access tab save must cast the collapsed names back to strings, or an '
             . 'all-digit table name is dropped and its scope silently becomes unrestricted.'
+        );
+    }
+
+    public function testWritePreambleGatesByOperation(): void
+    {
+        $source = $this->code('includes/Controller/FrontApiController.php');
+
+        $this->assertCodeHas(
+            'require_table_operation($table, $operation)',
+            $source,
+            'The single write gate must consult the per-table operation mask, not read access alone.'
+        );
+        $this->assertCodeHas(
+            '[$module, $function, $operation] = $matchedWriteRoute;',
+            $source,
+            'The operation must come from the matched route, so the gate and the dispatched handler agree.'
+        );
+    }
+
+    public function testFormControllersRespectTheOperationMask(): void
+    {
+        $this->assertCodeHas(
+            "!user_can_operate(\$table, 'create')",
+            $this->code('includes/Controller/CreateController.php'),
+            'create.php must block writes when the user lacks the create operation.'
+        );
+        $this->assertCodeHas(
+            "!user_can_operate(\$table, 'edit')",
+            $this->code('includes/Controller/EditController.php'),
+            'edit.php must block writes when the user lacks the edit operation.'
+        );
+    }
+
+    public function testBulkEndpointsRespectTheOperationMask(): void
+    {
+        $massSource = $this->code('includes/Controller/Api/MassEditController.php');
+
+        $this->assertCodeHas(
+            "require_table_operation(\$tableName, 'edit')",
+            $massSource,
+            'Mass edit must gate the edit operation, not read access alone.'
+        );
+        $this->assertCodeHas(
+            "validatedTable(\$body, 'create')",
+            $massSource,
+            'Mass duplicate must gate the create operation.'
+        );
+        $this->assertCodeHas(
+            "validatedTable(\$body, 'delete')",
+            $massSource,
+            'Mass delete must gate the delete operation.'
+        );
+
+        $this->assertCodeHas(
+            "require_table_operation(\$tableName, 'edit')",
+            $this->code('includes/Controller/Api/DataCleanupController.php'),
+            'Find-and-replace must gate the edit operation.'
         );
     }
 

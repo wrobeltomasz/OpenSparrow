@@ -200,7 +200,7 @@ export async function deleteRow(id) {
         status: result.status,
         error: payload?.error || "Unknown error"
       });
-      showToast(I18n.t('grid.delete_failed', { status: result.status }), 'error');
+      showToast(payload?.error || I18n.t('grid.delete_failed', { status: result.status }), 'error');
       return;
     }
 
@@ -244,7 +244,7 @@ export async function addRow() {
         status: result.status,
         error: payload?.error || "Unknown error"
       });
-      showToast(I18n.t('grid.insert_failed', { status: result.status }), 'error');
+      showToast(payload?.error || I18n.t('grid.insert_failed', { status: result.status }), 'error');
       return;
     }
 

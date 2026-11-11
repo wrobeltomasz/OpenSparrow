@@ -3,6 +3,12 @@
         "name": "Slovenščina",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Shrani",
         "cancel": "Prekliči",
@@ -298,7 +304,8 @@
         "image_limit": "Priložite lahko do {max} slik.",
         "image_upload_error": "Nalaganje slike ni uspelo: {msg}",
         "procedure_running": "Izvajanje…",
-        "procedure_error": "Preverjanje ni uspelo: {msg}"
+        "procedure_error": "Preverjanje ni uspelo: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Izbriši",

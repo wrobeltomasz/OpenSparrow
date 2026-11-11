@@ -122,7 +122,7 @@ final class DataCleanupController
             throw new BadRequestException('Unknown table');
         }
 
-        require_table_access($tableName);
+        require_table_operation($tableName, 'edit');
 
         $columns = $tableConfig['columns'] ?? [];
         if (!isset($columns[$columnName]) || ($columns[$columnName]['type'] ?? '') === 'virtual') {

@@ -6,6 +6,7 @@
 import { apiFetch } from './util/api.js';
 import { showRecordTooltip, hideRecordTooltip, rowsFromRecord } from './util/record-tooltip.js';
 import { enablePointerDrag, registerDropTarget } from './util/touch-dnd.js';
+import { showToast } from './toast.js';
 
 let _i18nBundle = {};
 async function fetchI18n() {
@@ -731,6 +732,7 @@ async function moveEventTo(payload, dateString, newTime = '') {
                 eventsData[eventIndex].time = originalTime;
                 renderCalendar();
             }
+            showToast(data.error || t('common.error_generic'), 'error');
             console.error('Failed to move event:', data.error ?? result.status);
         }
     } catch (error) {
@@ -739,6 +741,7 @@ async function moveEventTo(payload, dateString, newTime = '') {
             eventsData[eventIndex].time = originalTime;
             renderCalendar();
         }
+        showToast(t('common.error_generic'), 'error');
         console.error('Network error during event move:', error);
     }
 }
@@ -764,11 +767,13 @@ async function deleteEvent(event) {
         if (!result.ok || data.error) {
             eventsData.splice(eventIndex, 0, removed);
             renderCalendar();
+            showToast(data.error || t('common.error_generic'), 'error');
             console.error('Failed to delete event:', data.error ?? result.status);
         }
     } catch (error) {
         eventsData.splice(eventIndex, 0, removed);
         renderCalendar();
+        showToast(t('common.error_generic'), 'error');
         console.error('Network error during event delete:', error);
     }
 }

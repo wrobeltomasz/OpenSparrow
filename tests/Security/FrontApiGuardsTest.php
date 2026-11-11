@@ -59,14 +59,48 @@ final class FrontApiGuardsTest extends TestCase
     public function testFrontControllerGatesTheWriteTargetExactlyOnce(): void
     {
         $source   = $this->code(self::API_PHP);
-        $count = substr_count($source, 'require_table_access(');
+        $count = substr_count($source, 'require_table_operation(');
 
         $this->assertSame(
             1,
             $count,
-            'includes/Controller/FrontApiController.php must call require_table_access() exactly once — the shared '
+            'includes/Controller/FrontApiController.php must call require_table_operation() exactly once — the shared '
             . 'write preamble. Found ' . $count . '. More than one means the single gate '
             . 'has been split; none means the mutating routes are ungated.'
+        );
+    }
+
+    public function testWriteRouteBindsHandlerToOperation(): void
+    {
+        $controller = (new \ReflectionClass(\App\Controller\FrontApiController::class))->newInstanceWithoutConstructor();
+        $match = new \ReflectionMethod(\App\Controller\FrontApiController::class, 'matchWriteRoute');
+
+        $cases = [
+            'plain insert'            => ['POST', ['data' => ['name' => 'x']], 'record', 'frontapi_record_insert', 'create'],
+            'duplicate'               => ['POST', ['action' => 'duplicate', 'id' => 1], 'record', 'frontapi_record_duplicate', 'create'],
+            'patch'                   => ['PATCH', ['id' => 1, 'column' => 'name', 'value' => 'x'], 'record', 'frontapi_record_patch', 'edit'],
+            'calendar move'           => ['POST', ['api' => 'calendar', 'action' => 'move_event'], 'calendar', 'frontapi_calendar_move_event', 'edit'],
+            'board move'              => ['POST', ['api' => 'board', 'action' => 'move_card'], 'board', 'frontapi_board_move_card', 'edit'],
+            'm2m sync'                => ['POST', ['api' => 'm2m_sync', 'id' => 1, 'm2m_index' => 0, 'ids' => [2]], 'record', 'frontapi_record_m2m_sync', 'edit'],
+            'delete'                  => ['DELETE', ['id' => 1], 'record', 'frontapi_record_delete', 'delete'],
+            'conflict m2m + data'     => ['POST', ['api' => 'm2m_sync', 'data' => ['name' => 'x']], 'record', 'frontapi_record_insert', 'create'],
+            'conflict m2m + duplicate' => ['POST', ['api' => 'm2m_sync', 'action' => 'duplicate', 'id' => 1, 'm2m_index' => 0, 'ids' => [2]], 'record', 'frontapi_record_m2m_sync', 'edit'],
+        ];
+
+        foreach ($cases as $label => [$method, $body, $module, $function, $operation]) {
+            $route = $match->invoke($controller, $method, $body);
+            $this->assertIsArray($route, "No route matched for {$label}.");
+            $this->assertSame(
+                [$module, $function, $operation],
+                $route,
+                "Route for {$label} must pair its handler with the required operation."
+            );
+        }
+
+        $this->assertNull($match->invoke($controller, 'POST', []), 'A malformed body must not match a write route.');
+        $this->assertNull(
+            $match->invoke($controller, 'POST', ['api' => 'm2m_sync', 'id' => 1]),
+            'An incomplete m2m_sync body must not match a write route.'
         );
     }
 
@@ -75,18 +109,21 @@ final class FrontApiGuardsTest extends TestCase
         $source = $this->code(self::API_PHP);
 
         $resolve  = strpos($source, 'safe_table($schema, $table)');
-        $gate     = strpos($source, 'require_table_access($table)');
-        $dispatch = strpos($source, '$osWriteRoutes');
+        $route    = strpos($source, 'matchWriteRoute($method');
+        $gate     = strpos($source, 'require_table_operation($table, $operation)');
+        $dispatch = strpos($source, '$handler($apiWriteContext)');
 
         $this->assertIsInt($resolve, 'The write preamble no longer resolves $body[table] through safe_table().');
+        $this->assertIsInt($route, 'The write route is no longer matched through matchWriteRoute().');
         $this->assertIsInt($gate, 'The write preamble no longer gates the resolved table.');
-        $this->assertIsInt($dispatch, 'The write dispatch table is gone — check this test against the source.');
+        $this->assertIsInt($dispatch, 'The matched handler is no longer dispatched through $handler().');
 
         $this->assertLessThan($gate, $resolve, 'The table must be resolved before it is gated.');
+        $this->assertLessThan($gate, $route, 'The route must be matched before it is gated.');
         $this->assertLessThan(
             $dispatch,
             $gate,
-            'The write gate must run before any mutating route is dispatched, not after.'
+            'The write gate must run before the matched handler is dispatched, not after.'
         );
     }
 
@@ -95,8 +132,8 @@ final class FrontApiGuardsTest extends TestCase
         foreach (self::WRITE_MODULES as $module) {
             $source = $this->code(self::MODULE_DIR . '/' . $module);
             $this->assertFalse(
-                str_contains($source, 'require_table_access('),
-                "includes/frontapi/{$module} must not call require_table_access(): the "
+                str_contains($source, 'require_table_access(') || str_contains($source, 'require_table_operation('),
+                "includes/frontapi/{$module} must not call require_table_access() or require_table_operation(): the "
                 . 'shared write preamble in includes/Controller/FrontApiController.php already gated '
                 . '$context->table. A '
                 . 'per-route copy is a list to keep by hand, which is how this class of '

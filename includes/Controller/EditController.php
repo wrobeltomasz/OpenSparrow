@@ -101,11 +101,6 @@ final class EditController
     public function handle(array $pageMeta): void
     {
         $cspNonce   = (string) ($pageMeta['nonce'] ?? '');
-        $isReadOnly = $this->session->role() !== 'editor';
-
-        if ($isReadOnly && $this->request->isPost()) {
-            throw new ForbiddenException('Read-only access');
-        }
 
         $table = os_validated_table_name($this->request->query('table'));
         $id    = os_validated_record_id($this->request->query('id'));
@@ -115,6 +110,12 @@ final class EditController
         }
 
         os_require_table_access($table);
+
+        $isReadOnly = $this->session->role() !== 'editor' || !user_can_operate($table, 'edit');
+
+        if ($isReadOnly && $this->request->isPost()) {
+            throw new ForbiddenException('Read-only access');
+        }
 
         $tableConfig   = $this->schemas->table($table);
         $rawSchema  = $this->schemas->raw();

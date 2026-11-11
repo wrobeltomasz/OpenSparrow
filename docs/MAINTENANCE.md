@@ -430,6 +430,62 @@ instead of naming each one — the tab renders whatever the registry describes.
   must take effect on the user's next request, not on their next login. The static
   cache in `user_allowed_items()` is per-request only.
 
+### Per-table operation permissions (create / edit / delete)
+
+On top of the `tables` allow-list (which is the read/list grant), a per-user entry
+may carry an optional `perms` map that narrows the **write** operations per table:
+`"perms": {"orders": ["create","edit"], "clients": []}`.
+
+- **The `tables` list stays the read grant.** `perms` only ever narrows writes; it
+  cannot revoke read, and read is not an operation in the mask. The effective set of
+  operations for a table is `{read} ∪ perms[table]`.
+- **Absent mask = full CRUD.** A table with no `perms` entry (or a legacy bare list,
+  which has no `perms` key at all) keeps `create`/`edit`/`delete`. This is the same
+  fail-open rule as the allow-list and is what makes the feature safe to ship — no
+  existing account loses a write it had.
+- **An empty mask is not "full"** — `"clients": []` means read-only: the table is
+  reachable but every write operation is refused. Distinguish the two: absent is full,
+  empty is read-only. `user_allowed_operations()` returns `null` for absent and `[]`
+  for empty.
+- **The full set is never persisted.** A mask equal to `USER_ACCESS_OPERATIONS`
+  (`create, edit, delete`) is dropped on save, so it collapses back to "absent", which
+  is the same permission. The admin save therefore only stores masks that differ from
+  full — partial masks and the read-only empty mask.
+- **The decision lives next to the read gate.** `require_table_operation($table, $op)`
+  (`includes/api_helpers.php`) runs `require_table_access()` first, then
+  `user_can_operate()`. The single write preamble in
+  `includes/Controller/FrontApiController.php` matches the request to exactly one
+  route via `matchWriteRoute()`, and that route carries both its handler and its
+  required operation (`insert`/`duplicate`→create, `PATCH`/`m2m_sync`/`move_*`→edit,
+  `delete`→delete). The gate and the dispatched handler always come from the same
+  matched route — never derive the operation from the method/body independently, or
+  a request authorised for one operation executes as another. The gate runs exactly
+  once; do not spread the mapping across route modules.
+- **`merge_user_access_selection()` does not touch `perms`.** It merges the scope lists
+  only; the admin save cleans the mask separately through `admin_clean_permissions()`
+  (`includes/admin/users.php`), which validates the operation names against
+  `USER_ACCESS_OPERATIONS` and drops the full set. A save that omits `perms` keeps the
+  stored value (same "never widen what you were not asked about" rule as the scopes).
+- **The mask gates every record-write surface.** The grid routes (`insert`/`patch`/
+  `delete`/`duplicate`/`calendar move`/`board move`/`m2m_sync`) are gated once in the
+  front controller's write preamble; the form pages gate it in `CreateController`
+  (`create`) and `EditController` (`edit`) by folding `user_can_operate()` into the
+  read-only flag so the form renders disabled and the POST is refused; the bulk
+  endpoints gate it in `MassEditController` (`edit`/`create`/`delete`) and
+  `DataCleanupController` (`edit`). `AccessScopeEndpointGuardTest` pins all of them so
+  a forgotten gate cannot ship.
+- **Workflow procedure steps require `edit` on the step tables.** `workflow_procedure`
+  (`includes/frontapi/workflow_procedure.php`) runs a `CALL` that writes, so on top of
+  the workflow-id grant and the read check (`workflow_tables_in_scope()`) it now also
+  runs `workflow_tables_writable()` (`includes/api_helpers.php`), which requires
+  `user_can_operate($stepTable, 'edit')` on every step table. `edit` is the proxy for
+  "may write" because the stored procedure is opaque — the app cannot tell whether it
+  INSERTs, UPDATEs or DELETEs. The wizard's inline record creation already went through
+  the shared write preamble (`create`), so that half was covered before.
+- **Owner-scoped endpoints (owners, comments, files, chat) are not covered.** They still
+  gate on role via `requireWrite()`, not on the per-table mask; extending the mask to
+  those endpoints is a separate, deliberately deferred change.
+
 ### Where the decision is made
 
 `includes/api_helpers.php` owns it, and nothing else may re-implement it:

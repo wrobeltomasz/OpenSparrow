@@ -3,6 +3,12 @@
         "name": "Latviešu",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Saglabāt",
         "cancel": "Atcelt",
@@ -290,7 +296,8 @@
         "image_limit": "Varat pievienot līdz {max} attēliem.",
         "image_upload_error": "Attēla augšupielāde neizdevās: {msg}",
         "procedure_running": "Notiek izpilde…",
-        "procedure_error": "Validācija neizdevās: {msg}"
+        "procedure_error": "Validācija neizdevās: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Dzēst",

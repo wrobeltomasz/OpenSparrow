@@ -121,7 +121,14 @@ final class FrontApiController
                     throw new BadRequestException('Unknown table');
                 }
 
-                require_table_access($table);
+                $matchedWriteRoute = $this->matchWriteRoute($method, is_array($body) ? $body : []);
+                if ($matchedWriteRoute === null) {
+                    throw new BadRequestException('Unsupported action or malformed request body');
+                }
+
+                [$module, $function, $operation] = $matchedWriteRoute;
+
+                require_table_operation($table, $operation);
                 $schemaName = $tableConfig['schema'] ?? 'public';
                 $idColumn = id_column();
 
@@ -134,60 +141,8 @@ final class FrontApiController
                     $idColumn,
                 );
 
-                $osWriteRoutes = [
-                    [
-                        fn(): bool => $method === 'POST'
-                            && ($body['api'] ?? '') === 'calendar'
-                            && ($body['action'] ?? '') === 'move_event',
-                        'calendar',
-                        'frontapi_calendar_move_event',
-                    ],
-                    [
-                        fn(): bool => $method === 'POST'
-                            && ($body['api'] ?? '') === 'board'
-                            && ($body['action'] ?? '') === 'move_card',
-                        'board',
-                        'frontapi_board_move_card',
-                    ],
-                    [
-                        fn(): bool => $method === 'PATCH' && isset($body['id'], $body['column'], $body['value']),
-                        'record',
-                        'frontapi_record_patch',
-                    ],
-                    [
-                        fn(): bool => $method === 'POST' && isset($body['data']),
-                        'record',
-                        'frontapi_record_insert',
-                    ],
-                    [
-                        fn(): bool => $method === 'POST'
-                            && ($body['api'] ?? '') === 'm2m_sync'
-                            && isset($body['id'], $body['m2m_index'], $body['ids']),
-                        'record',
-                        'frontapi_record_m2m_sync',
-                    ],
-                    [
-                        fn(): bool => $method === 'POST'
-                            && ($body['action'] ?? '') === 'duplicate'
-                            && isset($body['id']),
-                        'record',
-                        'frontapi_record_duplicate',
-                    ],
-                    [
-                        fn(): bool => $method === 'DELETE' && isset($body['id']),
-                        'record',
-                        'frontapi_record_delete',
-                    ],
-                ];
-
-                foreach ($osWriteRoutes as [$matches, $module, $function]) {
-                    if ($matches()) {
-                        $handler = $osFrontApiHandler($module, $function);
-                        $handler($apiWriteContext);
-                    }
-                }
-
-                throw new BadRequestException('Unsupported action or malformed request body');
+                $handler = $osFrontApiHandler($module, $function);
+                $handler($apiWriteContext);
             }
         } catch (ControlFlowException $signal) {
             throw $signal;
@@ -195,5 +150,69 @@ final class FrontApiController
             error_log('[api][exception] ' . $exception->getMessage());
             throw new ServerErrorException('Internal server error');
         }
+    }
+
+    private function matchWriteRoute(string $method, array $body): ?array
+    {
+        $writeRoutes = [
+            [
+                fn(): bool => $method === 'POST'
+                    && ($body['api'] ?? '') === 'calendar'
+                    && ($body['action'] ?? '') === 'move_event',
+                'calendar',
+                'frontapi_calendar_move_event',
+                'edit',
+            ],
+            [
+                fn(): bool => $method === 'POST'
+                    && ($body['api'] ?? '') === 'board'
+                    && ($body['action'] ?? '') === 'move_card',
+                'board',
+                'frontapi_board_move_card',
+                'edit',
+            ],
+            [
+                fn(): bool => $method === 'PATCH' && isset($body['id'], $body['column'], $body['value']),
+                'record',
+                'frontapi_record_patch',
+                'edit',
+            ],
+            [
+                fn(): bool => $method === 'POST' && isset($body['data']),
+                'record',
+                'frontapi_record_insert',
+                'create',
+            ],
+            [
+                fn(): bool => $method === 'POST'
+                    && ($body['api'] ?? '') === 'm2m_sync'
+                    && isset($body['id'], $body['m2m_index'], $body['ids']),
+                'record',
+                'frontapi_record_m2m_sync',
+                'edit',
+            ],
+            [
+                fn(): bool => $method === 'POST'
+                    && ($body['action'] ?? '') === 'duplicate'
+                    && isset($body['id']),
+                'record',
+                'frontapi_record_duplicate',
+                'create',
+            ],
+            [
+                fn(): bool => $method === 'DELETE' && isset($body['id']),
+                'record',
+                'frontapi_record_delete',
+                'delete',
+            ],
+        ];
+
+        foreach ($writeRoutes as [$matches, $module, $function, $operation]) {
+            if ($matches()) {
+                return [$module, $function, $operation];
+            }
+        }
+
+        return null;
     }
 }

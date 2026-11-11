@@ -3,6 +3,12 @@
         "name": "Slovenčina",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Uložiť",
         "cancel": "Zrušiť",
@@ -294,7 +300,8 @@
         "image_limit": "Môžete pripojiť až {max} obrázkov.",
         "image_upload_error": "Nahrávanie obrázka zlyhalo: {msg}",
         "procedure_running": "Prebieha…",
-        "procedure_error": "Overenie zlyhalo: {msg}"
+        "procedure_error": "Overenie zlyhalo: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Zmazať",

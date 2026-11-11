@@ -3,6 +3,12 @@
         "name": "Български",
         "dir": "ltr"
     },
+    "permissions": {
+        "no_create": "No permission to create",
+        "no_edit": "No permission to edit",
+        "no_delete": "No permission to delete",
+        "denied": "Permission denied"
+    },
     "common": {
         "save": "Запазване",
         "cancel": "Отказ",
@@ -290,7 +296,8 @@
         "image_limit": "Можете да прикачите до {max} изображения.",
         "image_upload_error": "Качването на изображението не бе успешно: {msg}",
         "procedure_running": "Изпълнява се…",
-        "procedure_error": "Проверката е неуспешна: {msg}"
+        "procedure_error": "Проверката е неуспешна: {msg}",
+        "no_access": "No access to this workflow"
     },
     "comments": {
         "delete": "Изтриване",
