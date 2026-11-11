@@ -332,6 +332,7 @@ ${_ul([
     `<strong>${strings.s9o_empty_label}:</strong> ${strings.s9o_empty}`,
     `<strong>${strings.s9o_admin_label}:</strong> ${strings.s9o_admin}`,
     `<strong>${strings.s9o_scope_label}:</strong> ${strings.s9o_scope}`,
+    `<strong>${strings.s9o_ops_label}:</strong> ${strings.s9o_ops}`,
     `<strong>${strings.s9o_hidden_label}:</strong> ${strings.s9o_hidden}`,
     `<strong>${strings.s9o_bindings_label}:</strong> ${strings.s9o_bindings}`,
     `<strong>${strings.s9o_views_label}:</strong> ${strings.s9o_views}`,
