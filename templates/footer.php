@@ -7,8 +7,7 @@
 <footer>
     <div class="footer-content">
         <div class="footer-text">
-            <a href="https://opensparrow.org"><img src="/assets/img/logo.png" alt="OpenSparrow Logo" height="16"></a>
-            <span>Copyright © 2026 <a href="https://opensparrow.org/">OpenSparrow</a> Team</span>
+            <span>Copyright © 2026 <a href="https://opensparrow.org/"><img src="/assets/img/logo.png" alt="OpenSparrow Logo" height="16"> OpenSparrow</a></span>
             <span>
             Licensed under LGPL-3.0
             </span>
