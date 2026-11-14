@@ -24,7 +24,7 @@
 
 ## Overview
 
-OpenSparrow is a JSON schema-driven platform for building internal systems. Tables, forms, dashboards, and calendars are generated from configuration files, so business logic stays decoupled from infrastructure. Self-hosted on PostgreSQL — no vendor lock-in, full data ownership.
+OpenSparrow is a JSON schema-driven platform for building internal systems. Tables, forms, dashboards, and calendars are generated from configuration stored in PostgreSQL, so business logic stays decoupled from infrastructure. Self-hosted — no vendor lock-in, full data ownership.
 
 > **No Composer. No npm. No build step** — in production.  
 > Drop the files, point to PostgreSQL, open your site — the **setup wizard** does the rest.  
@@ -33,6 +33,20 @@ OpenSparrow is a JSON schema-driven platform for building internal systems. Tabl
 Project website: https://opensparrow.org
 
 Demo: https://demo.opensparrow.org
+
+---
+
+## Quick Start
+
+With Docker installed (on Linux, apply the [ownership step](#path-b--docker) before starting):
+
+```bash
+git clone https://github.com/wrobeltomasz/OpenSparrow.git
+cd OpenSparrow
+docker compose up -d --build
+```
+
+Open **http://localhost:8080** and follow the setup wizard. For cloud, shared-hosting and local PHP options, use the deployment paths below.
 
 ---
 
@@ -51,72 +65,30 @@ Pick the path that matches your environment. Every path ends at the same place: 
 
 ## Preview
 
-<img width="2028" height="1086" alt="Zrzut ekranu 2026-08-01 233817" src="https://github.com/user-attachments/assets/1e322af2-1615-41ec-9589-85a9c64dde63" />
+<img width="2028" height="1086" alt="OpenSparrow grid interface" src="https://github.com/user-attachments/assets/1e322af2-1615-41ec-9589-85a9c64dde63" />
 
+### See it in action
 
-## RAG module Demo Video
-
-Setting up the RAG module in the admin panel is straightforward — just open the RAG tab, pick which tables and columns should be indexed, and save. You can feed the knowledge base either from uploaded documents (files attached to records) or directly from database views, so existing data can be exposed to search without duplicating it. Embeddings and answers can be generated locally through Ollama or via a cloud API, whichever you configure in the settings.
-
-<img width="1544" height="842" alt="rag" src="https://github.com/user-attachments/assets/10228ffb-27f9-413b-a645-9c5f59b75c80" />
-
-
-## Calendar module Demo Video
-
-Managing the calendar module from the admin panel is just as simple — open the Calendar tab and point it at the table that holds your events. You choose which columns provide the title, the start and end dates, and optionally a color or category, so any existing table can become a calendar without restructuring your data. Everything is saved straight from the panel and takes effect immediately, with no configuration files to edit by hand.
-
-<img width="1035" height="686" alt="calendar" src="https://github.com/user-attachments/assets/868f7144-7b71-4819-aa2c-9b7b5eb9159f" />
-
-
-## Board module Demo Video
-
-Managing the board module from the admin panel is equally easy — open the Board tab and select the table whose records should appear as cards. You define which column drives the status lanes and which fields show up on the card face, so any table with a status-like column turns into a working Kanban board straight away. Cards are then dragged between lanes in the front end, and every setting is saved from the panel with no files to edit manually.
-
-<img width="1035" height="686" alt="board_view" src="https://github.com/user-attachments/assets/7cc2ec05-ceb7-498c-994c-71a9747249f7" />
-
-
-## User Menu module Demo Video
-
-The personal modules — My Notes, My Records and My Comments — are managed from the same admin panel and need almost no setup. Each one is simply switched on and pointed at the data it should show, so users immediately get a private view of the records they own, the notes they wrote and the comments they left. Ownership is resolved automatically from the logged-in user, which means you don't have to build separate tables or filters for every person. As with the other modules, everything is configured and saved directly in the panel, with no configuration files to edit by hand.
-
-<img width="1797" height="981" alt="user_menu" src="https://github.com/user-attachments/assets/1509c524-4bbc-44f4-8263-f944ce5b78cf" />
+Module configuration is visual and requires no file edits. Browse the guides and screenshots for [RAG](docs/ADMIN.md#15-rag-retrieval-augmented-generation) ([screenshot](https://github.com/user-attachments/assets/10228ffb-27f9-413b-a645-9c5f59b75c80)), [Calendar](docs/ADMIN.md#4-calendar-module) ([screenshot](https://github.com/user-attachments/assets/868f7144-7b71-4819-aa2c-9b7b5eb9159f)), [Board](docs/ADMIN.md#4b-board-kanban-module) ([screenshot](https://github.com/user-attachments/assets/7cc2ec05-ceb7-498c-994c-71a9747249f7)) and [personal modules](docs/ADMIN.md#10c-user-records) ([screenshot](https://github.com/user-attachments/assets/1509c524-4bbc-44f4-8263-f944ce5b78cf)), or try the [live demo](https://demo.opensparrow.org).
 
 ---
 
 ## Features
 
-- **First-run setup wizard** — guided `setup.php` wizard appears automatically on first launch (no `database.json` present). Collects PostgreSQL credentials, tests the connection, creates the schema, initializes all system tables, and seeds the default admin account in one flow.
-- **Config-driven CRUD** — tables and forms generated from the `schema` configuration with nested relations, constraints, and enum color states.
-- **Inline editing** — in-grid PATCH updates routed through a single `api.php` gateway.
-- **Record image galleries** — per-table photo galleries: thumbnails render directly in the grid, full-size images open in a popup, and uploads happen from the Edit form. Enabled per table in the `schema` configuration; files are stored alongside attachments in `spw_files`.
-- **Conditional row highlighting** — colour rules evaluated per row in the grid (e.g. overdue invoices in red), defined in the admin panel next to the column settings.
-- **Dashboard engine** — COUNT / SUM / AVG widgets (grouped bar, pie, time-series line, stat cards and data lists) defined in the `dashboard` configuration.
-- **Calendar & notifications** — date-based records on a calendar view, with scheduled reminders via cron. An optional subtitle column adds a second line to each calendar entry.
-- **Admin panel** — collapsible sidebar navigation with visual editors for schema, dashboards, calendar, boards, roadmaps, printouts, views, workflows, automations, files, ETL, anonymization, the knowledge base, and users at `/admin`. Unified login for all roles — no separate admin password.
-- **Visual table builder** — create PostgreSQL tables from the admin UI with per-column type, NOT NULL, default value, index (btree/hash/unique), column comment (`COMMENT ON COLUMN`), and foreign key constraints. Timestamps preset adds `created_at`/`updated_at` automatically. Tables are registered in the app schema configuration in the same step.
-- **Per-user access control** — beyond the three roles, each frontend account can be restricted to a subset of tables, views, printouts, boards, roadmaps and workflows from **System → Users → Access**. The groups are independent, ticking nothing leaves a group unrestricted, and enforcement is server-side on every endpoint — menus, grids, forms, subtable tabs, bulk tools, files and the RAG context all follow the restriction. On top of the table allow-list, each ticked table can independently narrow its write operations (create/edit/delete): an unticked operation is refused server-side while read access stays granted.
-- **Column masking for viewers** — sensitive columns (e.g. personal ID or passport number) can be flagged in the schema editor to hide their value from Viewer accounts. The column stays visible in grids, boards, calendar, roadmap, dashboard, FK/m2m labels, comments and share views, but every value is replaced with a `•••••` placeholder. Masking is enforced server-side — the raw value never leaves the backend for a Viewer — and Editor/Admin accounts are unaffected; SQL views, printouts and external API keys are out of scope.
-- **Two-factor login (email code)** — optional second factor, toggled from **System → Settings → Login Security** and off by default. After a correct password, accounts with a contact email set receive a 6-digit code (valid 60 seconds, 5 attempts max) and must type it in to finish logging in; accounts without an email keep password-only login. Delivery uses the same email settings as the notification cron (`AUTOMATION_EMAIL_FROM` / SMTP), and wrong codes feed the existing login rate limiter, so the lockout covers the code phase too.
-- **Audit logging & record snapshots** — every write is logged to `spw_users_log`; an optional record-snapshot module saves a full JSONB copy of each record after INSERT/UPDATE to `spw_record_snapshots`, toggled from the admin panel or via env var.
-- **Click Statistics** — optional UI-interaction analytics (**System → Click Statistics**), off by default: while disabled nothing is emitted, no collector script loads and no request is made. Once enabled, clicks on buttons, links and elements carrying a `data-stat` attribute are batched client-side and delivered via `navigator.sendBeacon` to `spw_clickstats`, recording who clicked, when, which element, and the table/record in context where applicable. Retention is configurable (90 days by default) and enforced by the notification cron.
-- **CSV export & pagination** — built-in grid utilities.
-- **Workflows builder** — multi-step wizards linking parent/child records across tables. Each step can also upload an image or call a PostgreSQL stored procedure, so server-side logic runs as part of the wizard.
-- **File management** — per-record attachments with tagging and search, configurable via the admin panel.
-- **WCAG 2.1 focus** — accessibility-oriented UI.
-- **AI Knowledge Base (RAG)** — upload `.txt` documents to a local knowledge base, then query them through a built-in chat interface powered by a local [Ollama](https://ollama.com) model. Retrieval uses PostgreSQL full-text search. Available to all authenticated users; managed by admins from the **Centrum AI** tab. No cloud API required.
-- **Automations** — rule-based triggers on record create/update/delete with nested AND/OR conditions, change detection, and template variables. Actions can update the record, notify users, create a related record, queue an email, or call an outbound webhook. Configured from the admin panel — split into **Record Automations** (in-app actions) and **n8n Automations** (outbound webhooks) — with a per-rule run history.
-- **Record comments** — threaded comments per record (`spw_comments`) with audit trail, shown as a grid badge and an Edit-form tab; comment bodies can embed `[Record: table:id]` links to records from any table (rendered only when the reader can access the target table).
-- **Private notes** — a personal notepad in the user menu (`spw_notes`), visible only to its author, optionally linked to a record and carrying a reminder date **and time**, delivered by the notification cron once that moment has passed.
-- **User chat** — a one-to-one messenger in the user menu (`spw_chat_messages`). Conversations are strictly between two users; sending a message immediately raises an in-app notification for the recipient. Either participant can hide a message (soft delete — the row stays in the table but leaves the thread). Sending and hiding require the editor role; viewers can read their conversations only.
-- **Kanban boards** — drag records between status lanes; multiple boards can be defined in the `board` configuration, each appearing as its own sidebar item.
-- **Roadmaps (Gantt)** — read-only timeline views over monthly columns: records become bars driven by a start and end date column, with automatic milestones (start = end), an optional progress overlay, category coloring and a today marker. Multiple roadmaps can be defined in the `roadmap` configuration, each appearing as its own sidebar item.
-- **Saved views** — read-only pages backed by PostgreSQL views, ordinary or materialized, discoverable across multiple schemas and configured from the admin panel.
-- **Printable reports** — configurable print templates with paginated output, defined in the `print` configuration and rendered by `print.php`.
-- **ETL module** — scheduled data transfers from MySQL, MariaDB, PostgreSQL or SQLite sources — or a CSV file fetched over FTP/FTPS — into PostgreSQL targets, with multi-step flows, run logs, and a cron worker.
-- **Data anonymization** — GDPR-oriented column scrubbing with preview, scheduled runs, and an audit trail in `spw_anonymization_log`.
-- **Bulk operations** — mass edit, CSV import, and search-and-replace data cleanup, all with preview before applying.
-- **Outbound webhooks (n8n / Make / custom)** — any automation rule can POST/PUT/PATCH/DELETE a JSON payload to an external endpoint on record create, update or delete. The body carries the rule, event and record (mapped fields or the whole row, plus the pre-change state on update and delete). Requests can be signed with an HMAC SHA-256 `X-Sparrow-Signature` header and/or carry custom headers for the receiver's own auth; signing secrets and header values are stored encrypted. Failed sends optionally retry on timeouts and 5xx/429. Point the URL at an n8n Webhook node and no plugin is needed on either side.
-- **External API (read-only)** — expose table or view data to external services through API keys managed from **System → API**. Each API binds one table or one registered PostgreSQL view, a chosen set of columns, fixed server-side filters and a row limit; the endpoint (`api/external.php`) accepts nothing from the caller except the key (`Authorization: Bearer`). Keys are stored encrypted, requests are logged to `spw_external_api_log` with usage statistics in the panel. Write access for external systems is planned; today integrations are read-only inbound plus the outbound webhooks above.
+- **Config-driven CRUD** — schema-generated tables and forms with inline editing, relations, image galleries, row highlighting, CSV export and bulk operations.
+- **Visual administration** — configure modules and build PostgreSQL tables, columns, indexes and foreign keys from the browser.
+- **Dashboards and planning views** — charts, calendars with reminders, Kanban boards, Gantt roadmaps, saved views and printable reports.
+- **Access control and security** — three roles, per-user scopes, per-table write permissions, viewer column masking, optional email 2FA and audit snapshots.
+- **Collaboration** — record attachments and comments, private notes, ownership history, notifications and one-to-one user chat.
+- **Workflows and automations** — multi-step record wizards, conditional triggers, notifications, emails and signed outbound webhooks for n8n, Make or custom receivers.
+- **AI knowledge base (RAG)** — searchable documents and database views with answers from local or cloud [Ollama](https://ollama.com) models.
+- **External API** — encrypted, key-authenticated read access to selected table or view columns, with fixed filters, limits and usage statistics.
+- **Data integration** — CSV import plus scheduled ETL from MySQL, MariaDB, PostgreSQL, SQLite and FTP/FTPS CSV sources.
+- **Privacy and analytics** — optional GDPR anonymization, record snapshots and click statistics with configurable retention.
+- **First-run wizard and demo CRM** — initialize the database and admin account, then optionally install a ready-made example application.
+- **Accessible, dependency-free frontend** — WCAG 2.1-oriented UI built with vanilla JavaScript and CSS.
+
+See the [admin guide](docs/ADMIN.md), [security notes](docs/SECURITY.md) and [database reference](docs/DATABASE.md) for module details.
 
 ---
 
@@ -183,7 +155,7 @@ Each release ZIP is built automatically by GitHub Actions and includes all PHP, 
 
    > **Host doesn't let you change the document root?** Upload the *contents* of `public/` into your web root (e.g. `public_html/`) and the remaining folders (`includes/`, `config/`, `src/`, `storage/`, `templates/`, `cron/`, `languages/`) one level **above** it. The code references them via relative paths (`../includes`), so this layout works out of the box. As a last resort, uploading the whole tree into the web root also works on Apache — every backend folder ships a `Deny from all` `.htaccess` — but keeping backend folders outside the web root is strongly preferred.
 
-3. Make `config/` and `storage/files/` writable by the web server (typically `chmod 755` or `775`, depending on your host).
+3. Default permissions: files `644`, directories `755`. Make `config/`, `storage/` and `public/assets/img/uploads/` writable by the web server — `755` works on most shared hosts (PHP runs as your account user), otherwise use `775`. Avoid `777`; if your host requires it, apply it only to those writable directories, never to PHP files or `config/*.json`.
 4. Open your site in a browser — you are redirected to the **setup wizard**; follow the [wizard steps](#first-run-setup-wizard).
 
 > **Note:** The ZIP contains no pre-configured JSON files except `database.json.example`. Your `config/database.json` is created on first setup and is never overwritten during updates; all other configuration lives in the database (`spw_config`) — existing configuration is always preserved.
@@ -264,7 +236,7 @@ Granting a board, a roadmap or a workflow does not grant the tables it uses — 
 2. **Before uploading** — export your configuration from the admin panel: **Configuration → Export config**. Keep this backup safe.
 3. Extract the ZIP and upload all files to your server via FTP, overwriting existing files.
 4. Your `config/database.json` is **not included** in the ZIP and your schema, dashboards, and all other settings live in the database — configuration is preserved automatically.
-5. Log in to `/admin` → **System → Migrations** → **Apply Pending Migrations** to apply any new system table migrations. See `config/migrations.json` for the full per-release history; recent database migrations include `3.3_user_contact` (nullable first name / last name / email / phone columns on `spw_users`), `3.3_clickstats` (the `spw_clickstats` table backing the optional Click Statistics module), `3.6_external_api_log` (the request log for the External API module) and `4.4_user_chat` (the `spw_chat_messages` table backing the user chat).
+5. Log in to `/admin` → **System → Migrations** → **Apply Pending Migrations**. See `config/migrations.json` for the per-release history.
 6. Check **System → Health Check** — the version shown should match the release tag you just uploaded.
 
 ---
@@ -275,124 +247,33 @@ Granting a board, a roadmap or a workflow does not grant the tables it uses — 
 
 ### Environment variables (optional)
 
-All variables are read by `includes/config.php` on every request — the single source of configuration. If a variable is absent the documented default applies. There is no `.env` loader: export in your shell, container, or web-server virtual-host config.
+Most installations need only database credentials and, for plain-HTTP local development, `SECURE_COOKIES=false`. Variables are read by `includes/config.php`; export them in your shell, container or web-server configuration.
 
-#### Database
-
-| Variable | Default | Description |
+| Variable | Default | Purpose |
 |---|---|---|
-| `DB_HOST` | `localhost` | PostgreSQL host. Falls back to `PGHOST`. |
-| `DB_PORT` | `5432` | PostgreSQL port. Falls back to `PGPORT`. |
-| `DB_CONNECT_TIMEOUT` | `5` | Seconds before connection attempt times out. |
-| `DB_STATEMENT_TIMEOUT` | `30000` | Server-side cap on a single query, in milliseconds; `0` disables it. Applied per connection right after `SET TIME ZONE`, so a runaway JOIN cannot hold a connection open indefinitely — `MAX_LIST_ROWS` bounds the rows returned, not the time spent. **Web requests only:** CLI runs (cron, ETL, migrations) are left unlimited, because long batch jobs legitimately exceed any web-sized limit. |
-| `APP_TIMEZONE` | `Europe/Warsaw` | IANA timezone applied per PostgreSQL session. |
-| `DB_NAME` | — | PostgreSQL database name. Falls back to `PGDATABASE`. |
-| `DB_USER` | — | PostgreSQL user. Falls back to `PGUSER`. |
-| `DB_PASSWORD` | — | PostgreSQL password. Falls back to `PGPASSWORD`. |
-| `DB_SCHEMA` | `app` | Schema for `spw_*` tables. Falls back to `PGSCHEMA`. Overridden by the `schema` key in `database.json`. |
-| `DB_SSLMODE` | `prefer` | libpq TLS mode for the database connection: `disable`, `allow`, `prefer`, `require`, `verify-ca`, `verify-full`. `prefer` is what libpq negotiated on its own before this variable existed, so the default changes nothing; raise it to `require` or stronger whenever PostgreSQL is not on localhost. Falls back to `PGSSLMODE`. A value outside the list is refused and logged, and the connection falls back to `prefer`. Overridden by the `sslmode` key in `database.json`. |
-| `DB_SSLROOTCERT` | *(empty)* | Path to the CA bundle used to verify the server certificate — required by `verify-ca` and `verify-full`, ignored by the weaker modes. Falls back to `PGSSLROOTCERT`. Overridden by the `sslrootcert` key in `database.json`. |
-
-#### Session & cookies
-
-| Variable | Default | Description |
-|---|---|---|
-| `SECURE_COOKIES` | `true` | Set `false` on plain HTTP (local dev). |
-| `SESSION_SAMESITE` | `Lax` | Cookie SameSite policy. Do not change to `Strict` — it causes `ERR_TOO_MANY_REDIRECTS` on the login→admin redirect. |
-| `SESSION_COOKIE_NAME` | `OSSESSID` | Name of the session cookie. The default used to be PHP's own `PHPSESSID`, which two applications sharing a hostname silently overwrite for each other — give every installation its own name when that applies. Accepts letters, digits and underscores (max 64 characters, not all digits); anything else is refused and logged, and `OSSESSID` is used. Changing the name logs every active user out once. |
-| `SESSION_COOKIE_PATH` | `/` | Path attribute of the session cookie. Narrow it to the subdirectory of this installation (e.g. `/crm`) when unrelated applications share the hostname — with the default the cookie is sent to all of them. Must start with `/` and contain no whitespace, semicolon or comma; anything else is refused and logged, and `/` is used. Changing it logs every active user out once. |
-| `SESSION_MAX_LIFETIME` | `28800` | Hard session expiry in seconds (8 h), counted from login. |
-| `SESSION_IDLE_TIMEOUT` | `0` | Inactivity expiry in seconds — the session ends after this long without a request. `0` disables it; the hard expiry above always applies. |
-| `SESSION_SAVE_PATH` | *(auto)* | Absolute path for PHP session storage. When unset, defaults to `storage/sessions/` inside the project root — overriding any server-level `session.save_path`, which on some shared hosts (e.g. home.pl) differs per subdirectory and may point to a system `/tmp` blocked by `open_basedir`. Set explicitly when your host requires a specific path or for shared storage across nodes. |
-
-#### Authentication & rate limiting
-
-| Variable | Default | Description |
-|---|---|---|
-| `IP_HASH_SALT` | *(auto)* | HMAC secret for IP pseudonymisation in login rate-limiting. If unset, a 64-char random salt is generated on first request and persisted to `includes/.secret_salt` (chmod 0600, gitignored, web-denied). Set explicitly via env var for multi-server deployments where all nodes must share the same salt. |
-| `LOGIN_MAX_ATTEMPTS_PER_IP` | `20` | Failed login threshold per IP before lockout. |
-| `LOGIN_MAX_ATTEMPTS_PER_USERNAME` | `5` | Failed login threshold per username before lockout. |
-| `LOGIN_LOCKOUT_MINUTES` | `15` | How long a lockout lasts once it triggers, in minutes. |
-| `LOGIN_RATE_LIMIT_WINDOW_MINUTES` | `15` | How far back failed attempts are counted towards the two thresholds above. A lockout fires when that many failures land inside this window, and then lasts `LOGIN_LOCKOUT_MINUTES` from the last of them. |
-| `PASSWORD_MIN_LENGTH` | `12` | Shortest password accepted anywhere in the system — admin user creation, admin password resets and the self-service change in the profile page. The **Users → Global User Settings** policy may raise it, never lower it. Values below `8` are ignored. |
-| `TRUST_PROXY_HEADERS` | `false` | Resolve the client IP from forwarding headers instead of `REMOTE_ADDR`. Off by default so a spoofed header cannot dodge the rate limiter; turn it on only behind a proxy you control. HTTPS auto-detection through `X-Forwarded-Proto` is independent of this switch. |
-| `TRUSTED_PROXY_IPS` | *(empty)* | Comma-separated IPs or CIDR ranges (IPv4 and IPv6) allowed to set those headers. Empty means every client is trusted, so set it together with `TRUST_PROXY_HEADERS=true` — the resolved IP drives `LOGIN_MAX_ATTEMPTS_PER_IP`. |
-| `FORWARDED_HEADER_PRIORITY` | `cf,x-real-ip` | Order in which forwarding headers are consulted once they are trusted. Supported values: `cf` (`CF-Connecting-IP`, only alongside `CF-Ray`), `x-real-ip`, `x-forwarded-for`. Unknown names are dropped, and every candidate must parse as an IP address. |
-| `ARGON2_MEMORY_COST` | `131072` | Password hashing memory in KiB (128 MB). Lower it on constrained hosts; the floor is `8192`. |
-| `ARGON2_TIME_COST` | `4` | Password hashing iterations. |
-| `API_RATE_LIMIT_PER_MIN` | `120` | Requests per minute allowed per logged-in user, counted separately for each API endpoint so one busy endpoint cannot starve the others. Over the budget the endpoint answers `429` with `Retry-After: 60`. The click-statistics collector gets its own `600`/min budget, because `navigator.sendBeacon` fires on every click. `0` disables the limit everywhere, including that collector. Applies to the endpoints booted through `os_api_bootstrap()`; the admin API boots its own way and is not covered. When the throttle state under `STORAGE_PATH/ratelimit` cannot be written or locked the request is **allowed** and the failure logged — an unwritable directory must not take the whole API down. RAG stays fail-closed there, because a single unmetered answer costs far more than a refused one. |
-| `ARGON2_THREADS` | `1` | Password hashing parallelism. |
-
-#### Application behaviour
-
-| Variable | Default | Description |
-|---|---|---|
+| `DB_HOST` | `localhost` | PostgreSQL host (`DB_PORT` defaults to `5432`). |
+| `DB_NAME` | — | PostgreSQL database name. |
+| `DB_USER` / `DB_PASSWORD` | — | PostgreSQL credentials. |
 | `APP_ENV` | `production` | Runtime environment. |
-| `APP_URL` | *(empty)* | Absolute base URL of this installation, e.g. `https://crm.example.com` (a trailing slash is trimmed). Exposed to automations as the `{{ app_url }}` placeholder, so e-mail bodies and links queued from cron — where there is no request to derive a host from — can carry working absolute URLs. A value that is not an absolute `http`/`https` URL is ignored and logged. |
-| `STORAGE_PATH` | *(project root)*`/storage` | Absolute path of the writable data directory holding `sessions/`, `tmp/`, `files/`, `ratelimit/` and migration backups. Point it at a mounted volume to keep the code tree read-only, or at shared storage across nodes. Paths already recorded in `spw_files.storage_path` keep resolving, so no migration is needed. `SESSION_SAVE_PATH` still wins for sessions alone. |
-| `ERROR_LOG_PATH` | *(auto)* | Destination of every `error_log()` message — the app's only diagnostic channel, since `display_errors` is forced off outside development. When unset it resolves to `storage/logs/app.log`, created on first run alongside a `.htaccess` denying HTTP access. Set it explicitly to log outside `STORAGE_PATH`; if the target directory is missing or not writable the value is refused and logged, and the `php.ini` destination is kept. |
-| `DEMO_MODE` | `false` | Set `true` to block all write operations in the admin panel API (safe for public demos). Frontend record edits — grid, comments, files, chat — stay enabled so visitors can try the app. |
-| `SETUP_ENABLED` | `true` | Second, independent lock on the installation wizard. Set `false` once the installation is finished: `setup.php` then redirects to the login page and `setup_api.php` answers 403, regardless of whether `config/database.json` exists. That file is otherwise the *only* thing standing between the public internet and a wizard that creates an admin account. Fail-closed — any value other than `true` disables the wizard. |
-| `CRON_SECRET` | *(empty)* | Secret token that unlocks the notification cron over HTTP at `cron.php`. Empty (the default) keeps the endpoint disabled — every request answers 403. Set it to a long random value (e.g. `openssl rand -hex 32`) and schedule `https://crm.example.com/cron.php?token=<secret>` from any URL-based cron service (cPanel, cron-job.org, EasyCron, UptimeRobot) or a host-specific launcher (see Path C). The token is compared in constant time. |
-| `RECORD_SNAPSHOTS_ENABLED` | `false` | Enable record snapshot capture after every INSERT/UPDATE. Overrides the admin panel toggle stored in the `settings` configuration. |
-| `FILES_MAX_SIZE_MB` | `20` | Default upload size limit when not set in the `files` configuration. |
-| `THUMBNAIL_MAX_WIDTH` | `300` | Max thumbnail width in pixels. |
-| `NOTIFICATIONS_DROPDOWN_LIMIT` | `10` | Max items in the bell notification dropdown. |
-| `HSTS_MAX_AGE` | `31536000` | HSTS `max-age` in seconds (1 year). Set `0` to disable on plain HTTP. |
-| `CSP_REPORT_URI` | *(empty)* | Same-origin path collecting Content-Security-Policy violation reports, appended to every policy the app sends. Empty disables reporting. Must start with a single `/` — an absolute or protocol-relative URL would hand violation reports, including the URLs they name, to a third party, so it is refused and logged. Values containing whitespace, `;` or `,` are rejected the same way. |
-| `CSP_REPORT_ONLY` | `false` | Send the policy as `Content-Security-Policy-Report-Only`, so violations are logged instead of blocked. Requires `CSP_REPORT_URI`, and never applies to file downloads — those keep their enforced `default-src 'none'`. |
-| `ADMIN_PURGE_MAX_DAYS` | `3650` | Longest retention window an admin log purge will accept, in days. |
-| `HTTP_CLIENT_TIMEOUT` | `30` | Timeout in seconds for outbound requests — automation webhooks and admin Ollama calls. RAG answer generation keeps its own longer limit. |
-| `HTTP_CLIENT_CONNECT_TIMEOUT` | `10` | Connect timeout in seconds for the same outbound requests. |
-| `SMTP_TIMEOUT` | `10` | Connect and read timeout in seconds for SMTP delivery — used by the notification cron when sending queued e-mails and by the **Test connection** button in admin Settings. A relay that stops responding otherwise stalls the whole queue run. |
+| `SECURE_COOKIES` | `true` | Set `false` for local plain HTTP. |
+| `CRON_SECRET` | *(empty)* | Enables the token-protected HTTP cron endpoint when set. |
 
-#### AI / RAG (Knowledge Base)
-
-| Variable | Default | Description |
-|---|---|---|
-| `OLLAMA_URL` | `http://localhost:11434` | Base URL of the Ollama endpoint — either a local instance (the default) or **Ollama Cloud** (`https://api.ollama.com`) for the hosted tier. Used by `api/rag.php` and admin RAG actions. The Ollama Cloud API key is not an env var: set it in **AI → Centrum AI → Global Settings**, where it is stored encrypted (`ollama_api_key_enc`) and never returned to the browser. |
-| `OLLAMA_MODEL` | `llama3` | Default Ollama model for RAG queries. Overridden by the `rag` configuration if present. |
+See the [complete environment variable reference](docs/ENV.md) for session, security, storage, rate-limiting, SMTP and AI settings.
 
 ---
 
 ## Project Structure
 
-The **web document root is the `public/` directory**. Everything served
-over HTTP lives under `public/` (entry PHP scripts, `public/admin/`,
-`public/assets/`, `favicon.ico`); all backend code and data listed below sits at
-the repository root, *outside* the document root, and cannot be reached over the web.
+The **web document root is `public/`**; backend code and writable data stay outside it and cannot be reached over HTTP.
 
-### Core directories
-- **`src/`** — OOP application layer (PSR-4, no Composer). Namespaced under `App\`. Sub-directories: `Audit/`, `Csrf/`, `Domain/`, `Form/`, `Http/`, `Persistence/`, `Repository/`, `Security/`, `Support/`. Loaded via `includes/autoload.php`; wired in `includes/bootstrap.php`.
-- **`public/admin/`** — management panel (schema editor, dashboards, calendar, workflows, users, files, system health). Web-served; self-authenticated (requires role `admin`).
-- **`public/assets/`** — static frontend resources: `css/`, `js/`, `icons/` (the Material Symbols set, see [Third-party assets](#third-party-assets)) and `img/` (application logos plus the `uploads/` directory).
-- **`includes/`** — backend helpers. `config.php` centralizes env-driven configuration; `db.php` centralizes PostgreSQL access; `api_helpers.php` holds request/response helpers (including the shared `requireWrite()` and `require_not_demo()` guards); `crypto.php` encrypts stored secrets (webhook signing keys, custom headers, the Ollama Cloud API key); `images.php` backs the record image galleries; `autoload.php` registers the PSR-4 class loader; `bootstrap.php` wires all OOP dependencies. `includes/admin/` holds the admin API modules dispatched by `public/admin/api.php`, with `helpers.php` providing their shared request/response wrappers and `admin_api_errors.php` the shared error vocabulary.
-- **`config/`** — bootstrap and distribution files only: `database.json` (connection details, read before any DB connection exists), `security.json`, and `demo_meta.json`. All JSON in this folder is gitignored and, being outside the `public/` document root, is not web-reachable — except `migrations.json`, the distribution-tracked release manifest. Application configuration (schema, menu, settings, dashboard, calendar, board, workflows, automations, views, files, print, anonymization, user_records, rag) lives in the `spw_config` database table — see `includes/config_store.php`.
-- **`cron/`** — scheduled workers (e.g. `cron_notifications.php`).
-- **`templates/`** — layout wrappers (`template.php`).
-- **`storage/files/`** — user-uploaded files.
-- **`tests/`** — PHPUnit unit test suite. Mirrors `src/` namespace structure under `Tests\`. Run with `vendor/bin/phpunit`.
+- **`public/`** — entry pages, the admin panel, static assets and module API endpoints.
+- **`includes/`** — request helpers, controllers, services, admin modules and autoloading.
+- **`src/`** — PSR-4 OOP application layer under the `App\` namespace.
+- **`config/`** — bootstrap files; application configuration lives in PostgreSQL (`spw_config`).
+- **`templates/`, `cron/` and `storage/`** — layouts, scheduled workers and writable data.
+- **`tests/`** — the PHPUnit suite; Docker and cloud deployment files sit at the repository root.
 
-### Key files
-All web-served files below live under `public/` (the document root).
-
-- **`setup.php` / `setup_api.php`** — first-run setup wizard and its API backend. Active only when `config/database.json` is absent.
-- **`api.php`** — main API gateway (GET / POST / PATCH / DELETE).
-- **`index.php`** — default landing / data entry page.
-- **`dashboard.php` / `calendar.php` / `board.php`** — user-facing visualization, scheduling, and Kanban modules.
-- **`views.php` / `print.php`** — saved-view pages and printable report templates.
-- **`files.php` / `file_download.php`** — file manager UI and the download proxy (uploads are never served by direct path).
-- **`login.php` / `logout.php`** — session and authentication.
-- **`create.php` / `edit.php`** — record create/update forms.
-- **`api/schema.php`** — filtered schema endpoint for the frontend (hides backend-only structure).
-- **`api/fk.php`** — proxy endpoint for foreign-key dropdowns (never exposes internal relations).
-- **`api/rag.php`** — RAG knowledge base endpoint (`?action=tags` GET, `?action=query` POST); consumed by the slide-in "Ask AI" panel (`assets/js/agent-panel.js`).
-- **Remaining `api/` endpoints** — `comments.php`, `notes.php`, `chat.php`, `owners.php`, `files.php`, `notifications.php`, `views.php`, `print.php`, `mass_edit.php`, `data_cleanup.php`, `clickstats.php` (Click Statistics collector) and `external.php` (key-authenticated read-only External API): specialized backends for the corresponding modules. Everything else goes through `api.php`.
-- **`Dockerfile` / `docker-compose.yml`** — containerized deployment (dev stack). **`Dockerfile.standalone`** — single-container image (Nginx + PHP-FPM) used by Render / Railway. **`docker-compose-production.yml`** — hardened production stack.
-- **`render.yaml` / `railway.toml`** — one-click cloud deploy configs.
-- **`phpcs.xml`** — PSR-12 ruleset.
-- **`composer.json`** — dev-only dependency manifest (`phpunit/phpunit`). Not required for production.
-- **`phpunit.xml`** — PHPUnit configuration (bootstrap, test suite directory, coverage source).
+See [maintenance decisions](docs/MAINTENANCE.md) for architecture and conventions, and [production setup](docs/PRODUCTION_SETUP.md) for deployment hardening.
 
 ---
 
