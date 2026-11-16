@@ -2,20 +2,22 @@ OpenSparrow — Admin Panel Overview
 ==================================
 The Admin panel (/admin/) is where the entire OpenSparrow application is configured:
 tables, forms, dashboards, calendars, workflows, automations, users, and system maintenance.
-Available to the admin role (and partially to editor). All application configuration is stored
-in the database (the spw_config table, one JSONB row per key) — no code changes and no config
-files to edit; only database.json and security.json remain on disk as bootstrap files.
+Available to the admin role only (editors and viewers work in the frontend and cannot open the
+admin panel). All application configuration is stored in the database (the spw_config table,
+one JSONB row per key) — no code changes and no config files to edit; only database.json
+remains on disk as a bootstrap file read before a database connection exists.
 
-Current version: 3.1.
+Current version: 4.6.
 Stack: PHP 8.4+, PostgreSQL 14+, vanilla JavaScript (ES6+). No npm, no composer required.
 License: LGPL v3. Self-hosted, works fully offline.
 
 
 SETUP & INSTALLATION
 --------------------
-1. Open the app — the first-run setup wizard (setup.php) configures the database connection.
+1. Open the app — the first-run setup wizard (setup.php) configures the database connection,
+   creates all spw_* tables, applies every migration and seeds the admin account.
    (Alternatively copy config/database.json.example to config/database.json manually.)
-2. Open /admin — click System → Database → Initialize System Tables.
+2. After an upgrade, open /admin — System → Migrations → Apply Pending Migrations.
 3. Log in as admin with the randomly generated password shown once in the setup wizard —
    change it after first login.
 Docker: docker compose up -d --build → http://localhost:8080
@@ -186,7 +188,7 @@ Automations:
         by OpenSparrow and cannot be overridden
       * On failure — optional 1 or 2 retries with backoff, applied only to timeouts and
         5xx/429 responses; a 4xx is never repeated. Sending is synchronous, so retries
-        delay the user's save (5 s connect / 10 s response timeout per attempt)
+        delay the user's save (10 s connect / 30 s response timeout per attempt)
       * Webhook and email skip records owned by another user on owner_restricted tables
   - Run History: last 100 executions per rule — time, table, record ID, event,
     status (ok / error / skipped), error message; stored in spw_automation_runs
@@ -223,13 +225,17 @@ Audit & Snapshots:
   - Filter by table, user, action type; view before/after record snapshots
 
 Backup Tables:
-  - Manual backup button (SQL dump), list of backups with timestamps
-  - Download backup (.sql file); restore from backup (confirmation required)
+  - Creates timestamped in-place copies of selected tables in the same PostgreSQL schema
+    (name format YYYYMMDDHHII_tablename); column structure and data rows are copied, indexes and
+    constraints are not
+  - Three tabs: Application Tables, System Tables (spw_*), and Global Settings (spw_config and
+    its history); optional retention (keep at most N copies / delete older than X days) and a
+    Clean Up Now button; there is no restore in the panel — restoring is a manual copy
 
 Cron Notifications:
   - Manual run (trigger the notification cron immediately)
   - Run history (status, output, duration), statistics (avg duration, success rate)
-  - Setup guide for the server system cron (cron/notifications.php, e.g. every 15 min)
+  - Setup guide for the server system cron (cron/cron_notifications.php, e.g. every 15 min)
   - Log cleanup (delete old cron log entries)
   - Email tab: "From" address for queued automation emails (spw_automation_emails); optional
     SMTP delivery (host, port, encryption, username, password, "Test SMTP Connection" button)
@@ -353,7 +359,7 @@ Click Statistics:
 Migrations:
   - Database migrations tab: list of system migrations (pending / applied),
     "Apply pending migrations" button. Applied migrations are recorded in spw_migrations.
-    Six migrations exist:
+    Seven migrations exist:
       3.0_baseline        — the whole spw_* schema (tables, constraints, indexes). The
                             pre-3.0 incremental history was collapsed into this single
                             append-only entry; 3.0 is the first shipped version
@@ -374,12 +380,16 @@ Migrations:
       3.3_clickstats      — creates spw_clickstats plus its two indexes, the storage for
                             the optional Click Statistics module. Nothing writes to it
                             until the module is enabled
-      3.6_external_api_log — creates spw_external_api_log plus its two indexes, the
+       3.6_external_api_log — creates spw_external_api_log plus its two indexes, the
                             request log of the External API endpoint. Nothing writes to it
                             until an API key is configured and used
+       4.4_user_chat        — creates spw_chat_messages plus its two indexes, the storage for
+                            the one-to-one user chat (message body, sender, recipient, soft-hide
+                            flag)
   - A fresh install via the setup wizard applies all of them automatically, so new databases
     are created with the descriptions, the widened reminder column, the user contact
-    columns and spw_clickstats already in place, and with nothing reported as pending
+    columns, spw_clickstats, spw_external_api_log and spw_chat_messages already in place, and
+    with nothing reported as pending
   - Release migrations tab: config cleanup driven by config/migrations.json —
     tracks files and config keys removed between versions, applied manually on upgrade
 
@@ -400,8 +410,6 @@ Settings:
     (PostgreSQL connection settings), Audit & Snapshots (record snapshot capture)
   - Custom Logo: replace the default frontend header logo (PNG/JPEG/WEBP, up to 2 MB);
     independent show/hide toggle
-  - Security configuration stored in config/security.json: CORS, HSTS, CSP modes,
-    optional IP whitelist, session timeout, password policy
 
 Users:
   - Four inner tabs: Manage Users, Access, Statistics, Global Settings
@@ -428,7 +436,7 @@ Users:
 
 SYSTEM TABLES (spw_*)
 ---------------------
-27 system tables, all prefixed spw_ and created in the schema from database.json
+30 system tables, all prefixed spw_ and created in the schema from database.json
 (default "app"). Since 3.1 every table and column also carries its description as a
 PostgreSQL COMMENT. The full column-by-column reference is docs/DATABASE.md; the DDL
 lives in includes/system_tables.php (system_tables_ddl + system_tables_comments_ddl).
@@ -440,8 +448,9 @@ Users, authentication and audit:
                                which table and record, when)
   spw_login_attempts         — login attempt journal for the rate limiter; stores a
                                salted hash of the IP, never the raw address
-  spw_record_snapshots       — full before/after row snapshots (JSONB) attached to an
-                               audit entry; retention configurable in Settings
+  spw_record_snapshots       — full post-write row snapshots (JSONB) after INSERT/UPDATE,
+                               attached to an audit entry; no snapshot on DELETE; controlled
+                               by Settings -> Audit & Snapshots or RECORD_SNAPSHOTS_ENABLED
   spw_record_owners          — record ownership history; the row flagged is_current
                                drives per-user row filtering
 
@@ -453,7 +462,8 @@ Configuration:
                                config/migrations.json)
   spw_migrations             — applied database migrations (3.0_baseline,
                                 3.1_table_comments, 3.1_notes_reminder_time,
-                                3.3_user_contact, 3.3_clickstats, 3.6_external_api_log)
+                                3.3_user_contact, 3.3_clickstats, 3.6_external_api_log,
+                                4.4_user_chat)
 
 Content attached to records:
   spw_files                  — uploaded files and attachments, including the record
@@ -491,6 +501,15 @@ Click statistics:
                                optionally the table and record in context). Written
                                only while the Click Statistics module is enabled
 
+External API:
+  spw_external_api_log       — usage log of the read-only External API endpoint, one row per
+                               successful authenticated request (API, source, rows returned,
+                               duration)
+
+User chat:
+  spw_chat_messages          — one-to-one messages between two users; hiding a message flips
+                               is_visible without deleting the row
+
 ETL:
   spw_etl_log                — single-job run history (rows read/written, errors)
   spw_etl_flow_run_log       — flow run history, including the failing step index
@@ -519,9 +538,9 @@ Read and written through includes/config_store.php — never as files.
   user_records  — per-table owner column mapping and record limits
   user_policy   — minimum password length and default role for new users
   user_table_access
-                — per-user frontend allow-lists for five independent scopes:
+                — per-user frontend allow-lists for six independent scopes:
                   {"users": {"<id>": {"tables": [], "views": [], "prints": [],
-                  "boards": [], "workflows": []}}}.
+                  "boards": [], "roadmaps": [], "workflows": []}}}.
                   Edited in Users > Access. An absent or EMPTY list means
                   UNRESTRICTED for that scope, not "no access" — to cut a user off
                   entirely, deactivate the account instead. Views and printouts are
@@ -548,8 +567,8 @@ CONFIGURATION FILES (config/*.json)
 ------------------------------------
 Only bootstrap and distribution files remain on disk:
 
-  database.json       — DB connection (host, port, dbname, user, password, schema);
-                        read before any database connection exists, so it cannot live in the DB
-  security.json       — CORS, HSTS, CSP, IP whitelist, session and password policy
+  database.json       — DB connection (host, port, dbname, user, password, schema); created by
+                        the setup wizard, read before any database connection exists, so it
+                        cannot live in the DB (database.json.example ships in the distribution)
   migrations.json     — release manifest (files/config keys removed per version)
   demo_meta.json      — installed demo metadata

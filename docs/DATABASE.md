@@ -5,10 +5,11 @@ Reference for every system-owned table. All of them live in the PostgreSQL schem
 
 **Sources of truth**
 
-- `includes/system_tables.php` → `system_tables_ddl()` — the whole schema; it *is* the body of the
-  `3.0_baseline` migration. The setup wizard (`public/setup_api.php`) runs it too, followed by
-  `system_tables_comments_ddl()` and the `3.1_notes_reminder_time` `ALTER TABLE`, so a fresh install
-  lands on the same state as an upgraded one.
+- `includes/system_tables.php` → `system_tables_ddl()` — the baseline schema and the body of the
+  `3.0_baseline` migration. Later migration helpers in the same file add contact columns and the
+  Click Statistics, External API log and user chat tables. The setup wizard (`public/setup_api.php`)
+  runs the complete set and records every migration, so a fresh install lands on the same state as
+  an upgraded one.
 - `includes/admin/migrations.php` → `$bootstrap` — `CREATE SCHEMA` + `spw_migrations` only; created
   before the migration registry can be consulted, so it is not part of `system_tables_ddl()`.
 
@@ -18,28 +19,21 @@ Reference for every system-owned table. All of them live in the PostgreSQL schem
 |---|---|
 | Initial version | **3.0** — single migration `3.0_baseline` (the pre-3.0 incremental history was collapsed into it) |
 | Current version | **4.6** (`includes/version.php`, `includes/VERSION`) |
-| Migrations after the baseline | **`3.1_table_comments`** — `COMMENT ON TABLE` / `COMMENT ON COLUMN` only<br>**`3.1_notes_reminder_time`** — `spw_notes.reminder_date` `date` → `timestamp` |
+| Migrations after the baseline | **`3.1_table_comments`** — table/column comments<br>**`3.1_notes_reminder_time`** — `spw_notes.reminder_date` `date` → `timestamp`<br>**`3.3_user_contact`** — four nullable contact columns on `spw_users`<br>**`3.3_clickstats`** — `spw_clickstats`<br>**`3.6_external_api_log`** — `spw_external_api_log`<br>**`4.4_user_chat`** — `spw_chat_messages` |
 
-The `$migrations` registry, the `$known` list (`includes/admin/migrations.php`) and `$knownMig`
-(`includes/admin/overview.php`) contain the same three keys, in the same order: `3.0_baseline`,
-`3.1_table_comments`, `3.1_notes_reminder_time` — a parity that `tests/Admin/MigrationRegistryTest.php`
-enforces. `config/migrations.json` has a `3.1` entry with empty `removed_files` /
-`removed_config_keys`.
+The `$migrations` registry and `$known` list (`includes/admin/migrations.php`), `$knownMigrations`
+(`includes/admin/overview.php`) and the migration `INSERT` rows (`public/setup_api.php`) contain the
+same seven keys in the same order — a parity that `tests/Admin/MigrationRegistryTest.php` enforces.
+`config/migrations.json` separately tracks release migrations for file and configuration cleanup.
 
-**3.1 changes the table layout in exactly one place:** `3.1_notes_reminder_time` widens
-`spw_notes.reminder_date` from `date` to `timestamp`, so a note reminder can carry a time of day
-(`cron/cron_notifications.php` compares it with `NOW()`). Everything else is unchanged —
-`3.1_table_comments` adds descriptions (catalog metadata), not columns, constraints or indexes,
-and 3.1's headline feature (per-table record image galleries) reuses `spw_files` with no schema
-change: gallery images are ordinary `spw_files` rows tagged `related_field = '__image'`
-(`IMAGES_FIELD`, `includes/images.php`). Apart from `spw_notes.reminder_date`, every "3.1" column
-below is also a "3.0" column, so no per-table *Changed in 3.1* column is repeated.
+`3.1_notes_reminder_time` widens `spw_notes.reminder_date` from `date` to `timestamp`, so a note
+reminder can carry a time of day (`cron/cron_notifications.php` compares it with `NOW()`). The
+baseline body remains append-only and still creates that column as `date`; the migration applies the
+type change afterwards. Record image galleries reuse `spw_files` rows tagged
+`related_field = '__image'` (`IMAGES_FIELD`, `includes/images.php`) and require no schema change.
 
-Note that `system_tables_ddl()` still creates `reminder_date` as `date`: the baseline body is
-append-only and must keep producing the 3.0 layout, with the migration applying the type change
-afterwards. The column type documented below is the post-migration one.
-
-27 tables total: 26 from `system_tables_ddl()` + `spw_migrations` from the bootstrap.
+30 tables total: 26 from `system_tables_ddl()` + `spw_migrations` from the bootstrap +
+`spw_clickstats`, `spw_external_api_log` and `spw_chat_messages` from later migrations.
 
 **Where the descriptions live in the database**
 
@@ -48,11 +42,11 @@ The same texts are applied as `COMMENT ON TABLE` / `COMMENT ON COLUMN`, so they 
 
 - `includes/system_tables.php` → `system_tables_comments_ddl()` — the authoritative list, and the
   body of the `3.1_table_comments` migration. Applied automatically by **both** entry points: the
-  setup wizard (fresh install) and Admin → Migrations → Initialize System Tables (existing install).
+  setup wizard (fresh install) and Admin → System → Migrations → Apply Pending Migrations (existing install).
   Metadata only, so it is idempotent and safe to re-run.
-- `docs/sql/spw_comments.sql` — a standalone copy of the same statements for running by hand
-  (`psql -d opensparrow -f docs/sql/spw_comments.sql`), written against the default schema `app`.
-  Not needed if the migration has been applied. Keep it in sync when editing the PHP list.
+- `docs/sql/spw_comments.sql` — standalone table/column comments for the current schema, for manual
+  application with `psql -d opensparrow -f docs/sql/spw_comments.sql`; written against the default
+  schema `app`. Not needed when all migrations have been applied. Keep it in sync when editing the PHP lists.
 
 ---
 
@@ -83,8 +77,12 @@ Created by the bootstrap block, *not* by `system_tables_ddl()`. One row per appl
 | `password_algo` | varchar(32) NOT NULL DEFAULT `'argon2id'` | Algorithm the hash was produced with; drives rehash-on-login decisions. |
 | `password_params` | jsonb DEFAULT `'{}'` | Cost parameters used for the hash (memory/time/threads), for rehash comparison. |
 | `is_active` | bool DEFAULT true | Soft disable — inactive users cannot log in but their audit rows survive. |
-| `role` | varchar(20) NOT NULL DEFAULT `'editor'` | Authorization level (`admin` / `editor` / read-only roles). Enforced server-side in `api_bootstrap.php` / `requireWrite()`. |
+| `role` | varchar(20) NOT NULL DEFAULT `'editor'` | Authorization level (`admin` / `editor` / `viewer`). Enforced server-side by the shared API and page gates. |
 | `avatar_id` | smallint NULL | Avatar colour: 1-based index into the avatar palette (OS_AVATAR_COLORS). NULL = default colour. The avatar itself is the initial of the username. |
+| `first_name` | varchar(100) NULL | Optional given name, managed from the admin panel and shown in frontend user tooltips. Added by `3.3_user_contact`. |
+| `last_name` | varchar(100) NULL | Optional surname, managed from the admin panel and shown in frontend user tooltips. Added by `3.3_user_contact`. |
+| `email` | varchar(255) NULL | Optional, format-checked contact email; not unique. Used for two-factor email codes and shown in user tooltips. Added by `3.3_user_contact`. |
+| `phone` | varchar(32) NULL | Optional contact phone, managed from the admin panel and shown in user tooltips. Added by `3.3_user_contact`. |
 
 ### `spw_users_log` — user action audit trail
 
@@ -110,7 +108,7 @@ Written by `log_user_action()` (`includes/api_helpers.php`); every mutation must
 
 Indexes: `(username, attempted_at)`, `(ip_hash, attempted_at)` — the two throttle lookups. Pruned by `cron/cron_notifications.php`.
 
-### `spw_record_snapshots` — before/after row snapshots
+### `spw_record_snapshots` — post-write row snapshots
 
 | Column | Type | Description |
 |---|---|---|
@@ -118,10 +116,10 @@ Indexes: `(username, attempted_at)`, `(ip_hash, attempted_at)` — the two throt
 | `log_id` | int4 NOT NULL → `spw_users_log(id)` ON DELETE CASCADE | The audit entry this snapshot belongs to. |
 | `table_name` | varchar(100) NOT NULL | Snapshotted table. |
 | `record_id` | int4 NOT NULL | Snapshotted record. |
-| `snapshot` | jsonb NOT NULL | Full row content as JSON at the moment of the change. |
+| `snapshot` | jsonb NOT NULL | Full post-write row content as JSON after INSERT or UPDATE. No snapshot is captured on DELETE. |
 | `created_at` | timestamp DEFAULT CURRENT_TIMESTAMP | Snapshot time. |
 
-Indexes: `(log_id)`, `(table_name, record_id)`. Retention is configurable in Admin → Settings (`includes/admin/settings.php`).
+Indexes: `(log_id)`, `(table_name, record_id)`. Capture is controlled by **Settings → Audit & Snapshots** or the `RECORD_SNAPSHOTS_ENABLED` override.
 
 ### `spw_record_owners` — record ownership history
 
@@ -144,8 +142,9 @@ Index: `(table_name, record_id, is_current)`.
 ### `spw_config` — DB-backed application configuration
 
 One JSONB row per configuration key (`schema`, `menu`, `settings`, `dashboard`, `calendar`, `board`,
-`workflows`, `automations`, `views`, `files`, `print`, `anonymization`, `user_records`,
-`user_table_access`, `rag`, …).
+`roadmap`, `workflows`, `automations`, `views`, `files`, `print`, `anonymization`, `user_records`,
+`user_policy`, `user_table_access`, `rag`, `etl`, `etl_flows`, `clickstats`, `external_api`,
+`shared_tables`, `backup`, …).
 Accessed only through `includes/config_store.php`.
 
 | Column | Type | Description |
@@ -295,7 +294,7 @@ Index: `(started_at)`.
 | `table_name` | varchar(100) NOT NULL DEFAULT `''` | Table whose change fired the rule. |
 | `record_id` | int4 NOT NULL DEFAULT 0 | Triggering record. |
 | `event` | varchar(20) NOT NULL DEFAULT `''` | Trigger event — `insert` / `update` / `delete`. |
-| `status` | varchar(20) NOT NULL DEFAULT `'ok'` | `ok` or `error`. |
+| `status` | varchar(20) NOT NULL DEFAULT `'ok'` | `ok`, `error` or `skipped` (conditions not met). |
 | `error_msg` | text NULL | Failure detail. |
 | `executed_at` | timestamp NOT NULL DEFAULT now() | Execution time. |
 
@@ -335,7 +334,7 @@ Indexes: `(status, created_at)` (queue drain), `(rule_id, created_at DESC)`.
 | `user_id` | int4 NULL → `spw_users(id)` ON DELETE SET NULL | Who ran the import. |
 | `filename` | varchar(255) NOT NULL | Uploaded file name as shown to the user. |
 | `target_table` | varchar(100) NOT NULL | Destination table. |
-| `status` | varchar(20) NOT NULL DEFAULT `'pending'` | `pending` / `running` / `done` / `error`. |
+| `status` | varchar(20) NOT NULL DEFAULT `'pending'` | `pending` / `running` / `done` / `failed`. |
 | `total_rows` | int4 NOT NULL DEFAULT 0 | Data rows found in the file. |
 | `imported_rows` | int4 NOT NULL DEFAULT 0 | Rows inserted/updated. |
 | `skipped_rows` | int4 NOT NULL DEFAULT 0 | Rows rejected — each detailed in `spw_import_rows_log`. |
@@ -472,7 +471,7 @@ Written by `cron/cron_etl.php`; also the per-step target of flow runs.
 | `job_name` | varchar(255) NOT NULL DEFAULT `''` | Job label captured at run time. |
 | `triggered_by` | varchar(20) NOT NULL DEFAULT `'cron'` | `cron`, manual admin run, or a flow. |
 | `status` | varchar(20) NOT NULL DEFAULT `'running'` | `running` / `success` / `error`. |
-| `rows_read` | int4 NULL | Rows read from the source (MySQL/PostgreSQL). |
+| `rows_read` | int4 NULL | Rows read from the configured database or CSV/FTP source. |
 | `rows_written` | int4 NULL | Rows written to the PostgreSQL target. |
 | `error_message` | text NULL | Failure detail. |
 | `started_at` | timestamp NOT NULL DEFAULT now() | Start time. |
@@ -514,3 +513,63 @@ Index: `(flow_id, status, started_at)`.
 | `finished_at` | timestamp NULL | Step end. |
 
 Index: `(flow_run_id)`.
+
+---
+
+## 11. Click Statistics
+
+### `spw_clickstats` — recorded UI interactions
+
+Created by `3.3_clickstats`. Rows are written by `public/api/clickstats.php` only while the module is enabled.
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | bigserial PK | Click event id. |
+| `user_id` | int4 NULL → `spw_users(id)` ON DELETE SET NULL | User who clicked; NULL after account deletion. |
+| `element` | varchar(120) NOT NULL | `data-stat` value or a derived element label. |
+| `page` | varchar(120) NULL | Page script on which the click occurred. |
+| `table_name` | varchar(100) NULL | Table in context, when recording it is enabled and access allows it. |
+| `record_id` | int4 NULL | Record in context, when recording it is enabled. |
+| `created_at` | timestamp NOT NULL DEFAULT now() | Click time; drives retention and log ordering. |
+
+Indexes: `(created_at DESC)`, `(element)`. Retention is configured in **System → Click Statistics** and enforced by the notification cron.
+
+---
+
+## 12. External API
+
+### `spw_external_api_log` — successful external request log
+
+Created by `3.6_external_api_log`. One row is written for each successful authenticated call to `public/api/external.php`.
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | bigserial PK | Request log id. |
+| `api_id` | varchar(64) NOT NULL DEFAULT `''` | API definition identifier. |
+| `api_name` | varchar(255) NOT NULL DEFAULT `''` | API name captured at request time. |
+| `table_name` | varchar(100) NULL | Configured table or view name captured at request time. |
+| `status` | varchar(20) NOT NULL DEFAULT `'ok'` | `ok`; failed requests are not recorded. |
+| `rows_returned` | int4 NULL | Number of rows returned. |
+| `duration_ms` | int4 NULL | End-to-end request duration in milliseconds. |
+| `created_at` | timestamp NOT NULL DEFAULT now() | Request time. |
+
+Indexes: `(created_at DESC)`, `(api_id, created_at DESC)`.
+
+---
+
+## 13. User chat
+
+### `spw_chat_messages` — one-to-one messages
+
+Created by `4.4_user_chat`. Messages are visible only to their sender and recipient.
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | serial4 PK | Message id. |
+| `sender_id` | int4 NULL → `spw_users(id)` ON DELETE SET NULL | Author; NULL after account deletion. |
+| `recipient_id` | int4 NULL → `spw_users(id)` ON DELETE SET NULL | Recipient; NULL after account deletion. |
+| `body` | text NOT NULL | Message text; CHECK `char_length(body) <= 4000`. |
+| `created_at` | timestamp NOT NULL DEFAULT now() | Send time. |
+| `is_visible` | bool NOT NULL DEFAULT true | Soft-hide marker; hiding keeps the row but removes it from the rendered thread. |
+
+Indexes: `(sender_id, created_at)`, `(recipient_id, created_at)`.

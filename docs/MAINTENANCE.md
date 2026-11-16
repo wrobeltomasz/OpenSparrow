@@ -38,7 +38,7 @@ concentrated in a few places listed below.
   unchanged. The `$migrations`/`$known` registries stay together in
   `includes/admin/migrations.php` (the release process depends on both being
   updated together during a version bump). A third copy of the migration-key
-  list lives in `includes/admin/overview.php` (`$knownMig`, drives the
+  list lives in `includes/admin/overview.php` (`$knownMigrations`, drives the
   dashboard pending count) and must be kept in sync with those two. As of 3.0
   the pre-3.0 incremental migration history was collapsed into a single
   append-only `3.0_baseline` entry (3.0 is the first shipped version), and
@@ -84,8 +84,9 @@ concentrated in a few places listed below.
   except `menu.json`. There is **no file fallback**: 3.0 is the first shipped
   version, so no instance ever had file-based config to migrate. `database.json`
   (and `security.json`) stay files permanently — they are read before a database
-  connection exists. Only `print` and `anonymization` plumb the version through
-  their JS; the generic editor is still last-write-wins (open item).
+  connection exists. The generic config editor (`includes/admin/config_files.php`)
+  saves its DB-backed keys through `config_save()` with optimistic locking
+  (`version`); `print` and `anonymization` plumb the version through their JS.
 
 ### Open items, in recommended order
 
@@ -134,9 +135,8 @@ acceptable only because no production deployment existed yet at rename time;
 had one existed, the old tag would need to keep working (alias or dual-push)
 until deployments migrated.
 
-**Still open:** the local `git remote origin` URL was not changed by the
-assistant (a `git remote set-url` was denied in-session) — update it manually:
-`git remote set-url origin https://github.com/wrobeltomasz/OpenSparrow.git`.
+**Resolved:** the local `git remote origin` URL now points at
+`https://github.com/wrobeltomasz/OpenSparrow.git`.
 
 ## Search & filter UI standardization (2026-07-10)
 
@@ -374,7 +374,7 @@ to clear it.
 ## Per-user frontend access (2026-08-11)
 
 Admins can restrict a frontend user to a subset of the schema tables, the
-configured views, the print templates, the boards and the workflows, from
+configured views, the print templates, the boards, the roadmaps and the workflows, from
 **Users → Access**. The rules below are binding.
 
 ### One registry, no second list anywhere
@@ -396,10 +396,10 @@ instead of naming each one — the tab renders whatever the registry describes.
 
 - All scopes live in one `user_table_access` key of `spw_config`, shaped as
   `{"users": {"<id>": {"tables": [], "views": [], "prints": [], "boards": [],
-  "workflows": []}}}`. No new table, no migration; an unknown key is ignored and a
-  missing one means unrestricted, so the document upgrades itself.
-- Views, printouts, boards and workflows are granted **by name**, not derived from a
-  table — boards and workflows by their stable `id` (`brd_…` / `wf_…`, assigned once
+  "roadmaps": [], "workflows": []}}}`. No new table, no migration; an unknown key is
+  ignored and a missing one means unrestricted, so the document upgrades itself.
+- Views and printouts are granted **by name**; boards, roadmaps and workflows are
+  granted by their stable `id` (`brd_…` / `rdm_…` / `wf_…`, assigned once
   at creation in `admin/js/app.js` and independent of the title).
 - **Granting a board or a workflow does not grant its tables.** Both still check the
   tables they touch: a board with an out-of-scope table is not listed, and a workflow
@@ -522,11 +522,11 @@ a whole page.
 it unfiltered would hand a user the full contents of a table they may not open. The
 filter sits in two places, and they must stay in step:
 
-- `public/edit.php` — drops out-of-scope entries from `$subtablesData` right after
-  `$records->subtables()`. Filtered at the call site, not in
-  `PgRecordRepository::subtables()`, because `src/` is frozen.
-- `public/api.php` — the `subtable_counts` loop skips the same tables; a count is
-  still a fact about a table the user may not open.
+- `includes/Controller/EditController.php` — drops out-of-scope entries from
+  `$subtablesData` right after `$records->subtables()` (`array_filter(... user_can_access_table(...))`).
+  Filtered at the call site, not in `PgRecordRepository::subtables()`, because `src/` is frozen.
+- `includes/frontapi/list.php` → `frontapi_subtable_counts()` — skips the same tables
+  (`user_can_access_table($subtableName)`); a count is still a fact about a table the user may not open.
 
 The distinction to keep in mind: FK exposes a **name**, a subtable exposes **rows**.
 That is the line, and it is why one is exempt and the other is not.
@@ -620,7 +620,7 @@ to get wrong:
   rows the caller cannot open, while every other file surface refused them. Admins are
   exempt, as `can_access_record()` exempts them and as `user_allowed_tables()` already
   no-ops for them in the same function: the admin Files module lists the whole library
-  through this action. Covered by `idor.cy.js` (behaviour) and
+  through this action. Covered by manual verification (behaviour) and
   `AccessScopeEndpointGuardTest` (both halves pinned, so a refactor cannot drop one and
   leave the other looking complete).
 
@@ -2133,14 +2133,14 @@ the strip now prints the record id. Everything else is byte-identical.
 - `login.php`, `setup.php`, `setup_api.php`, `cypress_seed.php` and
   `file_download.php` run before or outside `os_boot_app()` — no container, and in
   the setup case no configured database — so they do not fit this shape.
-- `FrontApiController` still calls `db_connect()` itself rather than taking a
-  connection, and it is the one controller that does **not** take `AppContext`.
-  `public/api.php` boots with `['connect' => false]` on purpose: the admin and
-  viewer blocks must answer **before** a connection is opened, and `AppContext`
-  connects in its constructor, so injecting it would connect first and quietly undo
-  that ordering. Its two arguments (session, request) are inside the limit anyway;
-  only the duplicated `handle($request)` parameter was dropped, the same way it was
-  in the page controllers.
+- `FrontApiController` takes only `SessionInterface` + `PhpRequest` and calls
+  `db_connect()` itself rather than taking `AppContext`. `public/api.php` boots with
+  `['connect' => false]` on purpose: the admin and viewer blocks must answer **before**
+  a connection is opened. `AppContext` is lazy (it would not connect on construction
+  either), so injecting it is possible, but the controller needs none of the object
+  graph — only the session, the request and a connection obtained after the gates — so
+  two narrow dependencies keep that ordering obvious. The duplicated `handle($request)`
+  parameter was dropped, the same way it was in the page controllers.
 
 ### Verification
 

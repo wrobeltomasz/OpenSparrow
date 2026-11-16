@@ -32,7 +32,9 @@ audits are not repeated from scratch.
   `error_log('[mailer]…')` only.
 - **DOM building** — pattern is "clear with `innerHTML = ''`, build with
   `createElement`/`textContent`". `innerHTML` with data is allowed only through the
-  vetted escaping helpers listed in the audit below.
+  vetted escaping helpers listed in the audit below. `I18n.t()`/`t()` values are
+  **not** trusted as safe for `innerHTML`: they come from language files and
+  config-served strings and must be escaped at the sink like any other value.
 - **Shared JS helpers (2026-07-09 consolidation)** — `assets/js/util/csrf.js`
   (`getCsrfToken()`: `window.CSRF_TOKEN` first — edit.php/files.php have no meta tag —
   then the `<meta name="csrf-token">`) and `assets/js/util/esc.js` (`escHtml()`:
@@ -133,8 +135,10 @@ through. Verdict: **no XSS from API/user data**.
     XSS vector of user comment bodies.
   - `data_cleanup.js highlightBefore/After` — output assembled solely from
     `esc()`-passed fragments plus static `<del>`/`<ins>` tags.
-- `${I18n.t(...)}` template interpolations (user-menu, data_cleanup panel) are trusted:
-  values come from repo-tracked `languages/*.json`.
+- `${I18n.t(...)}` template interpolations (user-menu, data_cleanup panel) were treated as
+  trusted at the time of this audit; that is now **superseded** — language files and
+  config-served strings are editable, so interpolations go through `escHtml()` like every
+  other value (see the DOM building standing decision above).
 - Fixes applied the same day: `avatar.js` fallback SVG rebuilt with `createElementNS`
   + `textContent` (was the only unescaped interpolation — a single username char, not
   exploitable but inconsistent); dead `esc()` removed from `views.js`.

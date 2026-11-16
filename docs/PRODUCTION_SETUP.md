@@ -89,9 +89,9 @@ openssl rand -hex 32          # IP_HASH_SALT (for multi-node)
 ### Reverse proxy (CloudFlare, Nginx, load balancer)
 
 OpenSparrow auto-detects HTTPS through `X-Forwarded-Proto`, `CF-Visitor`, and
-`X-Forwarded-SSL` headers, and resolves the real client IP via
-`CF-Connecting-IP` / `X-Real-IP`. **No configuration required** behind a
-properly configured reverse proxy.
+`X-Forwarded-SSL` headers — **no configuration required** behind a properly
+configured reverse proxy. Resolving the real client IP is a separate, opt-in
+decision (see below).
 
 Client-IP headers are ignored by default: set `TRUST_PROXY_HEADERS=true` to
 honour them, and list the proxy addresses in `TRUSTED_PROXY_IPS`, for example
@@ -130,8 +130,8 @@ docker compose exec -T db psql \
   -U ${POSTGRES_USER:-postgres} \
   ${POSTGRES_DB:-opensparrow} < backup.sql
 
-# Restore files
-tar -xzf storage_backup.tar.gz
+# Restore files (use the same dated archive produced by the backup step above)
+tar -xzf storage_YYYYMMDD.tar.gz
 ```
 
 ---
@@ -140,21 +140,21 @@ tar -xzf storage_backup.tar.gz
 
 ```bash
 # 1. Update image version in .env (release tags follow X.Y format, no "v" prefix)
-DOCKER_IMAGE=wrobeltom/opensparrow:3.1
+DOCKER_IMAGE=wrobeltom/opensparrow:4.6
 
 # 2. Pull & restart
 docker compose pull
 docker compose up -d
 
 # 3. Apply migrations
-# Admin → System → Migrations → Initialize System Tables
+# Admin → System → Migrations → Apply Pending Migrations
 ```
 
 Step 3 is not optional on an upgrade — the app reports pending migrations in the
 admin panel, but does not apply them by itself. Migrations are re-runnable
 (`IF NOT EXISTS` throughout), so running the step when nothing is pending is a no-op.
 
-**Upgrading to 3.1** brings two migrations:
+**For example, upgrading to 3.1** brought two migrations:
 
 | Migration | Effect |
 |---|---|
@@ -183,6 +183,6 @@ running it — that is the one step in an upgrade that is not trivially reversib
 - [ ] `.env` added to `.gitignore`
 - [ ] `docker compose pull` succeeded
 - [ ] `docker compose ps` — all services healthy
-- [ ] `/admin → System → Migrations → Initialize System Tables` ran
+- [ ] `/admin → System → Migrations → Apply Pending Migrations` ran
 - [ ] Login works at `http://localhost/login.php`
 - [ ] Backup strategy in place

@@ -24,10 +24,11 @@ discount tiers on "Enterprise License Q2", stalled legal redlines on the digital
 transformation deal, a reference-customer request on the analytics deal, and handover
 notes on a deal that was closed Won.
 
-MY NOTES
---------
-"My Notes" is a private per-user panel — a note is visible only to its author. A note can
-stand alone or be linked to a record (a deal, a company), and can carry a reminder_date.
+NOTES
+-----
+"Notes" is a private per-user panel — a note is visible only to its author. A note can
+stand alone or be linked to a record (a deal, a company), and can carry a reminder date
+and time.
 
 The demo seeds notes across all three users, some linked to a deal or a company and some
 standalone. A couple of them carry a reminder date (one due today, one tomorrow) so the

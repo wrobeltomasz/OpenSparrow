@@ -24,7 +24,7 @@ The admin panel uses a collapsible left sidebar with five sections (Overview, Da
 - **Workflows:** Automations, Workflow Manager.
 - **AI:** Centrum AI.
 - **System:** Anonymization, API (External API), Backup Tables, Click Statistics, Cron Notifications, Demo Systems, Health Check, Migrations, Performance, Settings, Sharing, Users. Database and Audit & Snapshots are inner tabs of Settings.
-- **Automatic saving:** Config-editing tabs (Schema, Dashboard, Calendar, Board, Roadmap, Workflows, Views, User Records, Files, Printouts) save automatically — about a second after your last edit, when switching tabs and when the page is hidden. Each save is versioned: a concurrent edit by another admin is rejected with a conflict pill instead of silently overwriting their changes. A validation error (e.g. an unfinished workflow) blocks the save and shows an error pill — the edit stays in the form until fixed. `database` and `security` stay files on disk with their own Save button (edited from **System → Settings → Database**).
+- **Automatic saving:** Config-editing tabs (Schema, Dashboard, Calendar, Board, Roadmap, Workflows, Views, User Records, Files, Printouts) save automatically — about a second after your last edit, when switching tabs and when the page is hidden. Each save is versioned: a concurrent edit by another admin is rejected with a conflict pill instead of silently overwriting their changes. A validation error (e.g. an unfinished workflow) blocks the save and shows an error pill — the edit stays in the form until fixed. `database` stays a file on disk with its own Save button (edited from **System → Settings → Database**).
 - **Unsaved-changes guard:** Shows a confirmation prompt only when a change could not be saved (validation error, conflict or network failure) or when a save is still in flight while switching tabs. Tabs that save immediately via API (Users, Database, Health, Backup) never trigger this warning.
 - **Debug FE mode:** Toggle in the header. When enabled, the frontend exposes a `#debug` panel with raw payloads for schema/API responses — useful when building new tables or troubleshooting grids.
 - **Docs icon (book):** Opens this documentation page.
@@ -51,7 +51,7 @@ OpenSparrow reserves a set of internal tables, all prefixed with `spw_` and crea
 - `spw_login_attempts` — rolling log used by the DB-backed rate limiter on `login.php` (IP-hash and username counters).
 - `spw_comments` — user comments attached to any record. Each row links to a specific record via `related_table` + `related_id`, stores the author (`user_id`), body text (max 4000 chars), and a soft-delete timestamp.
 - `spw_record_snapshots` — JSONB snapshots of records captured after every INSERT or UPDATE. Each row is linked to the corresponding `spw_users_log` entry via `log_id` (CASCADE DELETE). Only active when the Record Snapshots module is enabled (see section 9b).
-- `spw_record_owners` — append-only ownership log. Each row records who owns a specific record (`table_name` + `record_id`) and who made the change (`changed_by`). The current owner is the row where `is_current = true`; all previous rows form the full ownership history. Created automatically on INSERT; reassignable by editors via the Record Owner panel in the edit view (see section 9c).
+- `spw_record_owners` — append-only ownership log. Each row records who owns a specific record (`table_name` + `record_id`) and who made the change (`changed_by`). The current owner is the row where `is_current = true`; all previous rows form the full ownership history. Created automatically on INSERT; reassignable by editors via the Record Owner panel in the edit view (see section 9d).
 - `spw_migrations` — migration tracker. One row per applied migration name + timestamp. Bootstrapped automatically by the first run of *Apply Pending Migrations*. Used by *System → Migrations* to determine which schema changes have already been applied.
 - `spw_release_migrations` — release migrations already applied from `config/migrations.json` — one row per version.
 - `spw_config` — the application configuration store — one JSONB row per key (schema, menu, settings, dashboard, calendar, board, workflows, automations, views, files, print, anonymization, user_records, user_policy, user_table_access, rag, etl, etl_flows, clickstats), versioned with optimistic locking.
@@ -147,7 +147,7 @@ On mobile screens all widgets collapse to a single column.
 
 Every widget supports structured filter conditions combined with AND/OR. Column names are validated against the schema; values are escaped.
 
-- Available operators: `=`, `!=`, ``, `=`, `LIKE`, `ILIKE`, `IS NULL`, `IS NOT NULL`.
+- Available operators: `=`, `!=`, `<`, `>`, `<=`, `>=`, `LIKE`, `ILIKE`, `IS NULL`, `IS NOT NULL`.
 
 #### Global period filter and trends
 
@@ -253,7 +253,7 @@ Manage the core PostgreSQL connection from **System → Settings → Database** 
 
 ### 8. Backup Tables
 
-**System → Backup Tables** creates timestamped copies of selected tables directly in PostgreSQL, in the same schema as the original. Tables are grouped into three tabs: *Application Tables* (from your schema configuration), *System Tables (spw_*)* (discovered live from the database) and *Global Settings* (`spw_config` + `spw_config_log`, the configuration store and its history). Each tab has *Select all* / *Deselect all* and its own *Backup selected tables* button.
+**System → Backup Tables** creates timestamped copies of selected tables directly in PostgreSQL, in the same schema as the original. Tables are grouped into three tabs: *Application Tables* (from your schema configuration), *System Tables (spw_*)* (discovered live from the database, including `spw_config` and `spw_config_log`), and *Global Settings* (retention rules, a list of existing backup copies, and *Clean Up Now*). Each of the first two tabs has *Select all* / *Deselect all* and its own *Backup selected tables* button.
 
 - **Backup name format:** `YYYYMMDDHHII_tablename`.
 - **Shared timestamp:** All tables backed up in one run share the same *minute-precision* prefix, so a multi-table snapshot is easy to recognise later.
@@ -307,12 +307,12 @@ Each account can carry a first name, last name, email address and phone number, 
 
 - **Where:** Set them in **Users → Manage Users**, either in the "Add New User" form or via the "Edit Details" button on a row. They are shown in the Name / Email / Phone columns.
 - **Optional:** All four fields may stay empty (an empty cell renders as a dash). The email is only checked for a valid format and is not required to be unique.
-- **Scope:** Admin panel only — nothing on the frontend reads these columns and they are never exposed through the public API; the two-factor module reads the email server-side at login time.
+- **Scope:** Editable only in the admin panel. First name, last name and phone are shown in frontend user tooltips; the email also drives two-factor delivery. They are not served as general record data.
 
 ### 9e. Grid Default Sort & Load Limit
 
 - **Default Sort Order:** One or more sort rules (column + ASC/DESC). Fallback is `id DESC`.
-- **Initial Load Limit:** Max rows on first load. `0` means unlimited.
+- **Initial Load Limit:** Max rows on first load. `0` falls back to the global row cap (`MAX_LIST_ROWS`, default 1000).
 - **Stored in:** `spw_config.schema` as `"default_sort"` and `"initial_limit"`.
 
 ### 9f. Grid Drilldown — Quick Add
@@ -417,8 +417,9 @@ Two bulk tools available to the **editor** role directly from the data grid. Bot
 
 - **Settings tab:** The last tab on the right. Two checkboxes and the retention window. *Enable Click Statistics* switches collection on; *Record Table And Record* additionally stores which table and record was open, and unchecking it reduces every entry to user, time and element.
 - **Automatic retention:** *Delete Automatically After N days* (default 90) is applied by the notifications cron, and is what bounds the table without anyone remembering to purge it. Set it to 0 to keep every click until you clear the log by hand. An unusable value falls back to the default rather than to "keep everything", so a bad entry can never quietly switch the bound off.
-- **Log tab:** The recorded clicks, newest first, 100 per page, filterable by element and by user. On-demand purging, on top of the automatic window: *Delete Older Than* trims the log to a rolling window of N days and *Clear Log* empties `spw_clickstats` entirely.
-- **Top Elements tab:** A rollup of the 20 most-clicked elements, aggregated from all recorded clicks, with the same element and user filters as the Log tab.
+- **Log tab:** The recorded clicks, newest first, 100 per page, filterable by element, by user and by a From/To date range. On-demand purging, on top of the automatic window: *Delete Older Than* trims the log to a rolling window of N days and *Clear Log* empties `spw_clickstats` entirely.
+- **Top Elements tab:** A rollup of the 20 most-clicked elements, aggregated from all recorded clicks, with the same element, user and date-range filters as the Log tab.
+- **Pages tab:** A graphical rollup of clicks per page: one tile per page script showing its icon and click count, aggregated from all recorded clicks, with the same element, user and date-range filters as the Log tab. Empty or unknown pages are shown as "Unknown page".
 - **When disabled:** Off means absent. With the module off no collector script is emitted into any page, so nothing is downloaded, no listener is installed and no request is ever sent. The endpoint independently re-checks the flag and answers 204 without writing, so a page left open when the module is switched off stops recording immediately.
 - **What is collected:** A click on a button, link or element carrying `data-stat` stores the element label (the `data-stat` value when present, otherwise a derived id/class/text label), the page script name, and the user id. Input values, query strings and form contents are never recorded. Clicks are buffered in the browser and delivered in batches via `navigator.sendBeacon`, so collection costs a handful of requests per session rather than one per click. A table name from a client is stored only if that user has access to it.
 - **Write limits:** The browser buffers clicks and flushes at most every 5 seconds (and on page navigation), with at most 50 events per batch. The endpoint keeps its own per-session budget of 300 rows per minute — a burst beyond that is silently dropped rather than recorded, so statistics can never be used to flood the table. Each batch is written as a single multi-row `INSERT`.
@@ -491,7 +492,7 @@ A per-user notepad, stored in `spw_notes` and served by `api/notes.php`. Opened 
 
 - **Strictly private:** Every query is scoped to the calling user — notes are never shared, and no role can read another account's notes. This is the difference from comments, which are attached to a record and visible to everyone who can open it.
 - **Record link:** A note may optionally reference a record (table + id), so it can be opened from the note straight back to what it is about. It can equally stand alone.
-- **Reminders:** A note can carry a **reminder date**. `cron/cron_notifications.php` picks up notes that are due or overdue and delivers them as in-app notifications under the bell icon, so a reminder set for a time earlier in the day still fires on that day's run. Body text is capped at 4000 characters and deletion is a soft delete, exactly as for comments.
+- **Reminders:** A note can carry a **reminder date and time**. `cron/cron_notifications.php` picks up notes that are due or overdue and delivers them as in-app notifications under the bell icon, so a reminder set for a time earlier in the day still fires on that day's run. Body text is capped at 4000 characters and deletion is a soft delete, exactly as for comments.
 
 ### 11. Menu Preview & Navigation Editor
 
@@ -514,7 +515,7 @@ Renders the frontend sidebar and lets you rearrange or nest items by dragging. E
 
 #### Demo 1: CRM
 
-Companies, contacts, deals, quotes, invoices, assets, activities. FK subtables, deal stage color coding, computed columns with conditional icons (deal size, activity kind), revenue drill-down by year → month, Kanban deals board, automations (incl. welcome email), GDPR anonymization rules for stale leads.
+Companies, contacts, deals, activities, leads, projects (with a Projects Roadmap), plus the deal_contacts junction. FK subtables, deal stage color coding, computed columns with conditional icons (deal size, activity kind), revenue drill-down by year → month, Kanban deals board, automations (incl. welcome email), GDPR anonymization rules for stale leads.
 
 ### 11c. CSV Import
 
@@ -717,7 +718,7 @@ A view grouped by two things at once (company *and* stage) holds the answer to "
 
 ### 16. Print Templates
 
-**System → Printouts** — build printable report templates from simple blocks (header, text, table), each bound to a PostgreSQL view from the Views module. Admin configuration in `System → Printouts`; reports are rendered by `public/print.php` and the `api/print.php` endpoint.
+**Data Management → Printouts** — build printable report templates from simple blocks (header, text, table), each bound to a PostgreSQL view from the Views module. Admin configuration in `Data Management → Printouts`; reports are rendered by `public/print.php` and the `api/print.php` endpoint.
 
 - **Data source:** A template is bound to exactly one PostgreSQL view registered in the Views module (only views with `source=postgres` are offered). The view's columns become the available `{variables}` used in header and text blocks. A report always prints whole rows of the view — there is no per-record printing from a table grid.
 - **Layout:** Blocks in a configured order, up to 50 per template: **header** (H1–H3, text with `{variables}`), **text** (a paragraph, values substituted from the first row), and **table** (all rows; per-column width in % and left/center/right alignment, headers centered). A template with no view selected and no blocks still renders — useful for fixed text pages.

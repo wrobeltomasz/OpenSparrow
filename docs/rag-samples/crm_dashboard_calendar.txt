@@ -18,7 +18,7 @@ Charts:
 - "Activities Over Time" — area/line chart, activity count per week by created_at
 
 PERIOD FILTER:
-The dashboard has a period filter (Today / 7 days / 30 days) and stat cards show a trend
+The dashboard has a period filter (All time / Today / Last 7 days / Last 30 days / This month) and stat cards show a trend
 delta against the previous period. The demo seed deliberately spreads created_at over the
 past months for companies, contacts, deals and activities so the filter and the
 time-series charts have real history to show. Leads older than a year are left untouched

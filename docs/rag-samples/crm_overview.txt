@@ -1,18 +1,19 @@
 CRM Demo — OpenSparrow
 ======================
 Customer Relationship Management demo app for tracking companies, contacts, deals and
-sales activities. Installed from Admin → Demo Data. All tables live in the PostgreSQL
+sales activities. Installed from System → Demo Systems. All tables live in the PostgreSQL
 schema spw_crm.
 
 MENU (what the demo puts in the sidebar):
 - Dashboard
 - Calendar
-- Companies (with Contacts nested underneath)
-- Deals
-- Activities
+- Companies (with Contacts, Deals, Activities and Projects nested underneath)
 - Deals Board (Kanban)
+- Projects Roadmap
 - Files
-Plus the Pipeline Summary view, and the Pipeline Report and Activity Agenda printouts.
+- Workflows
+- Pipeline Summary (view)
+- Pipeline Report and Activity Agenda (printouts)
 
 TABLES IN THE MENU:
 - companies: Client organizations. Fields: name, industry, website, phone, email.
@@ -23,9 +24,15 @@ TABLES IN THE MENU:
   value-based row highlighting in the grid.
 - activities: Actions on deals (calls, meetings, emails). Fields: type, notes,
   scheduled_at, done, deal_id, contact_id.
+- projects: Initiatives tracked on the Projects Roadmap. Fields: name, category,
+  start_date, end_date, progress.
 
-BACKGROUND TABLES (seeded and fully configured, but NOT in the menu):
-Reachable only through a deal's subtables, a workflow step, or a direct
+Contacts, Deals, Activities and Projects are nested under Companies in the menu, not
+separate top-level entries.
+
+BACKGROUND TABLES (seeded and fully configured, but hidden — NOT in the menu):
+Both are flagged hidden in the schema config, so they have no menu entry and no grid of
+their own. They are reachable through a deal's subtables, a workflow step, or a direct
 index.php?table=... URL. They exist so the demo can show automations, a workflow and
 the GDPR anonymization rules working against real data.
 - leads: Incoming prospects not yet converted. Drives two automations and the
@@ -56,7 +63,7 @@ VIEWS:
 One more view is installed but hidden from the menu: Leads Funnel. Two further views
 (Pipeline Report Source, Activity Agenda Source) exist only to feed the print templates
 and are not meant to be browsed. A fifth database view, v_demo_crm_deals_aggregate, holds
-deal totals per company and stage and is attached to the deals table in Admin → RAG →
+deal totals per company and stage and is attached to the deals table in AI → Centrum AI →
 Aggregate Views; it is not registered in the Views module at all.
 
 DEMO USERS:
@@ -65,6 +72,9 @@ Three extra users are created: demo.anna (editor), demo.marek (editor) and demo.
 notifications — see the CRM Collaboration doc.
 
 UNINSTALL:
-Admin → Demo Data removes the spw_crm schema, the demo users and every config entry the
-install added (widgets, views, menu items, board, workflows, automations, prints,
-anonymization rules, files, the RAG aggregate view mapping).
+System → Demo Systems removes the spw_crm schema and every config entry the install
+added (widgets, views, menu items, board, workflows, automations, prints, anonymization
+rules, files, the RAG aggregate view mapping). It also removes whichever optional parts
+were installed — the demo users (with their comments, notes, notifications and chat), the
+RAG sample documents and the seeded audit history — each only if its install checkbox was
+ticked.

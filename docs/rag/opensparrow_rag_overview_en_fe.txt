@@ -8,7 +8,7 @@ OpenSparrow is an open-source, schema-driven web platform. The tables, forms, an
 see are generated from configuration maintained by your administrator — if you need a new
 table, column, widget, or workflow, ask an admin.
 
-Current version: 3.1. Self-hosted, works fully offline.
+Current version: 4.6. Self-hosted, works fully offline.
 
 
 LOGIN & SESSION
@@ -31,15 +31,15 @@ record straight on its Comments tab. Both panels share the same layout.
 
 ROLES (what you can do)
 -----------------------
-  - admin:  full access, including the Admin panel
-  - editor: can read and write data; no Admin panel
+  - admin:  works in the Admin panel only; cannot log in to the frontend
+  - editor: can read and write data in the frontend; no Admin panel
   - viewer: read-only — grids, dashboard, and calendar visible, no editing
 
 
 NAVIGATION
 ----------
-Sidebar menu lists all available tables, views, workflows, and pages (Dashboard, Calendar,
-Files, AI assistant). The menu structure is configured by the admin.
+Sidebar menu lists all available tables, views, workflows, boards, roadmaps and pages
+(Dashboard, Calendar, Files, AI assistant). The menu structure is configured by the admin.
 
 
 DATA GRID (index.php?table=X)
@@ -58,7 +58,8 @@ The main way to browse and edit data:
     Ctrl+A to select all
   - Export selected rows to CSV
   - Mass Edit: select multiple rows, bulk-update a field across all selected
-  - Quick Data Cleanup: find-and-replace across a column, with regex support
+  - Quick Data Cleanup: find-and-replace across a column, with case-insensitive, whole-word
+    and ignore-accents options
   - Images column: when the admin enables images for a table, the grid gains a
     thumbnail column showing the first image of each record plus a "+N" badge for
     the rest; hovering the cell opens a popup with larger previews, and clicking a
@@ -138,11 +139,11 @@ save take a moment longer.
 
 AI ASSISTANT (RAG)
 ------------------
-Local AI assistant — 100% offline, no external APIs.
+Local AI assistant — runs on Ollama, either a local instance (fully offline) or Ollama Cloud.
 Ask questions via the "Ask AI" panel (avatar menu → Ask AI, or the chat icon).
 Answers are based on documents uploaded by the admin; tag filtering narrows which
-documents are searched. The Ask AI panel automatically pre-selects the tag matching
-the table you are currently viewing (e.g. on ?table=deals → tag "deals").
+documents are searched. Tags start unchecked and are attached only when you tick them;
+the panel shows the current table in a context bar but does not pre-select its tag.
 A "Current table data" checkbox lets you additionally attach the rows currently on
 screen (up to 50 rows / 12 columns) as context — available on the grid page and on
 Views report tables; at least one source (a tag or "Current table data") must be

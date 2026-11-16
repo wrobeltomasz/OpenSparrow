@@ -1,9 +1,8 @@
 -- OpenSparrow — COMMENT ON statements for all spw_* system tables and columns.
 --
--- Scope:   26 tables from includes/system_tables.php (system_tables_ddl) + spw_migrations
---          from the init_db bootstrap block = 27 tables.
--- Version: valid for the initial layout (3.0_baseline) AND for 3.1 — no DDL migration was
---          added after 3.0_baseline, so the two layouts are identical.
+-- Scope:   26 baseline tables + spw_migrations from the init_db bootstrap block
+--          + spw_clickstats + spw_external_api_log + spw_chat_messages = 30 tables.
+-- Version: current 4.6 layout, including all seven database migrations through 4.4_user_chat.
 --
 -- Schema:  statements below use "app", the default from config/database.json -> schema.
 --          If your installation uses a different schema, run the script after:
@@ -36,8 +35,12 @@ COMMENT ON COLUMN app.spw_users.salt IS 'Legacy/optional extra salt. Modern Argo
 COMMENT ON COLUMN app.spw_users.password_algo IS 'Algorithm the hash was produced with; drives rehash-on-login decisions. Default argon2id.';
 COMMENT ON COLUMN app.spw_users.password_params IS 'Cost parameters used for the hash (memory/time/threads), for rehash comparison.';
 COMMENT ON COLUMN app.spw_users.is_active IS 'Soft disable - inactive users cannot log in but their audit rows survive.';
-COMMENT ON COLUMN app.spw_users.role IS 'Authorization level (admin / editor / read-only roles). Enforced server-side in api_bootstrap.php and requireWrite().';
+COMMENT ON COLUMN app.spw_users.role IS 'Authorization level (admin / editor / viewer). Enforced server-side by the shared API and page gates.';
 COMMENT ON COLUMN app.spw_users.avatar_id IS 'Avatar colour: 1-based index into the avatar palette (OS_AVATAR_COLORS). NULL = default colour. The avatar itself is the initial of the username.';
+COMMENT ON COLUMN app.spw_users.first_name IS 'Optional given name managed from the admin panel and shown in frontend user tooltips. Added by 3.3_user_contact.';
+COMMENT ON COLUMN app.spw_users.last_name IS 'Optional surname managed from the admin panel and shown in frontend user tooltips. Added by 3.3_user_contact.';
+COMMENT ON COLUMN app.spw_users.email IS 'Optional contact email. Format-checked, not unique; used for two-factor login codes and shown in frontend user tooltips. Added by 3.3_user_contact.';
+COMMENT ON COLUMN app.spw_users.phone IS 'Optional contact phone managed from the admin panel and shown in frontend user tooltips. Added by 3.3_user_contact.';
 
 COMMENT ON TABLE  app.spw_users_log IS 'User action audit trail. Written by log_user_action() (includes/api_helpers.php); every mutation must produce a row.';
 COMMENT ON COLUMN app.spw_users_log.id IS 'Log entry id; referenced by spw_record_snapshots.log_id.';
@@ -53,7 +56,7 @@ COMMENT ON COLUMN app.spw_login_attempts.username IS 'Username the attempt was m
 COMMENT ON COLUMN app.spw_login_attempts.ip_hash IS 'Salted hash of the client IP (IP_HASH_SALT). The raw IP is never stored.';
 COMMENT ON COLUMN app.spw_login_attempts.attempted_at IS 'Attempt timestamp; the sliding window for the throttle.';
 
-COMMENT ON TABLE  app.spw_record_snapshots IS 'Full JSON row snapshots taken at the moment of a change. Retention configurable in Admin - Settings.';
+COMMENT ON TABLE  app.spw_record_snapshots IS 'Full post-write JSON row snapshots after INSERT or UPDATE. No snapshot is captured on DELETE. Controlled by Settings - Audit & Snapshots or RECORD_SNAPSHOTS_ENABLED.';
 COMMENT ON COLUMN app.spw_record_snapshots.id IS 'Surrogate primary key.';
 COMMENT ON COLUMN app.spw_record_snapshots.log_id IS 'Audit entry this snapshot belongs to. FK to spw_users_log(id) ON DELETE CASCADE.';
 COMMENT ON COLUMN app.spw_record_snapshots.table_name IS 'Snapshotted table.';
@@ -177,7 +180,7 @@ COMMENT ON COLUMN app.spw_automation_runs.rule_name IS 'Rule label captured at r
 COMMENT ON COLUMN app.spw_automation_runs.table_name IS 'Table whose change fired the rule.';
 COMMENT ON COLUMN app.spw_automation_runs.record_id IS 'Triggering record.';
 COMMENT ON COLUMN app.spw_automation_runs.event IS 'Trigger event: insert / update / delete.';
-COMMENT ON COLUMN app.spw_automation_runs.status IS 'ok or error.';
+COMMENT ON COLUMN app.spw_automation_runs.status IS 'ok, error or skipped (conditions not met).';
 COMMENT ON COLUMN app.spw_automation_runs.error_msg IS 'Failure detail.';
 COMMENT ON COLUMN app.spw_automation_runs.executed_at IS 'Execution time.';
 
@@ -205,7 +208,7 @@ COMMENT ON COLUMN app.spw_imports.id IS 'Import run id.';
 COMMENT ON COLUMN app.spw_imports.user_id IS 'Who ran the import. FK to spw_users(id) ON DELETE SET NULL.';
 COMMENT ON COLUMN app.spw_imports.filename IS 'Uploaded file name as shown to the user.';
 COMMENT ON COLUMN app.spw_imports.target_table IS 'Destination table.';
-COMMENT ON COLUMN app.spw_imports.status IS 'pending / running / done / error.';
+COMMENT ON COLUMN app.spw_imports.status IS 'pending / running / done / failed.';
 COMMENT ON COLUMN app.spw_imports.total_rows IS 'Data rows found in the file.';
 COMMENT ON COLUMN app.spw_imports.imported_rows IS 'Rows inserted or updated.';
 COMMENT ON COLUMN app.spw_imports.skipped_rows IS 'Rows rejected; each one detailed in spw_import_rows_log.';
@@ -300,7 +303,7 @@ COMMENT ON COLUMN app.spw_etl_log.job_id IS 'Job identifier from the ETL config.
 COMMENT ON COLUMN app.spw_etl_log.job_name IS 'Job label captured at run time.';
 COMMENT ON COLUMN app.spw_etl_log.triggered_by IS 'cron, a manual admin run, or a flow.';
 COMMENT ON COLUMN app.spw_etl_log.status IS 'running / success / error.';
-COMMENT ON COLUMN app.spw_etl_log.rows_read IS 'Rows read from the source (MySQL or PostgreSQL).';
+COMMENT ON COLUMN app.spw_etl_log.rows_read IS 'Rows read from the configured database or CSV/FTP source.';
 COMMENT ON COLUMN app.spw_etl_log.rows_written IS 'Rows written to the PostgreSQL target.';
 COMMENT ON COLUMN app.spw_etl_log.error_message IS 'Failure detail.';
 COMMENT ON COLUMN app.spw_etl_log.started_at IS 'Run start.';
@@ -330,5 +333,44 @@ COMMENT ON COLUMN app.spw_etl_flow_step_log.rows_written IS 'Rows written by the
 COMMENT ON COLUMN app.spw_etl_flow_step_log.error_message IS 'Failure detail.';
 COMMENT ON COLUMN app.spw_etl_flow_step_log.started_at IS 'Step start.';
 COMMENT ON COLUMN app.spw_etl_flow_step_log.finished_at IS 'Step end.';
+
+-- ---------------------------------------------------------------------------
+-- 11. Click Statistics (3.3_clickstats)
+-- ---------------------------------------------------------------------------
+
+COMMENT ON TABLE app.spw_clickstats IS 'Click statistics. Written only while Admin -> Click Statistics is enabled; one row per UI element click.';
+COMMENT ON COLUMN app.spw_clickstats.id IS 'Click event id.';
+COMMENT ON COLUMN app.spw_clickstats.user_id IS 'User who clicked. FK to spw_users(id) ON DELETE SET NULL.';
+COMMENT ON COLUMN app.spw_clickstats.element IS 'Element label: the data-stat attribute when present, otherwise a derived id/class/text label.';
+COMMENT ON COLUMN app.spw_clickstats.page IS 'Page script the click happened on, e.g. index.php.';
+COMMENT ON COLUMN app.spw_clickstats.table_name IS 'Table in context when the click happened, or NULL.';
+COMMENT ON COLUMN app.spw_clickstats.record_id IS 'Record in context when the click happened, or NULL.';
+COMMENT ON COLUMN app.spw_clickstats.created_at IS 'Click time; drives retention and log ordering.';
+
+-- ---------------------------------------------------------------------------
+-- 12. External API (3.6_external_api_log)
+-- ---------------------------------------------------------------------------
+
+COMMENT ON TABLE app.spw_external_api_log IS 'Usage log of the External API endpoint (public/api/external.php). One row per successful authenticated request.';
+COMMENT ON COLUMN app.spw_external_api_log.id IS 'Request log id.';
+COMMENT ON COLUMN app.spw_external_api_log.api_id IS 'Identifier of the API definition that served the request.';
+COMMENT ON COLUMN app.spw_external_api_log.api_name IS 'API name captured at request time; survives later renames.';
+COMMENT ON COLUMN app.spw_external_api_log.table_name IS 'Configured table or view name, captured at request time.';
+COMMENT ON COLUMN app.spw_external_api_log.status IS 'ok for a successful request; error rows are not recorded.';
+COMMENT ON COLUMN app.spw_external_api_log.rows_returned IS 'Number of rows returned to the caller.';
+COMMENT ON COLUMN app.spw_external_api_log.duration_ms IS 'End-to-end request duration in milliseconds.';
+COMMENT ON COLUMN app.spw_external_api_log.created_at IS 'Request time.';
+
+-- ---------------------------------------------------------------------------
+-- 13. User chat (4.4_user_chat)
+-- ---------------------------------------------------------------------------
+
+COMMENT ON TABLE app.spw_chat_messages IS 'One-to-one user messages. A message is visible to its sender and recipient only; hiding a message flips is_visible without deleting the row.';
+COMMENT ON COLUMN app.spw_chat_messages.id IS 'Surrogate primary key.';
+COMMENT ON COLUMN app.spw_chat_messages.sender_id IS 'Author. FK to spw_users(id) ON DELETE SET NULL.';
+COMMENT ON COLUMN app.spw_chat_messages.recipient_id IS 'Recipient. FK to spw_users(id) ON DELETE SET NULL.';
+COMMENT ON COLUMN app.spw_chat_messages.body IS 'Message text. CHECK char_length(body) <= 4000.';
+COMMENT ON COLUMN app.spw_chat_messages.created_at IS 'Send time.';
+COMMENT ON COLUMN app.spw_chat_messages.is_visible IS 'Soft-hide marker. A hidden message stays in the table but is not rendered in the chat thread.';
 
 COMMIT;
