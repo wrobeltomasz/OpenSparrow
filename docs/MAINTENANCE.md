@@ -92,11 +92,11 @@ concentrated in a few places listed below.
 1. ~~**`admin/js/docs-strings.js` (~2.7k lines)** — six languages of admin docs
    hardcoded in one JS file.~~ **Resolved 2026-07-29 (851df26)** by taking the
    second option: built-in admin docs reduced to **en + pl**, the de/fr/it/es and
-   placeholder locales dropped. The app UI keeps all 20 languages — only the admin
+   placeholder locales dropped. The app UI keeps all 24 languages — only the admin
    Docs tab is bilingual. Do not add doc locales back; the maintenance cost was the
    whole reason for the trim.
-2. **20-language hard key parity** (`tests/I18n/LanguageFilesTest.php`) — every
-   new key costs 20 edits. Considered alternative: fallback-to-en with parity
+2. **24-language hard key parity** (`tests/I18n/LanguageFilesTest.php`) — every
+   new key costs 24 edits. Considered alternative: fallback-to-en with parity
    enforced only for en+pl. Product decision, not taken yet. (The docs-strings trim
    above is precedent for the narrower en+pl scope, but the app UI is a different
    surface — untranslated *interface* strings are more visible than untranslated
@@ -173,10 +173,10 @@ records the reasoning and gotchas so they are not re-derived or re-litigated.
   cluttered — one dropdown per enum column per source) in favor of a phrase
   search box + source visibility chips. Old localStorage `enumFilters` state
   is silently ignored. The now-unused i18n key `calendar.filter_all` was
-  deliberately **left** in all 20 language files (removal is a 21-file churn
+  deliberately **left** in all 24 language files (removal is a 25-file churn
   gated by the parity test, zero user benefit).
 - **Dashboard** — the period select is rendered server-side in the header
-  (its `dashboard.filter_*` keys already existed in all 20 languages;
+  (its `dashboard.filter_*` keys already existed in all 24 languages;
   `buildFilterBar()` was deleted from `dashboard/index.js`, which also removes
   the empty-bar flash before JS loads). New per-widget visibility chips are
   keyed by `widget.id` (stable across reorder/rename; the API passes full
@@ -228,7 +228,7 @@ the same nitpicks are not re-litigated.
 ### Implemented the same day
 
 - **Submenu `<summary>` accessible name** — `aria-label` built from the new i18n
-  key `header.toggle_submenu` (`"Toggle submenu: {name}"`, added to all 20
+  key `header.toggle_submenu` (`"Toggle submenu: {name}"`, added to all 24
   `languages/*.json`); the `▾` glyph is `aria-hidden="true"`. The
   `<details>`/`<summary>` disclosure pattern itself **stays** — deliberate no-JS
   progressive enhancement; do not replace it with `button` + `aria-expanded`.

@@ -34,7 +34,7 @@ vendor/bin/phpunit tests/Security/TableAccessTest.php # single file
 - Keep body arrays named `$body` and locals named `$queryParameters` — the request-scope scanner matches those names.
 - New admin actions must be registered in the `$adminModules` map and `$postActions` in `public/admin/api.php`, both pinned by `tests/Admin/AdminApiGuardsTest.php`.
 - New reads of request-supplied table/view/print/board/workflow names must be recorded in `tests/Security/request_scope_inventory.php`.
-- Language parity: adding an i18n key means editing **all 20** `languages/*.json` files — `tests/I18n/LanguageFilesTest.php` enforces hard parity.
+- Language parity: adding an i18n key means editing **all 24** `languages/*.json` files — `tests/I18n/LanguageFilesTest.php` enforces hard parity.
 
 ## III. Manual verification
 
