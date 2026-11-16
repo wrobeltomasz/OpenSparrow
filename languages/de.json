@@ -144,6 +144,8 @@
         "my_records_assigned": "Zugewiesen: {date}",
         "my_comments": "Meine Kommentare",
         "my_comments_empty": "Sie haben noch keine Kommentare geschrieben.",
+        "my_history": "Mein Verlauf",
+        "my_history_empty": "Es wurden noch keine Klicks aufgezeichnet.",
         "notes": "Meine Notizen",
         "chat": "Chat",
         "close": "Schließen",

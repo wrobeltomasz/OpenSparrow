@@ -144,6 +144,8 @@
         "my_records_assigned": "Määratud: {date}",
         "my_comments": "Minu kommentaarid",
         "my_comments_empty": "Te pole veel ühtegi kommentaari kirjutanud.",
+        "my_history": "Minu ajalugu",
+        "my_history_empty": "Sul pole veel salvestatud klikke.",
         "notes": "Minu märkmed",
         "chat": "Vestlus",
         "close": "Sulge",

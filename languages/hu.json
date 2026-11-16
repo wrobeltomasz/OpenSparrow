@@ -144,6 +144,8 @@
         "my_records_assigned": "Hozzárendelve: {date}",
         "my_comments": "Saját hozzászólásaim",
         "my_comments_empty": "Még nem írt hozzászólást.",
+        "my_history": "Az előzményeim",
+        "my_history_empty": "Még nincsenek rögzített kattintásaid.",
         "notes": "Saját jegyzeteim",
         "chat": "Csevegés",
         "close": "Bezárás",

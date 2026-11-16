@@ -144,6 +144,8 @@
         "my_records_assigned": "Assigned: {date}",
         "my_comments": "My comments",
         "my_comments_empty": "You have not written any comments yet.",
+        "my_history": "My history",
+        "my_history_empty": "You have no recorded clicks yet.",
         "notes": "My notes",
         "chat": "Chat",
         "close": "Close",

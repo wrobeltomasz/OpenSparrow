@@ -371,6 +371,81 @@ async function openMyCommentsPanel() {
     }
 }
 
+let myHistoryPanel = null;
+
+function renderMyHistory(bodyElement, rows) {
+    bodyElement.textContent = '';
+
+    const linked = rows.filter(row => row.table_display && row.record_id);
+
+    if (!linked.length) {
+        const empty = document.createElement('p');
+        empty.className = 'dc-empty';
+        empty.textContent = I18n.t('header.my_history_empty');
+        bodyElement.appendChild(empty);
+        return;
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'um-list';
+
+    for (const row of linked) {
+        const item = document.createElement('li');
+        item.className = 'um-item';
+
+        const link = document.createElement('a');
+        link.className = 'um-item-link';
+        link.href = 'edit.php?table=' + encodeURIComponent(row.table_name)
+            + '&id=' + encodeURIComponent(row.record_id);
+        if (row.icon) {
+            const icon = document.createElement('img');
+            icon.className = 'um-item-icon';
+            icon.src = row.icon;
+            icon.alt = '';
+            link.appendChild(icon);
+        }
+        link.appendChild(document.createTextNode(`${row.table_display} → ${row.record_label || '#' + row.record_id}`));
+        item.appendChild(link);
+
+        const meta = document.createElement('div');
+        meta.className = 'um-item-meta';
+        meta.textContent = formatDateTime(row.created_at);
+        item.appendChild(meta);
+
+        list.appendChild(item);
+    }
+
+    bodyElement.appendChild(list);
+}
+
+async function openMyHistoryPanel() {
+    if (!myHistoryPanel) {
+        myHistoryPanel = new BulkPanel({
+            id: 'myHistoryPanel',
+            title: I18n.t('header.my_history'),
+            showApply: false,
+        });
+    }
+
+    myHistoryPanel.open();
+    myHistoryPanel.clearStatus();
+    myHistoryPanel.setStatus(I18n.t('common.loading'));
+    myHistoryPanel.bodyElement.textContent = '';
+
+    try {
+        const result = await fetch('api/clickstats_history.php', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const data = await result.json();
+        if (!result.ok || !data.success) throw new Error(data.error ?? I18n.t('common.error_generic'));
+
+        myHistoryPanel.clearStatus();
+        renderMyHistory(myHistoryPanel.bodyElement, data.rows ?? []);
+    } catch (error) {
+        myHistoryPanel.setStatus(error.message, true);
+    }
+}
+
 function initUserMenu() {
     const button  = document.getElementById('userAvatarBtn');
     const menu = document.getElementById('userAvatarMenu');
@@ -418,6 +493,11 @@ function initUserMenu() {
     document.getElementById('myCommentsBtn')?.addEventListener('click', () => {
         toggle(false);
         openMyCommentsPanel();
+    });
+
+    document.getElementById('myHistoryBtn')?.addEventListener('click', () => {
+        toggle(false);
+        openMyHistoryPanel();
     });
 
     document.getElementById('notesBtn')?.addEventListener('click', () => {

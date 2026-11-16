@@ -144,6 +144,8 @@
         "my_records_assigned": "Dodeljeno: {date}",
         "my_comments": "Moji komentarji",
         "my_comments_empty": "Niste še napisali nobenega komentarja.",
+        "my_history": "Moja zgodovina",
+        "my_history_empty": "Nimate še zabeleženih klikov.",
         "notes": "Moji zapiski",
         "chat": "Klepet",
         "close": "Zapri",

@@ -144,6 +144,8 @@
         "my_records_assigned": "Dodijeljeno: {date}",
         "my_comments": "Moji komentari",
         "my_comments_empty": "Još niste napisali nijedan komentar.",
+        "my_history": "Moja povijest",
+        "my_history_empty": "Nemate još zabilježenih klikova.",
         "notes": "Moje bilješke",
         "chat": "Razgovor",
         "close": "Zatvori",

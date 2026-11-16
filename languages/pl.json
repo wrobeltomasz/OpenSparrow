@@ -144,6 +144,8 @@
         "my_records_assigned": "Przypisano: {date}",
         "my_comments": "Moje komentarze",
         "my_comments_empty": "Nie napisałeś jeszcze żadnych komentarzy.",
+        "my_history": "Moja historia",
+        "my_history_empty": "Nie masz jeszcze zapisanych kliknięć.",
         "notes": "Moje notatki",
         "chat": "Czat",
         "close": "Zamknij",

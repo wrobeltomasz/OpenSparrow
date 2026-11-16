@@ -144,6 +144,8 @@
         "my_records_assigned": "Atribuído: {date}",
         "my_comments": "Os meus comentários",
         "my_comments_empty": "Ainda não escreveu nenhum comentário.",
+        "my_history": "Meu histórico",
+        "my_history_empty": "Ainda não tem cliques registados.",
         "notes": "As minhas notas",
         "chat": "Chat",
         "close": "Fechar",

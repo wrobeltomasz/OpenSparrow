@@ -30,6 +30,7 @@ require_once __DIR__ . '/../includes/rag_helpers.php';
 $agentEnabled = rag_chat_enabled();
 $myRecordsLabel      = htmlspecialchars(t('header.my_records'), ENT_QUOTES, 'UTF-8');
 $myCommentsLabel     = htmlspecialchars(t('header.my_comments'), ENT_QUOTES, 'UTF-8');
+$myHistoryLabel      = htmlspecialchars(t('header.my_history'), ENT_QUOTES, 'UTF-8');
 $notesTable          = htmlspecialchars(t('header.notes'), ENT_QUOTES, 'UTF-8');
 $chatLabel           = htmlspecialchars(t('header.chat'), ENT_QUOTES, 'UTF-8');
 $logoutLabel         = htmlspecialchars(t('auth.logout'), ENT_QUOTES, 'UTF-8');
@@ -119,6 +120,9 @@ if ($logoEnabled) {
                 </button>
                 <button class="user-avatar-menu-item" id="myCommentsBtn" data-cy="my-comments" role="menuitem">
                     <?= $myCommentsLabel ?>
+                </button>
+                <button class="user-avatar-menu-item" id="myHistoryBtn" data-cy="my-history" role="menuitem">
+                    <?= $myHistoryLabel ?>
                 </button>
                 <button class="user-avatar-menu-item" id="notesBtn" data-cy="notes" role="menuitem">
                     <?= $notesTable ?>

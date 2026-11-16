@@ -144,6 +144,8 @@
         "my_records_assigned": "Tilldelad: {date}",
         "my_comments": "Mina kommentarer",
         "my_comments_empty": "Du har inte skrivit några kommentarer än.",
+        "my_history": "Min historik",
+        "my_history_empty": "Du har inga registrerade klick ännu.",
         "notes": "Mina anteckningar",
         "chat": "Chatt",
         "close": "Stäng",

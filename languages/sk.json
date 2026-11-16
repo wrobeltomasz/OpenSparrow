@@ -144,6 +144,8 @@
         "my_records_assigned": "Priradené: {date}",
         "my_comments": "Moje komentáre",
         "my_comments_empty": "Zatiaľ ste nenapísali žiadne komentáre.",
+        "my_history": "Moja história",
+        "my_history_empty": "Zatiaľ nemáte zaznamenané žiadne kliknutia.",
         "notes": "Moje poznámky",
         "chat": "Chat",
         "close": "Zatvoriť",

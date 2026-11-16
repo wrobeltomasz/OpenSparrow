@@ -144,6 +144,8 @@
         "my_records_assigned": "Atribuit: {date}",
         "my_comments": "Comentariile mele",
         "my_comments_empty": "Nu ați scris încă niciun comentariu.",
+        "my_history": "Istoricul meu",
+        "my_history_empty": "Nu aveți încă niciun clic înregistrat.",
         "notes": "Notele mele",
         "chat": "Chat",
         "close": "Închide",

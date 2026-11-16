@@ -3210,10 +3210,20 @@ thead th.drag-over {
 }
 
 .um-item-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--accent);
   text-decoration: underline;
   word-break: break-word;
+}
+
+.um-item-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  opacity: 0.6;
+  flex-shrink: 0;
 }
 
 .um-item-meta {

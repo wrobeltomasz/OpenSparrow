@@ -455,7 +455,8 @@ ${_ul([
     `<strong>${strings.s9q_privacy_label}:</strong> ${strings.s9q_privacy}`,
     `<strong>${strings.s9q_budget_label}:</strong> ${strings.s9q_budget}`,
     `<strong>${strings.s9q_labels_label}:</strong> ${strings.s9q_labels}`,
-    `<strong>${strings.s9q_user_label}:</strong> ${strings.s9q_user}`
+    `<strong>${strings.s9q_user_label}:</strong> ${strings.s9q_user}`,
+    `<strong>${strings.s9q_myhistory_label}:</strong> ${strings.s9q_myhistory}`
 ])}
 
 ${_h3('doc-9r', strings.s9r_head)}

@@ -144,6 +144,8 @@
         "my_records_assigned": "Tildelt: {date}",
         "my_comments": "Mine kommentarer",
         "my_comments_empty": "Du har endnu ikke skrevet nogen kommentarer.",
+        "my_history": "Min historik",
+        "my_history_empty": "Du har endnu ingen registrerede klik.",
         "notes": "Mine noter",
         "chat": "Chat",
         "close": "Luk",
