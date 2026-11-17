@@ -154,9 +154,10 @@ final class EditController
         $m2mGroups      = $this->m2mGroups($m2mConfigs, $rawSchema, $id, $isReadOnly);
         $subtablePanels = $this->subtablePanels($subtablesData, $id, $rawSchema);
         $imagesPanel    = $this->imagesPanel($imagesConfig, $table, $id, $isReadOnly);
-        $filesPanel     = $this->canAttachFiles($table) ? $this->filesPanel($tableConfig->name, $id) : null;
+        $canAttachFiles = $this->canAttachFiles($table);
+        $filesPanel     = $canAttachFiles ? $this->filesPanel($tableConfig->name, $id) : null;
         $historyPanel   = $this->historyPanel();
-        $tabs           = $this->tabs($tableConfig, $subtablePanels, $imagesPanel);
+        $tabs           = $this->tabs($tableConfig, $subtablePanels, $imagesPanel, $canAttachFiles);
 
         $changePreview = RECORD_SNAPSHOTS_ENABLED
             ? $this->changePreview($table, $id, $rawSchema)
@@ -522,8 +523,12 @@ final class EditController
         ];
     }
 
-    private function tabs(TableConfig $tableConfig, array $subtablePanels, ?array $imagesPanel): array
-    {
+    private function tabs(
+        TableConfig $tableConfig,
+        array $subtablePanels,
+        ?array $imagesPanel,
+        bool $canAttachFiles
+    ): array {
         $tabs = [[
             'id'    => 'tab-details',
             'label' => $tableConfig->displayName,
@@ -539,15 +544,23 @@ final class EditController
                 'icon'  => 'assets/icons/material/image.svg',
             ];
         }
-        if ($this->canAttachFiles($tableConfig->name)) {
+        if ($canAttachFiles) {
             $tabs[] = [
                 'id'    => 'tab-files',
                 'label' => t('form.tab_files'),
                 'icon'  => 'assets/icons/material/folder_open.svg',
             ];
         }
-        $tabs[] = ['id' => 'tab-comments', 'label' => t('form.tab_comments'), 'icon' => 'assets/icons/material/comment.svg'];
-        $tabs[] = ['id' => 'tab-history', 'label' => t('form.tab_history'), 'icon' => 'assets/icons/material/history.svg'];
+        $tabs[] = [
+            'id'    => 'tab-comments',
+            'label' => t('form.tab_comments'),
+            'icon'  => 'assets/icons/material/comment.svg',
+        ];
+        $tabs[] = [
+            'id'    => 'tab-history',
+            'label' => t('form.tab_history'),
+            'icon'  => 'assets/icons/material/history.svg',
+        ];
 
         return $tabs;
     }
