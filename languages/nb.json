@@ -151,7 +151,11 @@
         "close": "Lukk",
         "avatar_option": "Farge {n}",
         "avatar_options": "Avatarens farger",
-        "error_saving_avatar": "Feil ved lagring av avatar."
+        "error_saving_avatar": "Feil ved lagring av avatar.",
+        "theme": "Tema",
+        "theme_light": "Lyst tema",
+        "theme_dark": "Mørkt tema",
+        "theme_system": "Systemtema"
     },
     "admin": {
         "title": "Administrasjon",

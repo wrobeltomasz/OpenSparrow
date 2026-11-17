@@ -34,6 +34,7 @@ if (!empty(os_session_get('user_id'))) {
     <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= htmlspecialchars(os_ensure_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+    <?= os_theme_init_script($cspNonce) ?>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link
         href="/assets/css/styles.css?v=<?= asset_version(__DIR__ . '/../public/assets/css/styles.css') ?>"

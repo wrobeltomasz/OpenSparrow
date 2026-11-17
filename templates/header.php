@@ -24,6 +24,7 @@ $adminPanelLabel     = htmlspecialchars(t('header.admin_panel'), ENT_QUOTES, 'UT
 $adminTitleLabel     = htmlspecialchars(t('admin.title'), ENT_QUOTES, 'UTF-8');
 $changeAvatarLabel   = htmlspecialchars(t('header.change_avatar'), ENT_QUOTES, 'UTF-8');
 $changePasswordLabel = htmlspecialchars(t('auth.change_password'), ENT_QUOTES, 'UTF-8');
+$themeLabel          = htmlspecialchars(t('header.theme'), ENT_QUOTES, 'UTF-8');
 $agentTitleLabel     = htmlspecialchars(t('agent.title'), ENT_QUOTES, 'UTF-8');
 
 require_once __DIR__ . '/../includes/rag_helpers.php';
@@ -111,6 +112,9 @@ if ($logoEnabled) {
                 </button>
                 <button class="user-avatar-menu-item" id="changePasswordBtn" role="menuitem">
                     <?= $changePasswordLabel ?>
+                </button>
+                <button class="user-avatar-menu-item" id="themeToggleBtn" data-cy="theme-toggle" role="menuitem">
+                    <?= $themeLabel ?>
                 </button>
                 <?php if ($agentEnabled) : ?>
                 <button class="user-avatar-menu-item" id="openAgentBtn" role="menuitem"><?= $agentTitleLabel ?></button>

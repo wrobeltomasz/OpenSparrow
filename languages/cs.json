@@ -151,7 +151,11 @@
         "close": "Zavřít",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
-        "error_saving_avatar": "Error saving avatar."
+        "error_saving_avatar": "Error saving avatar.",
+        "theme": "Motiv",
+        "theme_light": "Světlý motiv",
+        "theme_dark": "Tmavý motiv",
+        "theme_system": "Systémový motiv"
     },
     "admin": {
         "title": "Správa",

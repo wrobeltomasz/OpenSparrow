@@ -151,7 +151,11 @@
         "close": "Sulje",
         "avatar_option": "Väri {n}",
         "avatar_options": "Avatarin värit",
-        "error_saving_avatar": "Virhe avatarin tallennuksessa."
+        "error_saving_avatar": "Virhe avatarin tallennuksessa.",
+        "theme": "Teema",
+        "theme_light": "Vaalea teema",
+        "theme_dark": "Tumma teema",
+        "theme_system": "Järjestelmäteema"
     },
     "admin": {
         "title": "Hallinta",

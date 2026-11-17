@@ -151,7 +151,11 @@
         "close": "Loka",
         "avatar_option": "Litur {n}",
         "avatar_options": "Litir myndar",
-        "error_saving_avatar": "Villa við að vista mynd."
+        "error_saving_avatar": "Villa við að vista mynd.",
+        "theme": "Þema",
+        "theme_light": "Ljóst þema",
+        "theme_dark": "Dökkt þema",
+        "theme_system": "Kerfisþema"
     },
     "admin": {
         "title": "Stjórnun",

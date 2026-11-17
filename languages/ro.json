@@ -151,7 +151,11 @@
         "close": "Închide",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
-        "error_saving_avatar": "Error saving avatar."
+        "error_saving_avatar": "Error saving avatar.",
+        "theme": "Temă",
+        "theme_light": "Temă deschisă",
+        "theme_dark": "Temă închisă",
+        "theme_system": "Temă de sistem"
     },
     "admin": {
         "title": "Administrare",

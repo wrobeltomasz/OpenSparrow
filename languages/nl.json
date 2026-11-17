@@ -151,7 +151,11 @@
         "close": "Sluiten",
         "avatar_option": "Kleur {n}",
         "avatar_options": "Avatarkleuren",
-        "error_saving_avatar": "Fout bij opslaan van avatar."
+        "error_saving_avatar": "Fout bij opslaan van avatar.",
+        "theme": "Thema",
+        "theme_light": "Licht thema",
+        "theme_dark": "Donker thema",
+        "theme_system": "Systeemthema"
     },
     "admin": {
         "title": "Beheer",

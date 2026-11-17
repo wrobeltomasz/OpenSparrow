@@ -24,6 +24,8 @@
   --accent-light: #F1F4F8;
   --accent-mid:   #D0DAE6;
 
+  --header-bg:    #002245;
+
   --error:        var(--c-error);
   --error-light:  #FBEDED;
   --ok:           var(--c-ok);
@@ -50,6 +52,47 @@
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-paper: #1E2836;
+  --c-stone: #9AA4AF;
+  --c-ink:   #E7EDF3;
+  --c-navy:  #5B8DEE;
+  --c-ok:    #4CC38A;
+  --c-error: #F87171;
+
+  --bg:           #141B24;
+  --panel:        var(--c-paper);
+
+  --text:         var(--c-ink);
+  --muted:        #9AA4AF;
+
+  --accent:       var(--c-navy);
+  --accent-dark:  #4472CE;
+  --accent-light: #24344A;
+  --accent-mid:   #31445E;
+
+  --header-bg:    #0D1B2A;
+
+  --error:        var(--c-error);
+  --error-light:  #3A1F22;
+  --ok:           var(--c-ok);
+  --ok-light:     #17301F;
+
+  --warn:         #E7EDF3;
+  --warn-light:   #2A3340;
+
+  --border:       #2E3A48;
+  --border-light: #26313D;
+
+  --row-col-hover: #1C2530;
+  --cell-hover:   #31445E;
+
+  --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md:    0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
 }
 
 * { box-sizing: border-box; }
@@ -79,7 +122,7 @@ header {
   gap: 1rem;
   padding: 0 1.25rem;
   height: var(--header-h);
-  background: var(--accent-dark);
+  background: var(--header-bg);
   box-shadow: 0 2px 8px rgba(31, 42, 55, 0.20);
   position: sticky;
   top: 0;
@@ -151,7 +194,7 @@ header select {
 }
 
 header select:focus { outline: none; border-color: rgba(255,255,255,.8); }
-header select option { background: var(--accent-dark); color: #fff; }
+header select option { background: var(--header-bg); color: #fff; }
 
 #dateFiltersContainer {
   display: flex;
@@ -350,7 +393,7 @@ header .print-filter-label {
 #nav-tip {
   position: fixed;
   background: var(--text);
-  color: #fff;
+  color: var(--panel);
   padding: 4px 10px;
   border-radius: 4px;
   font-size: 12px;
@@ -1879,7 +1922,7 @@ header .dash-filter-label {
   font-weight: 700;
 }
 .calendar-cell {
-  background: #fff;
+  background: var(--panel);
   min-height: 120px;
   padding: 5px;
   display: flex;
@@ -3502,7 +3545,7 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
-  background: #fff;
+  background: var(--panel);
   transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
   font-family: inherit;

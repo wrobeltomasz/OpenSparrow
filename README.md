@@ -86,7 +86,7 @@ Module configuration is visual and requires no file edits. Browse the guides and
 - **Data integration** — CSV import plus scheduled ETL from MySQL, MariaDB, PostgreSQL, SQLite and FTP/FTPS CSV sources.
 - **Privacy and analytics** — optional GDPR anonymization, record snapshots and click statistics with configurable retention.
 - **First-run wizard and demo CRM** — initialize the database and admin account, then optionally install a ready-made example application.
-- **Accessible, dependency-free frontend** — WCAG 2.1-oriented UI built with vanilla JavaScript and CSS.
+- **Accessible, dependency-free frontend** — WCAG 2.1-oriented UI built with vanilla JavaScript and CSS, with a light/dark/system theme toggle.
 
 See the [admin guide](docs/ADMIN.md), [security notes](docs/SECURITY.md) and [database reference](docs/DATABASE.md) for module details.
 

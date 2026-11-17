@@ -11,6 +11,7 @@ import { openChatPanel } from './chat-panel.js';
 import { formatDateTime } from './util/format-value.js';
 import { escHtml } from './util/esc.js';
 import { AVATAR_COLORS, avatarColor, renderAvatar } from './avatar.js';
+import { getThemeMode, nextThemeMode, applyTheme, initTheme } from './theme.js';
 
 const AVATAR_COUNT = AVATAR_COLORS.length;
 
@@ -485,6 +486,17 @@ function initUserMenu() {
         openModal(buildPasswordModal());
     });
 
+    const themeButton = document.getElementById('themeToggleBtn');
+    const renderThemeLabel = () => {
+        if (themeButton) themeButton.textContent = I18n.t('header.theme_' + getThemeMode());
+    };
+    renderThemeLabel();
+    themeButton?.addEventListener('click', () => {
+        toggle(false);
+        applyTheme(nextThemeMode());
+        renderThemeLabel();
+    });
+
     document.getElementById('myRecordsBtn')?.addEventListener('click', () => {
         toggle(false);
         openMyRecordsPanel();
@@ -517,6 +529,7 @@ function initUserMenu() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await I18n.load();
+    initTheme();
     initUserMenu();
     if (new URLSearchParams(window.location.search).has('chat')) {
         openChatPanel();

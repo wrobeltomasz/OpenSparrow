@@ -151,7 +151,11 @@
         "close": "Zamknij",
         "avatar_option": "Kolor {n}",
         "avatar_options": "Kolory awatara",
-        "error_saving_avatar": "Błąd zapisu awatara."
+        "error_saving_avatar": "Błąd zapisu awatara.",
+        "theme": "Motyw",
+        "theme_light": "Jasny motyw",
+        "theme_dark": "Ciemny motyw",
+        "theme_system": "Motyw systemowy"
     },
     "admin": {
         "title": "Administracja",

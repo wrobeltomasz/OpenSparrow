@@ -151,7 +151,11 @@
         "close": "Bezárás",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
-        "error_saving_avatar": "Error saving avatar."
+        "error_saving_avatar": "Error saving avatar.",
+        "theme": "Téma",
+        "theme_light": "Világos téma",
+        "theme_dark": "Sötét téma",
+        "theme_system": "Rendszertéma"
     },
     "admin": {
         "title": "Adminisztráció",

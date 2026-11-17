@@ -151,7 +151,11 @@
         "close": "Zapri",
         "avatar_option": "Color {n}",
         "avatar_options": "Avatar colors",
-        "error_saving_avatar": "Error saving avatar."
+        "error_saving_avatar": "Error saving avatar.",
+        "theme": "Tema",
+        "theme_light": "Svetla tema",
+        "theme_dark": "Temna tema",
+        "theme_system": "Sistemska tema"
     },
     "admin": {
         "title": "Administracija",

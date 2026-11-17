@@ -128,6 +128,29 @@ function os_inline_globals(array $variables, string $nonce): string
         . $javaScript . '</script>' . "\n";
 }
 
+function os_theme_init_script(string $nonce): string
+{
+    $nonceAttribute = $nonce !== ''
+        ? ' nonce="' . htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8') . '"'
+        : '';
+    $script = <<<'JS'
+(function () {
+    var modes = ['light', 'dark', 'system'];
+    var mode = 'system';
+    try {
+        var stored = localStorage.getItem('sparrow_theme');
+        if (modes.indexOf(stored) !== -1) mode = stored;
+    } catch (error) {}
+    var theme = mode === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : mode;
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.themeMode = mode;
+})();
+JS;
+    return '<script' . $nonceAttribute . '>' . $script . '</script>';
+}
+
 function os_module_script(string $source, string $nonce, ?string $versionFile = null): string
 {
     $assetVersion = str_starts_with($source, 'assets/js/') || str_starts_with($source, './assets/js/')

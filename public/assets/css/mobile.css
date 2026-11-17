@@ -62,7 +62,7 @@
         top: 100%;
         left: 0;
         right: 0;
-        background: var(--accent-dark);
+        background: var(--header-bg);
         flex-direction: column;
         gap: 8px;
         padding: 10px 12px 14px;
