@@ -15,6 +15,7 @@ $m2mGroups     ??= [];
 $formLabels    ??= [];
 $cancelUrl     ??= 'index.php';
 $isReadOnly    ??= true;
+$filesPanel    ??= null;
 ?>
 <main class="form-page">
     <h2><?= htmlspecialchars($formHeading, ENT_QUOTES, 'UTF-8') ?></h2>
@@ -106,6 +107,8 @@ $isReadOnly    ??= true;
 
     <?php include __DIR__ . '/partials/subtables.php'; ?>
     <?php include __DIR__ . '/partials/images.php'; ?>
-    <?php include __DIR__ . '/partials/files.php'; ?>
+    <?php if ($filesPanel !== null) : ?>
+        <?php include __DIR__ . '/partials/files.php'; ?>
+    <?php endif; ?>
     <?php include __DIR__ . '/partials/comments_history.php'; ?>
 </main>

@@ -154,7 +154,7 @@ final class EditController
         $m2mGroups      = $this->m2mGroups($m2mConfigs, $rawSchema, $id, $isReadOnly);
         $subtablePanels = $this->subtablePanels($subtablesData, $id, $rawSchema);
         $imagesPanel    = $this->imagesPanel($imagesConfig, $table, $id, $isReadOnly);
-        $filesPanel     = $this->filesPanel($tableConfig->name, $id);
+        $filesPanel     = $this->canAttachFiles($table) ? $this->filesPanel($tableConfig->name, $id) : null;
         $historyPanel   = $this->historyPanel();
         $tabs           = $this->tabs($tableConfig, $subtablePanels, $imagesPanel);
 
@@ -417,6 +417,18 @@ final class EditController
         ];
     }
 
+    private function canAttachFiles(string $table): bool
+    {
+        $filesConfig = config_get('files');
+        $relations = is_array($filesConfig) ? ($filesConfig['relations'] ?? []) : [];
+        foreach ($relations as $relativePath) {
+            if (is_array($relativePath) && ($relativePath['table'] ?? '') === $table) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private function filesPanel(string $table, int $id): array
     {
         $fileRows = [];
@@ -527,11 +539,13 @@ final class EditController
                 'icon'  => 'assets/icons/material/image.svg',
             ];
         }
-        $tabs[] = [
-            'id'    => 'tab-files',
-            'label' => t('form.tab_files'),
-            'icon'  => 'assets/icons/material/folder_open.svg',
-        ];
+        if ($this->canAttachFiles($tableConfig->name)) {
+            $tabs[] = [
+                'id'    => 'tab-files',
+                'label' => t('form.tab_files'),
+                'icon'  => 'assets/icons/material/folder_open.svg',
+            ];
+        }
         $tabs[] = ['id' => 'tab-comments', 'label' => t('form.tab_comments'), 'icon' => 'assets/icons/material/comment.svg'];
         $tabs[] = ['id' => 'tab-history', 'label' => t('form.tab_history'), 'icon' => 'assets/icons/material/history.svg'];
 
