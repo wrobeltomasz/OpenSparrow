@@ -27,6 +27,8 @@
             "true": "Da",
             "false": "Nu"
         },
+        "expand": "Extinde",
+        "collapse": "Restrânge",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -364,7 +366,12 @@
         "error_load": "Eroare la încărcarea chatului.",
         "error_send": "Eroare la trimiterea mesajului.",
         "new_message": "Mesaj nou de la {user}",
-        "message_user": "Mesaj"
+        "message_user": "Mesaj",
+        "insert_icon": "Inserați pictogramă",
+        "icon_picker_title": "Selectați pictogramă",
+        "icon_search": "Căutați pictograme…",
+        "icon_no_results": "Nu s-au găsit pictograme",
+        "icon_show_more": "Afișați mai multe"
     },
     "roles": {
         "admin": "Administrator",

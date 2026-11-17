@@ -27,6 +27,8 @@
             "true": "Ja",
             "false": "Nee"
         },
+        "expand": "Uitvouwen",
+        "collapse": "Invouwen",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Fout bij laden van chat.",
         "error_send": "Fout bij verzenden van bericht.",
         "new_message": "Nieuw bericht van {user}",
-        "message_user": "Bericht"
+        "message_user": "Bericht",
+        "insert_icon": "Pictogram invoegen",
+        "icon_picker_title": "Pictogram kiezen",
+        "icon_search": "Pictogrammen zoeken…",
+        "icon_no_results": "Geen pictogrammen gevonden",
+        "icon_show_more": "Meer weergeven"
     },
     "roles": {
         "admin": "Beheerder",

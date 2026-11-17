@@ -27,6 +27,8 @@
             "true": "Ja",
             "false": "Nej"
         },
+        "expand": "Expandera",
+        "collapse": "Minimera",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Fel vid laddning av chatten.",
         "error_send": "Fel vid sändning av meddelande.",
         "new_message": "Nytt meddelande från {user}",
-        "message_user": "Meddelande"
+        "message_user": "Meddelande",
+        "insert_icon": "Infoga ikon",
+        "icon_picker_title": "Välj ikon",
+        "icon_search": "Sök ikoner…",
+        "icon_no_results": "Inga ikoner hittades",
+        "icon_show_more": "Visa fler"
     },
     "roles": {
         "admin": "Administratör",

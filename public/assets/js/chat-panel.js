@@ -6,14 +6,42 @@
 import { I18n } from './i18n.js';
 import { BulkPanel } from './bulk_panel.js';
 import { apiFetch } from './util/api.js';
+import { escHtml } from './util/esc.js';
 import { formatDateTime } from './util/format-value.js';
 import { renderAvatar } from './avatar.js';
 import { enableUserTooltips } from './util/user-tooltip.js';
+import { buildRecordLinkPicker } from './util/record-link-picker.js';
+import { buildIconPicker } from './util/icon-picker.js';
 
 let panel = null;
 
 function currentUserId() {
     return parseInt(window.CURRENT_USER_ID ?? '0', 10);
+}
+
+function renderChatBody(raw, links) {
+    const inline = [];
+    let s = String(raw ?? '');
+
+    s = s.replace(/\[Icon:\s*([a-z0-9_]+)\]/g, (match, name) => {
+        inline.push('<img src="assets/icons/material/' + escHtml(name) + '.svg" class="chat-icon" alt="' + escHtml(name) + '" />');
+        return '\x00I' + (inline.length - 1) + '\x00';
+    });
+
+    s = s.replace(/\[Record:\s*([a-zA-Z0-9_]+):(\d+)\]/g, (match, table, id) => {
+        const link = (links || {})[table + ':' + id];
+        if (!link) return match;
+        inline.push('<a href="' + escHtml(link.url) + '" target="_blank" rel="noopener noreferrer" class="c-record-link">' + escHtml(link.label) + '</a>');
+        return '\x00I' + (inline.length - 1) + '\x00';
+    });
+
+    s = escHtml(s);
+
+    s = s
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+    return s.replace(/\x00I(\d+)\x00/g, (_, index) => inline[+index]);
 }
 
 async function fetchConversations() {
@@ -29,7 +57,7 @@ async function fetchThread(peerId) {
     });
     const data = await result.json();
     if (!data.success) throw new Error(data.error ?? I18n.t('chat.error_load'));
-    return data.messages ?? [];
+    return { messages: data.messages ?? [], links: data.links ?? {} };
 }
 
 async function fetchUsers(query) {
@@ -49,7 +77,7 @@ async function sendMessage(recipientId, body) {
     });
     const data = await result.json();
     if (!data.success) throw new Error(data.error ?? I18n.t('chat.error_send'));
-    return data.message;
+    return { message: data.message, links: data.links ?? {} };
 }
 
 async function hideMessage(id) {
@@ -122,7 +150,7 @@ function buildSearchBox(onStartChat) {
     return wrap;
 }
 
-function messageBubble(message, onHide) {
+function messageBubble(message, onHide, links) {
     const mine = message.sender_id === currentUserId();
     const row = document.createElement('div');
     row.className = 'chat-msg' + (mine ? ' chat-msg--mine' : '');
@@ -137,7 +165,7 @@ function messageBubble(message, onHide) {
 
     const bubble = document.createElement('div');
     bubble.className = 'chat-msg-bubble';
-    bubble.textContent = message.body;
+    bubble.innerHTML = renderChatBody(message.body, links);
     row.appendChild(bubble);
 
     const meta = document.createElement('div');
@@ -199,6 +227,53 @@ function buildThread(peer, onBack) {
     input.placeholder = I18n.t('chat.placeholder');
     composer.appendChild(input);
 
+    const boldButton = document.createElement('button');
+    boldButton.className = 'btn btn-secondary chat-toolbar-btn';
+    boldButton.type = 'button';
+    boldButton.textContent = 'B';
+    boldButton.title = I18n.t('comments.bold_title');
+    boldButton.addEventListener('click', () => wrapSelection('**', '**'));
+    composer.appendChild(boldButton);
+
+    const italicButton = document.createElement('button');
+    italicButton.className = 'btn btn-secondary chat-toolbar-btn';
+    italicButton.type = 'button';
+    italicButton.style.fontStyle = 'italic';
+    italicButton.textContent = 'I';
+    italicButton.title = I18n.t('comments.italic_title');
+    italicButton.addEventListener('click', () => wrapSelection('*', '*'));
+    composer.appendChild(italicButton);
+
+    const linkButton = document.createElement('button');
+    linkButton.className = 'btn btn-secondary chat-link-btn';
+    linkButton.type = 'button';
+    linkButton.title = I18n.t('comments.insert_link');
+    const linkIcon = document.createElement('img');
+    linkIcon.src = 'assets/icons/material/add_link.svg';
+    linkIcon.alt = '';
+    linkButton.appendChild(linkIcon);
+    linkButton.addEventListener('click', () => {
+        const overlay = buildRecordLinkPicker(insertMarker);
+        document.body.appendChild(overlay);
+        overlay.classList.add('open');
+    });
+    composer.appendChild(linkButton);
+
+    const iconButton = document.createElement('button');
+    iconButton.className = 'btn btn-secondary chat-link-btn';
+    iconButton.type = 'button';
+    iconButton.title = I18n.t('chat.insert_icon');
+    const iconButtonIcon = document.createElement('img');
+    iconButtonIcon.src = 'assets/icons/material/add_reaction.svg';
+    iconButtonIcon.alt = '';
+    iconButton.appendChild(iconButtonIcon);
+    iconButton.addEventListener('click', () => {
+        const overlay = buildIconPicker(insertMarker);
+        document.body.appendChild(overlay);
+        overlay.classList.add('open');
+    });
+    composer.appendChild(iconButton);
+
     const sendButton = document.createElement('button');
     sendButton.className = 'btn btn-primary';
     sendButton.type = 'button';
@@ -206,11 +281,31 @@ function buildThread(peer, onBack) {
     composer.appendChild(sendButton);
     thread.appendChild(composer);
 
+    function insertMarker(marker) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        input.value = input.value.slice(0, start) + marker + input.value.slice(end);
+        const caret = start + marker.length;
+        input.selectionStart = caret;
+        input.selectionEnd = caret;
+        input.focus();
+    }
+
+    function wrapSelection(before, after) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const selected = input.value.slice(start, end);
+        input.value = input.value.slice(0, start) + before + selected + after + input.value.slice(end);
+        input.selectionStart = start + before.length;
+        input.selectionEnd = end + before.length;
+        input.focus();
+    }
+
     async function reload() {
         messages.textContent = '';
-        const items = await fetchThread(peer.id);
+        const { messages: items, links } = await fetchThread(peer.id);
         for (const message of items) {
-            messages.appendChild(messageBubble(message, hideMessage));
+            messages.appendChild(messageBubble(message, hideMessage, links));
         }
         messages.scrollTop = messages.scrollHeight;
     }
@@ -220,9 +315,9 @@ function buildThread(peer, onBack) {
         if (!body) return;
         sendButton.disabled = true;
         try {
-            const message = await sendMessage(peer.id, body);
+            const { message, links } = await sendMessage(peer.id, body);
             input.value = '';
-            messages.appendChild(messageBubble(message, hideMessage));
+            messages.appendChild(messageBubble(message, hideMessage, links));
             messages.scrollTop = messages.scrollHeight;
         } catch (error) {
             alert(error.message);

@@ -27,6 +27,8 @@
             "true": "Tak",
             "false": "Nie"
         },
+        "expand": "Rozwiń",
+        "collapse": "Zwiń",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -364,7 +366,12 @@
         "error_load": "Błąd ładowania czatu.",
         "error_send": "Błąd wysyłania wiadomości.",
         "new_message": "Nowa wiadomość od {user}",
-        "message_user": "Wiadomość"
+        "message_user": "Wiadomość",
+        "insert_icon": "Wstaw ikonę",
+        "icon_picker_title": "Wybierz ikonę",
+        "icon_search": "Szukaj ikon…",
+        "icon_no_results": "Nie znaleziono ikon",
+        "icon_show_more": "Pokaż więcej"
     },
     "roles": {
         "admin": "Administrator",

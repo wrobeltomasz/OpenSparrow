@@ -27,6 +27,8 @@
             "true": "Da",
             "false": "Ne"
         },
+        "expand": "Proširi",
+        "collapse": "Sažmi",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -364,7 +366,12 @@
         "error_load": "Pogreška pri učitavanju razgovora.",
         "error_send": "Pogreška pri slanju poruke.",
         "new_message": "Nova poruka od {user}",
-        "message_user": "Poruka"
+        "message_user": "Poruka",
+        "insert_icon": "Umetni ikonu",
+        "icon_picker_title": "Odaberi ikonu",
+        "icon_search": "Pretraži ikone…",
+        "icon_no_results": "Nema pronađenih ikona",
+        "icon_show_more": "Prikaži više"
     },
     "roles": {
         "admin": "Administrator",

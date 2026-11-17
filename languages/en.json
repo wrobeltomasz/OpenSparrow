@@ -27,6 +27,8 @@
             "true": "Yes",
             "false": "No"
         },
+        "expand": "Expand",
+        "collapse": "Collapse",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Error loading chat.",
         "error_send": "Error sending message.",
         "new_message": "New message from {user}",
-        "message_user": "Message"
+        "message_user": "Message",
+        "insert_icon": "Insert icon",
+        "icon_picker_title": "Select icon",
+        "icon_search": "Search icons…",
+        "icon_no_results": "No icons found",
+        "icon_show_more": "Show more"
     },
     "roles": {
         "admin": "Admin",

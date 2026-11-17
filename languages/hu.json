@@ -27,6 +27,8 @@
             "true": "Igen",
             "false": "Nem"
         },
+        "expand": "Kibontás",
+        "collapse": "Összecsukás",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Hiba a csevegés betöltésekor.",
         "error_send": "Hiba az üzenet küldésekor.",
         "new_message": "Új üzenet tőle: {user}",
-        "message_user": "Üzenet"
+        "message_user": "Üzenet",
+        "insert_icon": "Ikon beszúrása",
+        "icon_picker_title": "Ikon kiválasztása",
+        "icon_search": "Ikonok keresése…",
+        "icon_no_results": "Nem találhatók ikonok",
+        "icon_show_more": "Több megjelenítése"
     },
     "roles": {
         "admin": "Rendszergazda",

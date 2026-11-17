@@ -27,6 +27,8 @@
             "true": "Да",
             "false": "Нет"
         },
+        "expand": "Развернуть",
+        "collapse": "Свернуть",
         "logo_alt": "Логотип"
     },
     "grid": {
@@ -364,7 +366,12 @@
         "error_load": "Ошибка загрузки чата.",
         "error_send": "Ошибка отправки сообщения.",
         "new_message": "Новое сообщение от {user}",
-        "message_user": "Сообщение"
+        "message_user": "Сообщение",
+        "insert_icon": "Вставить значок",
+        "icon_picker_title": "Выбрать значок",
+        "icon_search": "Поиск значков…",
+        "icon_no_results": "Значки не найдены",
+        "icon_show_more": "Показать ещё"
     },
     "roles": {
         "admin": "Администратор",

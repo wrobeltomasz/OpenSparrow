@@ -27,6 +27,8 @@
             "true": "예",
             "false": "아니요"
         },
+        "expand": "확장",
+        "collapse": "접기",
         "logo_alt": "로고"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "채팅 로딩 오류.",
         "error_send": "메시지 전송 오류.",
         "new_message": "{user}님의 새 메시지",
-        "message_user": "메시지"
+        "message_user": "메시지",
+        "insert_icon": "아이콘 삽입",
+        "icon_picker_title": "아이콘 선택",
+        "icon_search": "아이콘 검색…",
+        "icon_no_results": "아이콘을 찾을 수 없음",
+        "icon_show_more": "더 보기"
     },
     "roles": {
         "admin": "관리자",

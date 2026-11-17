@@ -3,6 +3,8 @@
 // Copyright (C) 2024-2026 OpenSparrow Contributors
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
+import { createDrawerToggle } from './util/drawer-toggle.js';
+
 export class BulkPanel {
     constructor({ id, title, applyLabel = 'Apply', showApply = true }) {
         this._id          = id;
@@ -93,6 +95,7 @@ export class BulkPanel {
         closeButton.addEventListener('click', () => this._handleClose());
 
         header.appendChild(titleElement);
+        header.appendChild(createDrawerToggle(this._panelEl));
         header.appendChild(closeButton);
 
         this._bodyEl = document.createElement('div');

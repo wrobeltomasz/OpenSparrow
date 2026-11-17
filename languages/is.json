@@ -27,6 +27,8 @@
             "true": "Já",
             "false": "Nei"
         },
+        "expand": "Stækka",
+        "collapse": "Minnka",
         "logo_alt": "Merki"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Villa við að hlaða spjalli.",
         "error_send": "Villa við að senda skilaboð.",
         "new_message": "Ný skilaboð frá {user}",
-        "message_user": "Skilaboð"
+        "message_user": "Skilaboð",
+        "insert_icon": "Setja inn tákn",
+        "icon_picker_title": "Velja tákn",
+        "icon_search": "Leita að táknum…",
+        "icon_no_results": "Engin tákn fundust",
+        "icon_show_more": "Sýna meira"
     },
     "roles": {
         "admin": "Stjórnandi",

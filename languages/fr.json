@@ -27,6 +27,8 @@
             "true": "Oui",
             "false": "Non"
         },
+        "expand": "Agrandir",
+        "collapse": "Réduire",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Erreur de chargement de la discussion.",
         "error_send": "Erreur d'envoi du message.",
         "new_message": "Nouveau message de {user}",
-        "message_user": "Message"
+        "message_user": "Message",
+        "insert_icon": "Insérer une icône",
+        "icon_picker_title": "Choisir une icône",
+        "icon_search": "Rechercher des icônes…",
+        "icon_no_results": "Aucune icône trouvée",
+        "icon_show_more": "Afficher plus"
     },
     "roles": {
         "admin": "Administrateur",

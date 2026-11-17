@@ -27,6 +27,8 @@
             "true": "Ja",
             "false": "Nej"
         },
+        "expand": "Udvid",
+        "collapse": "Skjul",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Fejl ved indlæsning af chat.",
         "error_send": "Fejl ved afsendelse af besked.",
         "new_message": "Ny besked fra {user}",
-        "message_user": "Besked"
+        "message_user": "Besked",
+        "insert_icon": "Indsæt ikon",
+        "icon_picker_title": "Vælg ikon",
+        "icon_search": "Søg efter ikoner…",
+        "icon_no_results": "Ingen ikoner fundet",
+        "icon_show_more": "Vis flere"
     },
     "roles": {
         "admin": "Administrator",

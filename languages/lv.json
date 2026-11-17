@@ -27,6 +27,8 @@
             "true": "Jā",
             "false": "Nē"
         },
+        "expand": "Izvērst",
+        "collapse": "Savērst",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Kļūda, ielādējot tērzēšanu.",
         "error_send": "Kļūda, nosūtot ziņojumu.",
         "new_message": "Jauns ziņojums no {user}",
-        "message_user": "Ziņojums"
+        "message_user": "Ziņojums",
+        "insert_icon": "Ievietot ikonu",
+        "icon_picker_title": "Izvēlēties ikonu",
+        "icon_search": "Meklēt ikonas…",
+        "icon_no_results": "Ikonas nav atrastas",
+        "icon_show_more": "Rādīt vairāk"
     },
     "roles": {
         "admin": "Administrators",

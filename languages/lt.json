@@ -27,6 +27,8 @@
             "true": "Taip",
             "false": "Ne"
         },
+        "expand": "Išplėsti",
+        "collapse": "Sutraukti",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -364,7 +366,12 @@
         "error_load": "Klaida įkeliant pokalbį.",
         "error_send": "Klaida siunčiant žinutę.",
         "new_message": "Nauja žinutė nuo {user}",
-        "message_user": "Žinutė"
+        "message_user": "Žinutė",
+        "insert_icon": "Įterpti piktogramą",
+        "icon_picker_title": "Pasirinkti piktogramą",
+        "icon_search": "Ieškoti piktogramų…",
+        "icon_no_results": "Piktogramų nerasta",
+        "icon_show_more": "Rodyti daugiau"
     },
     "roles": {
         "admin": "Administratorius",

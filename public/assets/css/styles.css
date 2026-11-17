@@ -3236,6 +3236,134 @@ thead th.drag-over {
   resize: vertical;
 }
 
+.chat-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+}
+
+.chat-link-btn img {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.chat-toolbar-btn {
+  min-width: 34px;
+  padding: 8px 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.chat-icon {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: middle;
+}
+
+.chat-msg--mine .chat-icon {
+  filter: brightness(0) invert(1);
+}
+
+.icon-picker-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 42, 55, 0.45);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-picker-overlay.open {
+  display: flex;
+}
+
+.icon-picker-box {
+  background: var(--panel);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.icon-picker-box h3 {
+  margin: 0 0 1rem;
+  color: var(--text);
+}
+
+.icon-picker-search {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.icon-picker-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 160px;
+}
+
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+}
+
+.icon-picker-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.icon-picker-cell:hover {
+  background: var(--accent-mid);
+}
+
+.icon-picker-cell img {
+  width: 24px;
+  height: 24px;
+}
+
+.icon-picker-name {
+  font-size: 10px;
+  color: var(--muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-picker-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px 0;
+}
+
+.icon-picker-more {
+  margin: 12px auto 0;
+  display: block;
+}
+
 .um-list {
   display: flex;
   flex-direction: column;
@@ -3917,10 +4045,13 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
 .dc-overlay.active, .bp-overlay.active { display: block; }
 
 .dc-panel, .bp-panel {
+    --drawer-base: 420px;
+    --drawer-width: var(--drawer-base);
+
     position: fixed;
     top: 0;
-    right: -440px;
-    width: 420px;
+    right: calc(-1 * var(--drawer-width) - 20px);
+    width: var(--drawer-width);
 
     height: 100vh;
     height: 100dvh;
@@ -3929,10 +4060,11 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
     z-index: 1001;
     display: flex;
     flex-direction: column;
-    transition: right var(--transition);
+    transition: right var(--transition), width var(--transition);
     overflow: hidden;
 }
 .dc-panel.active, .bp-panel.active { right: 0; }
+.bp-panel.drawer--wide, .dc-panel.drawer--wide, .ag-panel.drawer--wide { --drawer-width: calc(var(--drawer-base) * 2); }
 
 .dc-header, .bp-header {
     display: flex;
@@ -3957,6 +4089,24 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
     transition: background var(--transition);
 }
 .dc-close:hover, .bp-close:hover { background: var(--border-light); color: var(--text); }
+
+.drawer-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: auto;
+    transition: background var(--transition);
+}
+.drawer-toggle:hover { background: var(--border-light); color: var(--text); }
+.drawer-toggle img { display: block; width: 18px; height: 18px; }
+
+@media (max-width: 768px) {
+    .drawer-toggle { display: none; }
+}
 
 .dc-body, .bp-body {
     flex: 1;
@@ -4364,10 +4514,13 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
 .ag-overlay.active { display: block; }
 
 .ag-panel {
+    --drawer-base: 400px;
+    --drawer-width: var(--drawer-base);
+
     position: fixed;
     top: 0;
-    right: -420px;
-    width: 400px;
+    right: calc(-1 * var(--drawer-width) - 20px);
+    width: var(--drawer-width);
     height: 100vh;
     height: 100dvh;
     background: var(--panel);
@@ -4375,7 +4528,7 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
     z-index: 1001;
     display: flex;
     flex-direction: column;
-    transition: right 0.25s ease;
+    transition: right 0.25s ease, width 0.25s ease;
     overflow: hidden;
 }
 .ag-panel.active { right: 0; }

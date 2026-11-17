@@ -6,6 +6,7 @@
 import { I18n } from './i18n.js';
 import { renderAnswer } from './rag-render.js';
 import { apiFetch } from './util/api.js';
+import { createDrawerToggle } from './util/drawer-toggle.js';
 
 const RAG_API_URL  = 'api/rag.php';
 const translate    = (translationKey, translationVariables) => I18n.t(translationKey, translationVariables);
@@ -48,6 +49,7 @@ function buildPanel() {
     closeButton.setAttribute('aria-label', translate('agent.close'));
     closeButton.textContent = '×';
     header.appendChild(titleElement);
+    header.appendChild(createDrawerToggle(panelElement));
     header.appendChild(closeButton);
 
     contextBarElement           = document.createElement('div');

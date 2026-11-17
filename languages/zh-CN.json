@@ -27,6 +27,8 @@
             "true": "是",
             "false": "否"
         },
+        "expand": "展开",
+        "collapse": "收起",
         "logo_alt": "徽标"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "加载聊天出错。",
         "error_send": "发送消息出错。",
         "new_message": "来自 {user} 的新消息",
-        "message_user": "发消息"
+        "message_user": "发消息",
+        "insert_icon": "插入图标",
+        "icon_picker_title": "选择图标",
+        "icon_search": "搜索图标…",
+        "icon_no_results": "未找到图标",
+        "icon_show_more": "显示更多"
     },
     "roles": {
         "admin": "管理员",

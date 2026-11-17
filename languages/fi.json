@@ -27,6 +27,8 @@
             "true": "Kyllä",
             "false": "Ei"
         },
+        "expand": "Laajenna",
+        "collapse": "Pienennä",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Virhe keskustelun latauksessa.",
         "error_send": "Virhe viestin lähetyksessä.",
         "new_message": "Uusi viesti käyttäjältä {user}",
-        "message_user": "Viesti"
+        "message_user": "Viesti",
+        "insert_icon": "Lisää kuvake",
+        "icon_picker_title": "Valitse kuvake",
+        "icon_search": "Hae kuvakkeita…",
+        "icon_no_results": "Kuvakkeita ei löytynyt",
+        "icon_show_more": "Näytä lisää"
     },
     "roles": {
         "admin": "Ylläpitäjä",

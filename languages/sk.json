@@ -27,6 +27,8 @@
             "true": "Áno",
             "false": "Nie"
         },
+        "expand": "Rozbaliť",
+        "collapse": "Zbaliť",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -364,7 +366,12 @@
         "error_load": "Chyba pri načítaní chatu.",
         "error_send": "Chyba pri odosielaní správy.",
         "new_message": "Nová správa od {user}",
-        "message_user": "Správa"
+        "message_user": "Správa",
+        "insert_icon": "Vložiť ikonu",
+        "icon_picker_title": "Vybrať ikonu",
+        "icon_search": "Hľadať ikony…",
+        "icon_no_results": "Nenašli sa žiadne ikony",
+        "icon_show_more": "Zobraziť viac"
     },
     "roles": {
         "admin": "Administrátor",

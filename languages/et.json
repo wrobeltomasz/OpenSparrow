@@ -27,6 +27,8 @@
             "true": "Jah",
             "false": "Ei"
         },
+        "expand": "Laienda",
+        "collapse": "Ahenda",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Viga vestluse laadimisel.",
         "error_send": "Viga sõnumi saatmisel.",
         "new_message": "Uus sõnum kasutajalt {user}",
-        "message_user": "Sõnum"
+        "message_user": "Sõnum",
+        "insert_icon": "Lisa ikoon",
+        "icon_picker_title": "Vali ikoon",
+        "icon_search": "Otsi ikoone…",
+        "icon_no_results": "Ikoone ei leitud",
+        "icon_show_more": "Näita rohkem"
     },
     "roles": {
         "admin": "Administraator",

@@ -27,6 +27,8 @@
             "true": "Ja",
             "false": "Nein"
         },
+        "expand": "Erweitern",
+        "collapse": "Verkleinern",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Fehler beim Laden des Chats.",
         "error_send": "Fehler beim Senden der Nachricht.",
         "new_message": "Neue Nachricht von {user}",
-        "message_user": "Nachricht"
+        "message_user": "Nachricht",
+        "insert_icon": "Symbol einfügen",
+        "icon_picker_title": "Symbol auswählen",
+        "icon_search": "Symbole suchen…",
+        "icon_no_results": "Keine Symbole gefunden",
+        "icon_show_more": "Mehr anzeigen"
     },
     "roles": {
         "admin": "Administrator",

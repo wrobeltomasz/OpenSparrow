@@ -292,63 +292,12 @@ final class CommentsController
     {
         require_once __DIR__ . '/../../comment_links.php';
 
-        $pairs = [];
+        $bodies = [];
         foreach ($comments as $comment) {
-            foreach (comment_extract_record_links((string)($comment['body'] ?? '')) as $tableName => $ids) {
-                foreach ($ids as $recordId => $ignored) {
-                    $pairs[$tableName][$recordId] = true;
-                }
-            }
+            $bodies[] = (string)($comment['body'] ?? '');
         }
 
-        if ($pairs === []) {
-            return [];
-        }
-
-        require_once __DIR__ . '/../../config_store.php';
-        $schema = config_get('schema') ?? [];
-        $userRecordsConfig = config_get('user_records') ?? [];
-        $configuredColumns = is_array($userRecordsConfig['columns'] ?? null) ? $userRecordsConfig['columns'] : [];
-
-        $links = [];
-        foreach ($pairs as $tableName => $ids) {
-            $tableConfig = $schema['tables'][$tableName] ?? null;
-            if ($tableConfig === null || !empty($tableConfig['hidden'])) {
-                continue;
-            }
-            if (!user_can_access_table($tableName)) {
-                continue;
-            }
-
-            $rowsSql = sprintf(
-                'SELECT id, %s AS label FROM %s.%s WHERE id = ANY($1::int[])',
-                record_label_sql($tableConfig, $configuredColumns[$tableName] ?? []),
-                pg_ident($tableConfig['schema'] ?? 'public'),
-                pg_ident($tableName)
-            );
-            $labelResult = pg_query_params(
-                $this->conn,
-                $rowsSql,
-                ['{' . implode(',', array_keys($ids)) . '}']
-            );
-            if (!$labelResult) {
-                error_log('api_comments record link lookup failed: ' . pg_last_error($this->conn));
-                continue;
-            }
-
-            while ($row = pg_fetch_assoc($labelResult)) {
-                $recordId = (int)$row['id'];
-                $label = trim((string)($row['label'] ?? ''));
-                $links[$tableName . ':' . $recordId] = [
-                    'table' => $tableName,
-                    'id'    => $recordId,
-                    'label' => $label !== '' ? $label : ('#' . $recordId),
-                    'url'   => 'edit.php?table=' . rawurlencode($tableName) . '&id=' . $recordId,
-                ];
-            }
-        }
-
-        return $links;
+        return record_links_resolve($this->conn, $bodies, $this->session->userId());
     }
 
     private function commentCounts(): void

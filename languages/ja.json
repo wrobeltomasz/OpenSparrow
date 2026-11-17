@@ -27,6 +27,8 @@
             "true": "はい",
             "false": "いいえ"
         },
+        "expand": "展開",
+        "collapse": "折りたたむ",
         "logo_alt": "ロゴ"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "チャット読み込みエラー。",
         "error_send": "メッセージ送信エラー。",
         "new_message": "{user} からの新しいメッセージ",
-        "message_user": "メッセージ"
+        "message_user": "メッセージ",
+        "insert_icon": "アイコンを挿入",
+        "icon_picker_title": "アイコンを選択",
+        "icon_search": "アイコンを検索…",
+        "icon_no_results": "アイコンが見つかりません",
+        "icon_show_more": "さらに表示"
     },
     "roles": {
         "admin": "管理者",

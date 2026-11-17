@@ -27,6 +27,8 @@
             "true": "Ja",
             "false": "Nei"
         },
+        "expand": "Utvid",
+        "collapse": "Skjul",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Feil ved lasting av chat.",
         "error_send": "Feil ved sending av melding.",
         "new_message": "Ny melding fra {user}",
-        "message_user": "Melding"
+        "message_user": "Melding",
+        "insert_icon": "Sett inn ikon",
+        "icon_picker_title": "Velg ikon",
+        "icon_search": "Søk etter ikoner…",
+        "icon_no_results": "Ingen ikoner funnet",
+        "icon_show_more": "Vis mer"
     },
     "roles": {
         "admin": "Administrator",

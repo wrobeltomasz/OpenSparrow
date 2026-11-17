@@ -6,6 +6,7 @@
 import { I18n } from './i18n.js';
 import { state as gridState } from './grid/state.js';
 import { loadTable } from './grid.js';
+import { createDrawerToggle } from './util/drawer-toggle.js';
 
 let panel    = null;
 let overlay  = null;
@@ -288,6 +289,10 @@ function openPanel() {
 
         panel = buildPanel();
         document.body.appendChild(panel);
+
+        const dcHeader = panel.querySelector('.dc-header');
+        const dcClose  = panel.querySelector('#dc-close');
+        dcHeader.insertBefore(createDrawerToggle(panel), dcClose);
 
         panel.querySelector('#dc-close').addEventListener('click', closePanel);
         overlay.addEventListener('click', closePanel);

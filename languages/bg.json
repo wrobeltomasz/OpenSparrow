@@ -27,6 +27,8 @@
             "true": "Да",
             "false": "Не"
         },
+        "expand": "Разширяване",
+        "collapse": "Свиване",
         "logo_alt": "Logo"
     },
     "grid": {
@@ -360,7 +362,12 @@
         "error_load": "Грешка при зареждане на чата.",
         "error_send": "Грешка при изпращане на съобщение.",
         "new_message": "Ново съобщение от {user}",
-        "message_user": "Съобщение"
+        "message_user": "Съобщение",
+        "insert_icon": "Вмъкване на икона",
+        "icon_picker_title": "Избор на икона",
+        "icon_search": "Търсене на икони…",
+        "icon_no_results": "Не са намерени икони",
+        "icon_show_more": "Покажи още"
     },
     "roles": {
         "admin": "Администратор",

@@ -129,7 +129,11 @@ final class ChatController
             ];
         }
 
-        jsonSuccess(['messages' => $messages]);
+        require_once __DIR__ . '/../../comment_links.php';
+        $bodies = array_map(fn($message) => (string)($message['body'] ?? ''), $messages);
+        $links  = record_links_resolve($this->conn, $bodies, $userId);
+
+        jsonSuccess(['messages' => $messages, 'links' => $links]);
     }
 
     private function sendMessage(): void
@@ -195,6 +199,9 @@ final class ChatController
 
         $this->notifyRecipient((int)$recipient['id'], $messageId, $senderUsername);
 
+        require_once __DIR__ . '/../../comment_links.php';
+        $links = record_links_resolve($this->conn, [$rawBody], $userId);
+
         jsonSuccess(['message' => [
             'id'               => $messageId,
             'sender_id'        => $userId,
@@ -203,7 +210,7 @@ final class ChatController
             'created_at'       => $inserted['created_at'],
             'sender_username'  => $senderUsername,
             'sender_avatar_id' => $senderAvatarId,
-        ]], 201);
+        ], 'links' => $links], 201);
     }
 
     private function hideMessage(): void
