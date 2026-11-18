@@ -4,7 +4,7 @@
 // Licensed under LGPL v3. See COPYING.LESSER file for details.
 
 const TOOLTIP_ID = 'record-tooltip';
-const TOOLTIP_STYLE = 'position:absolute;display:none;background:#fff;border:1px solid var(--border);'
+const TOOLTIP_STYLE = 'position:absolute;display:none;background:var(--panel);border:1px solid var(--border);'
     + 'padding:12px;border-radius:6px;box-shadow:0 5px 15px rgba(0,0,0,0.2);font-size:13px;'
     + 'z-index:10000;pointer-events:none;min-width:220px;max-width:340px;max-height:400px;'
     + 'overflow-y:auto;color:var(--text);';
