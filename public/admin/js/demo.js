@@ -15,7 +15,7 @@ const DEMOS = {
             + 'and line widgets, a calendar with reminders, a Kanban board of the sales pipeline, step-by-step '
             + 'workflows (one validated by a PostgreSQL procedure), aggregate views with subtotals and drill-down, '
             + 'parameterised printouts built on those views, event-driven automations that notify, update and send '
-            + 'email, and a RAG knowledge base so the Ask AI panel can answer questions about the data. Collaboration '
+            + 'email, and a RAG knowledge base so the Chatbot panel can answer questions about the data. Collaboration '
             + 'is seeded too — three demo users with comments, personal notes, record ownership, notifications, '
             + 'file and image attachments.',
         schema:      'spw_crm',
@@ -159,10 +159,10 @@ function renderInstallForm(workspaceElement, { snapshotsLockedByEnv: snapshotsLo
     const ragOption = buildInstallOption({
         id:    'demo-rag-docs-chk',
         label: 'RAG knowledge base',
-        help:  'Loads nine sample documents describing this demo into Centrum AI, so the Ask AI '
+        help:  'Loads nine sample documents describing this demo into Centrum AI, so the Chatbot '
             + 'panel can answer questions about the CRM data. Installing them is pure SQL and needs '
             + 'no network; only answering a question later requires Ollama. Leave it off if you do '
-            + 'not plan to use Ask AI — the Ask AI panel will then return nothing.',
+            + 'not plan to use Chatbot — the Chatbot panel will then return nothing.',
     });
 
     const users = buildInstallOption({

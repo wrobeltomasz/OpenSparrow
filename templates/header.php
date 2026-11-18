@@ -107,17 +107,11 @@ if ($logoEnabled) {
                 <span class="user-avatar-tooltip"><?= $escapedUsername ?></span>
             </button>
             <div class="user-avatar-menu" id="userAvatarMenu" role="menu">
-                <button class="user-avatar-menu-item" id="changeAvatarBtn" role="menuitem">
-                    <?= $changeAvatarLabel ?>
-                </button>
-                <button class="user-avatar-menu-item" id="changePasswordBtn" role="menuitem">
-                    <?= $changePasswordLabel ?>
-                </button>
-                <button class="user-avatar-menu-item" id="themeToggleBtn" data-cy="theme-toggle" role="menuitem">
-                    <?= $themeLabel ?>
-                </button>
                 <?php if ($agentEnabled) : ?>
-                <button class="user-avatar-menu-item" id="openAgentBtn" role="menuitem"><?= $agentTitleLabel ?></button>
+                <button class="user-avatar-menu-item" id="openAgentBtn" role="menuitem">
+                    <img class="agent-menu-icon" src="assets/icons/material/smart_toy.svg" alt="" aria-hidden="true">
+                    <span><?= $agentTitleLabel ?></span>
+                </button>
                 <?php endif; ?>
                 <button class="user-avatar-menu-item" id="myRecordsBtn" data-cy="my-records" role="menuitem">
                     <?= $myRecordsLabel ?>
@@ -132,9 +126,20 @@ if ($logoEnabled) {
                     <?= $notesTable ?>
                 </button>
                 <button class="user-avatar-menu-item" id="chatBtn" data-cy="chat" role="menuitem">
-                    <?= $chatLabel ?>
+                    <img class="chat-menu-icon" src="assets/icons/material/chat.svg" alt="" aria-hidden="true">
+                    <span><?= $chatLabel ?></span>
                 </button>
                 <div class="user-avatar-menu-divider"></div>
+                <button class="user-avatar-menu-item" id="changeAvatarBtn" role="menuitem">
+                    <?= $changeAvatarLabel ?>
+                </button>
+                <button class="user-avatar-menu-item" id="changePasswordBtn" role="menuitem">
+                    <?= $changePasswordLabel ?>
+                </button>
+                <button class="user-avatar-menu-item" id="themeToggleBtn" data-cy="theme-toggle" role="menuitem">
+                    <img class="theme-toggle-icon" src="assets/icons/material/light_mode.svg" alt="" aria-hidden="true">
+                    <span class="theme-toggle-label"><?= $themeLabel ?></span>
+                </button>
                 <button class="user-avatar-menu-item danger" id="logoutBtn" data-cy="logout" role="menuitem">
                     <?= $logoutLabel ?>
                 </button>

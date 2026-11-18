@@ -582,7 +582,7 @@
         "copied": "Skopiowano do schowka"
     },
     "agent": {
-        "title": "Zapytaj AI",
+        "title": "Chatbot",
         "close": "Zamknij",
         "no_tags": "Brak tagów.",
         "tags_error": "Nie udało się załadować tagów.",

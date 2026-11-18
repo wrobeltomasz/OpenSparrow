@@ -487,8 +487,18 @@ function initUserMenu() {
     });
 
     const themeButton = document.getElementById('themeToggleBtn');
+    const THEME_ICONS = {
+        light: 'assets/icons/material/light_mode.svg',
+        dark: 'assets/icons/material/dark_mode.svg',
+        system: 'assets/icons/material/brightness_auto.svg',
+    };
     const renderThemeLabel = () => {
-        if (themeButton) themeButton.textContent = I18n.t('header.theme_' + getThemeMode());
+        if (!themeButton) return;
+        const mode = getThemeMode();
+        const icon = themeButton.querySelector('.theme-toggle-icon');
+        if (icon) icon.src = THEME_ICONS[mode] ?? THEME_ICONS.system;
+        const label = themeButton.querySelector('.theme-toggle-label');
+        if (label) label.textContent = I18n.t('header.theme_' + mode);
     };
     renderThemeLabel();
     themeButton?.addEventListener('click', () => {

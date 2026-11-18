@@ -140,7 +140,7 @@ save take a moment longer.
 AI ASSISTANT (RAG)
 ------------------
 Local AI assistant — runs on Ollama, either a local instance (fully offline) or Ollama Cloud.
-Ask questions via the "Ask AI" panel (avatar menu → Ask AI, or the chat icon).
+Ask questions via the "Chatbot" panel (avatar menu → Chatbot, or the chat icon).
 Answers are based on documents uploaded by the admin; tag filtering narrows which
 documents are searched. Tags start unchecked and are attached only when you tick them;
 the panel shows the current table in a context bar but does not pre-select its tag.

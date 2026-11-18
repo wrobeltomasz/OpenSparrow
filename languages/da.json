@@ -578,7 +578,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Spørg AI",
+        "title": "Chatbot",
         "close": "Luk",
         "no_tags": "Ingen tags.",
         "tags_error": "Kunne ikke indlæse tags.",

@@ -578,7 +578,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Jautāt AI",
+        "title": "Chatbot",
         "close": "Aizvērt",
         "no_tags": "Nav tagu.",
         "tags_error": "Neizdevās ielādēt tagus.",

@@ -578,7 +578,7 @@
         "copied": "Kopioitu leikepöydälle"
     },
     "agent": {
-        "title": "Kysy tekoälyltä",
+        "title": "Chatbot",
         "close": "Sulje",
         "no_tags": "Ei tunnisteita.",
         "tags_error": "Tunnisteita ei voitu ladata.",

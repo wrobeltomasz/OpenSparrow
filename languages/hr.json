@@ -582,7 +582,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Pitaj AI",
+        "title": "Chatbot",
         "close": "Zatvori",
         "no_tags": "Nema oznaka.",
         "tags_error": "Nije moguće učitati oznake.",

@@ -91,7 +91,7 @@ All variables are optional and are read by `includes/config.php` on every reques
 |---|---|---|
 | `OLLAMA_URL` | `http://localhost:11434` | Base URL of the Ollama endpoint — either a local instance (the default) or **Ollama Cloud** (`https://api.ollama.com`) for the hosted tier. Used by `api/rag.php` and admin RAG actions. The Ollama Cloud API key is not an env var: set it in **AI → Centrum AI → Global Settings**, where it is stored encrypted (`ollama_api_key_enc`) and never returned to the browser. |
 | `OLLAMA_MODEL` | `llama3` | Default Ollama model for RAG queries. Overridden by the `rag` configuration if present. |
-| `CHAT_BUBBLE_ENABLED` | *(settings)* | Set `true` or `false` to override the admin setting for the floating Ask AI button. |
+| `CHAT_BUBBLE_ENABLED` | *(settings)* | Set `true` or `false` to override the admin setting for the floating Chatbot button. |
 | `RAG_RATE_LIMIT_PER_MIN` | `10` | RAG queries allowed per user per minute; `0` disables this limit. |
 | `RAG_MAX_CONCURRENT` | `2` | Maximum simultaneously running RAG answer generations. |
 | `RAG_PAGE_CONTEXT_MAX_CHARS` | `12000` | Maximum characters of current-page context sent with a RAG query; `0` disables page context. |

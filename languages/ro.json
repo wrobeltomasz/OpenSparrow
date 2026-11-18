@@ -582,7 +582,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Întreabă AI",
+        "title": "Chatbot",
         "close": "Închide",
         "no_tags": "Fără etichete.",
         "tags_error": "Etichetele nu au putut fi încărcate.",

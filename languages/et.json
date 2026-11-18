@@ -578,7 +578,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Küsi AI-lt",
+        "title": "Chatbot",
         "close": "Sulge",
         "no_tags": "Sildid puuduvad.",
         "tags_error": "Siltide laadimine ebaõnnestus.",

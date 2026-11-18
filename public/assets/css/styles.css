@@ -453,6 +453,21 @@ header .print-filter-label {
   background: var(--accent-light);
 }
 
+.user-avatar-menu-item .theme-toggle-icon,
+.user-avatar-menu-item .agent-menu-icon,
+.user-avatar-menu-item .chat-menu-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: -3px;
+}
+
+:root[data-theme="dark"] .theme-toggle-icon,
+:root[data-theme="dark"] .agent-menu-icon,
+:root[data-theme="dark"] .chat-menu-icon {
+  filter: brightness(0) invert(1);
+}
+
 .user-avatar-menu-item.danger {
   color: var(--error);
 }
@@ -2875,7 +2890,7 @@ thead th.drag-over {
   position: fixed;
   inset: 0;
   background: rgba(31, 42, 55, 0.45);
-  z-index: 1000;
+  z-index: 2000;
   align-items: center;
   justify-content: center;
 }
@@ -3224,12 +3239,13 @@ thead th.drag-over {
 
 .chat-composer {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: flex-end;
 }
 
 .chat-input {
-  flex: 1;
+  flex: 1 1 100%;
   padding: 8px 12px;
   font-family: inherit;
   font-size: 13px;
@@ -3276,7 +3292,7 @@ thead th.drag-over {
   position: fixed;
   inset: 0;
   background: rgba(31, 42, 55, 0.45);
-  z-index: 1000;
+  z-index: 2000;
   align-items: center;
   justify-content: center;
 }

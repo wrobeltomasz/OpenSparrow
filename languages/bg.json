@@ -578,7 +578,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Попитай AI",
+        "title": "Chatbot",
         "close": "Затвори",
         "no_tags": "Няма тагове.",
         "tags_error": "Неуспешно зареждане на тагове.",

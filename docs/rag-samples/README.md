@@ -20,9 +20,9 @@ Activities are in the sidebar. Leads are seeded but
 hidden, reachable through subtables, workflows or a direct URL — the docs say so where it
 matters, so the agent does not send users to menu entries that are not there.
 
-## Tag selection in the Ask AI panel
+## Tag selection in the Chatbot panel
 
-Tags are listed in the "Ask AI" panel (avatar menu → Ask AI) and start **unchecked** —
+Tags are listed in the "Chatbot" panel (avatar menu → Chatbot) and start **unchecked** —
 documents are attached to a question only when the user ticks their tag. The panel does
 show a context bar naming the current table, and offers a separate opt-in checkbox to send
 the current grid's data along with the question, but neither attaches RAG documents on its

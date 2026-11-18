@@ -578,7 +578,7 @@
         "copied": "클립보드에 복사됨"
     },
     "agent": {
-        "title": "AI에게 질문",
+        "title": "Chatbot",
         "close": "닫기",
         "no_tags": "태그가 없습니다.",
         "tags_error": "태그를 로드할 수 없습니다.",

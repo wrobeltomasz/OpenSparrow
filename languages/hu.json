@@ -578,7 +578,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Kérdezd az AI-t",
+        "title": "Chatbot",
         "close": "Bezárás",
         "no_tags": "Nincsenek címkék.",
         "tags_error": "A címkék betöltése nem sikerült.",

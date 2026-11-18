@@ -578,7 +578,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Ρώτα το AI",
+        "title": "Chatbot",
         "close": "Κλείσιμο",
         "no_tags": "Δεν υπάρχουν ετικέτες.",
         "tags_error": "Αδυναμία φόρτωσης ετικετών.",

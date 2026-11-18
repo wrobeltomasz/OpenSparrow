@@ -14,6 +14,25 @@ import { buildRecordLinkPicker } from './util/record-link-picker.js';
 import { buildIconPicker } from './util/icon-picker.js';
 
 let panel = null;
+let pickerOverlay = null;
+let pickerKind = null;
+
+function openPicker(kind, overlay) {
+    const stillOpen = pickerOverlay && pickerOverlay.isConnected;
+    if (stillOpen && pickerKind === kind) {
+        pickerOverlay.remove();
+        pickerOverlay = null;
+        pickerKind = null;
+        return;
+    }
+    if (pickerOverlay && pickerOverlay.isConnected) {
+        pickerOverlay.remove();
+    }
+    pickerOverlay = overlay;
+    pickerKind = kind;
+    document.body.appendChild(overlay);
+    overlay.classList.add('open');
+}
 
 function currentUserId() {
     return parseInt(window.CURRENT_USER_ID ?? '0', 10);
@@ -253,9 +272,7 @@ function buildThread(peer, onBack) {
     linkIcon.alt = '';
     linkButton.appendChild(linkIcon);
     linkButton.addEventListener('click', () => {
-        const overlay = buildRecordLinkPicker(insertMarker);
-        document.body.appendChild(overlay);
-        overlay.classList.add('open');
+        openPicker('link', buildRecordLinkPicker(insertMarker));
     });
     composer.appendChild(linkButton);
 
@@ -268,9 +285,7 @@ function buildThread(peer, onBack) {
     iconButtonIcon.alt = '';
     iconButton.appendChild(iconButtonIcon);
     iconButton.addEventListener('click', () => {
-        const overlay = buildIconPicker(insertMarker);
-        document.body.appendChild(overlay);
-        overlay.classList.add('open');
+        openPicker('icon', buildIconPicker(insertMarker));
     });
     composer.appendChild(iconButton);
 

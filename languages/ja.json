@@ -578,7 +578,7 @@
         "copied": "クリップボードにコピーしました"
     },
     "agent": {
-        "title": "AI に質問",
+        "title": "Chatbot",
         "close": "閉じる",
         "no_tags": "タグがありません。",
         "tags_error": "タグを読み込めませんでした。",

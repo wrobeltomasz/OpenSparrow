@@ -582,7 +582,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Zeptat se AI",
+        "title": "Chatbot",
         "close": "Zavřít",
         "no_tags": "Žádné štítky.",
         "tags_error": "Nepodařilo se načíst štítky.",

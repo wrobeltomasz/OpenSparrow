@@ -578,7 +578,7 @@
         "copied": "已复制到剪贴板"
     },
     "agent": {
-        "title": "询问 AI",
+        "title": "Chatbot",
         "close": "关闭",
         "no_tags": "没有标签。",
         "tags_error": "无法加载标签。",

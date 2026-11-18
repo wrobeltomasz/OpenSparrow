@@ -578,7 +578,7 @@
         "applied": "Done. Owner assigned to {n} rows."
     },
     "agent": {
-        "title": "Perguntar à IA",
+        "title": "Chatbot",
         "close": "Fechar",
         "no_tags": "Sem tags.",
         "tags_error": "Não foi possível carregar as tags.",

@@ -197,7 +197,7 @@ records the reasoning and gotchas so they are not re-derived or re-litigated.
   the pre-existing `grid.clear_filters` key, last header control, hidden
   unless a filter/search is active; one click resets the page to defaults
   (dashboard also resets the period to `all` and reloads only if it changed).
-- **Out of scope** — the "Ask AI" panel (`agent-panel.js`) tag checkboxes are
+- **Out of scope** — the "Chatbot" panel (`agent-panel.js`) tag checkboxes are
   module-internal filtering, not page-level; they intentionally do not follow
   this standard.
 

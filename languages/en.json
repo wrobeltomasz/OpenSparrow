@@ -578,7 +578,7 @@
         "copied": "Copied to clipboard"
     },
     "agent": {
-        "title": "Ask AI",
+        "title": "Chatbot",
         "close": "Close",
         "no_tags": "No tags.",
         "tags_error": "Could not load tags.",
