@@ -1245,6 +1245,10 @@ tbody td.col-hover.cell-hover:not(.cell-error):not(.cell-success) { background: 
 #grid tbody tr:nth-child(even):hover td,
 #filesGrid tbody tr:nth-child(even):hover td { background: var(--row-col-hover) !important; }
 
+:root[data-theme="dark"] tr.row-highlighted td {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)) !important;
+}
+
 #filesGrid tbody td.f-td-empty,
 #filesGrid tbody td.f-td-error { padding: 30px; }
 

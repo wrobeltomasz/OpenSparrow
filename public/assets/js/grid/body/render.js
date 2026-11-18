@@ -149,6 +149,7 @@ export async function renderTbody(schema, isReadOnly, getPageRows, onTableReload
         }
 
         if (highlightColor) {
+            tr.classList.add('row-highlighted');
             tr.querySelectorAll('td').forEach(td => { td.style.backgroundColor = highlightColor; });
         }
 
