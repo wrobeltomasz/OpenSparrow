@@ -368,6 +368,7 @@
         "new_message": "Nová správa od {user}",
         "message_user": "Správa",
         "insert_icon": "Vložiť ikonu",
+        "insert_file": "Vložiť odkaz na súbor",
         "icon_picker_title": "Vybrať ikonu",
         "icon_search": "Hľadať ikony…",
         "icon_no_results": "Nenašli sa žiadne ikony",

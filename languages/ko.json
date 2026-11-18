@@ -364,6 +364,7 @@
         "new_message": "{user}님의 새 메시지",
         "message_user": "메시지",
         "insert_icon": "아이콘 삽입",
+        "insert_file": "파일 링크 삽입",
         "icon_picker_title": "아이콘 선택",
         "icon_search": "아이콘 검색…",
         "icon_no_results": "아이콘을 찾을 수 없음",

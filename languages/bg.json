@@ -364,6 +364,7 @@
         "new_message": "Ново съобщение от {user}",
         "message_user": "Съобщение",
         "insert_icon": "Вмъкване на икона",
+        "insert_file": "Вмъкване на връзка към файл",
         "icon_picker_title": "Избор на икона",
         "icon_search": "Търсене на икони…",
         "icon_no_results": "Не са намерени икони",

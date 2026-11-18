@@ -364,6 +364,7 @@
         "new_message": "Ny melding fra {user}",
         "message_user": "Melding",
         "insert_icon": "Sett inn ikon",
+        "insert_file": "Sett inn fillenke",
         "icon_picker_title": "Velg ikon",
         "icon_search": "Søk etter ikoner…",
         "icon_no_results": "Ingen ikoner funnet",

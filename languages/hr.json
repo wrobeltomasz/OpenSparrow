@@ -368,6 +368,7 @@
         "new_message": "Nova poruka od {user}",
         "message_user": "Poruka",
         "insert_icon": "Umetni ikonu",
+        "insert_file": "Umetni poveznicu datoteke",
         "icon_picker_title": "Odaberi ikonu",
         "icon_search": "Pretraži ikone…",
         "icon_no_results": "Nema pronađenih ikona",

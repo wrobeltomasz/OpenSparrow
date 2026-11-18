@@ -364,6 +364,7 @@
         "new_message": "Jauns ziņojums no {user}",
         "message_user": "Ziņojums",
         "insert_icon": "Ievietot ikonu",
+        "insert_file": "Ievietot faila saiti",
         "icon_picker_title": "Izvēlēties ikonu",
         "icon_search": "Meklēt ikonas…",
         "icon_no_results": "Ikonas nav atrastas",

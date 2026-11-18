@@ -364,6 +364,7 @@
         "new_message": "来自 {user} 的新消息",
         "message_user": "发消息",
         "insert_icon": "插入图标",
+        "insert_file": "插入文件链接",
         "icon_picker_title": "选择图标",
         "icon_search": "搜索图标…",
         "icon_no_results": "未找到图标",

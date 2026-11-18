@@ -368,6 +368,7 @@
         "new_message": "Mesaj nou de la {user}",
         "message_user": "Mesaj",
         "insert_icon": "Inserați pictogramă",
+        "insert_file": "Inserați link către fișier",
         "icon_picker_title": "Selectați pictogramă",
         "icon_search": "Căutați pictograme…",
         "icon_no_results": "Nu s-au găsit pictograme",

@@ -364,6 +364,7 @@
         "new_message": "New message from {user}",
         "message_user": "Message",
         "insert_icon": "Insert icon",
+        "insert_file": "Insert file link",
         "icon_picker_title": "Select icon",
         "icon_search": "Search icons…",
         "icon_no_results": "No icons found",

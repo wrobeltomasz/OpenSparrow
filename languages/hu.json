@@ -364,6 +364,7 @@
         "new_message": "Új üzenet tőle: {user}",
         "message_user": "Üzenet",
         "insert_icon": "Ikon beszúrása",
+        "insert_file": "Fájlhivatkozás beszúrása",
         "icon_picker_title": "Ikon kiválasztása",
         "icon_search": "Ikonok keresése…",
         "icon_no_results": "Nem találhatók ikonok",

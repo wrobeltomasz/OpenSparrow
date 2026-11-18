@@ -11,6 +11,7 @@ import { formatDateTime } from './util/format-value.js';
 import { renderAvatar } from './avatar.js';
 import { enableUserTooltips } from './util/user-tooltip.js';
 import { buildRecordLinkPicker } from './util/record-link-picker.js';
+import { buildFileLinkPicker } from './util/file-link-picker.js';
 import { buildIconPicker } from './util/icon-picker.js';
 
 let panel = null;
@@ -51,6 +52,13 @@ function renderChatBody(raw, links) {
         const link = (links || {})[table + ':' + id];
         if (!link) return match;
         inline.push('<a href="' + escHtml(link.url) + '" target="_blank" rel="noopener noreferrer" class="c-record-link">' + escHtml(link.label) + '</a>');
+        return '\x00I' + (inline.length - 1) + '\x00';
+    });
+
+    s = s.replace(/\[File:\s*([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\]/g, (match, uuid) => {
+        const link = (links || {})[uuid.toLowerCase()];
+        if (!link) return match;
+        inline.push('<a href="' + escHtml(link.url) + '" target="_blank" rel="noopener noreferrer" class="c-file-link">' + escHtml(link.label) + '</a>');
         return '\x00I' + (inline.length - 1) + '\x00';
     });
 
@@ -195,9 +203,14 @@ function messageBubble(message, onHide, links) {
     const actions = document.createElement('div');
     actions.className = 'chat-msg-actions';
     const hideButton = document.createElement('button');
-    hideButton.className = 'btn btn-secondary chat-hide-btn';
+    hideButton.className = 'btn-icon btn-icon-danger';
     hideButton.type = 'button';
-    hideButton.textContent = I18n.t('chat.hide');
+    hideButton.title = I18n.t('chat.hide');
+    hideButton.setAttribute('aria-label', I18n.t('chat.hide'));
+    const hideIcon = document.createElement('img');
+    hideIcon.src = 'assets/icons/material/delete.svg';
+    hideIcon.alt = '';
+    hideButton.appendChild(hideIcon);
     hideButton.addEventListener('click', async () => {
         if (!confirm(I18n.t('chat.hide_confirm'))) return;
         try {
@@ -275,6 +288,19 @@ function buildThread(peer, onBack) {
         openPicker('link', buildRecordLinkPicker(insertMarker));
     });
     composer.appendChild(linkButton);
+
+    const fileButton = document.createElement('button');
+    fileButton.className = 'btn btn-secondary chat-link-btn';
+    fileButton.type = 'button';
+    fileButton.title = I18n.t('chat.insert_file');
+    const fileIcon = document.createElement('img');
+    fileIcon.src = 'assets/icons/material/attach_file.svg';
+    fileIcon.alt = '';
+    fileButton.appendChild(fileIcon);
+    fileButton.addEventListener('click', () => {
+        openPicker('file', buildFileLinkPicker(insertMarker));
+    });
+    composer.appendChild(fileButton);
 
     const iconButton = document.createElement('button');
     iconButton.className = 'btn btn-secondary chat-link-btn';

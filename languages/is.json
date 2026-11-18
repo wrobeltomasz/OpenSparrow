@@ -364,6 +364,7 @@
         "new_message": "Ný skilaboð frá {user}",
         "message_user": "Skilaboð",
         "insert_icon": "Setja inn tákn",
+        "insert_file": "Setja inn skráartengil",
         "icon_picker_title": "Velja tákn",
         "icon_search": "Leita að táknum…",
         "icon_no_results": "Engin tákn fundust",

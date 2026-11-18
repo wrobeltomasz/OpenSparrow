@@ -364,6 +364,7 @@
         "new_message": "Uusi viesti käyttäjältä {user}",
         "message_user": "Viesti",
         "insert_icon": "Lisää kuvake",
+        "insert_file": "Lisää tiedostolinkki",
         "icon_picker_title": "Valitse kuvake",
         "icon_search": "Hae kuvakkeita…",
         "icon_no_results": "Kuvakkeita ei löytynyt",

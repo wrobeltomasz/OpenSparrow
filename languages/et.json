@@ -364,6 +364,7 @@
         "new_message": "Uus sõnum kasutajalt {user}",
         "message_user": "Sõnum",
         "insert_icon": "Lisa ikoon",
+        "insert_file": "Lisa faililink",
         "icon_picker_title": "Vali ikoon",
         "icon_search": "Otsi ikoone…",
         "icon_no_results": "Ikoone ei leitud",

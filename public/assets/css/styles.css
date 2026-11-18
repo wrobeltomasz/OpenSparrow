@@ -2869,7 +2869,8 @@ thead th.drag-over {
   color: var(--muted);
 }
 
-.c-record-link {
+.c-record-link,
+.c-file-link {
   display: inline-block;
   padding: 1px 8px;
   background: var(--accent-light);
@@ -2881,7 +2882,8 @@ thead th.drag-over {
   vertical-align: middle;
 }
 
-.c-record-link:hover {
+.c-record-link:hover,
+.c-file-link:hover {
   background: var(--accent-mid);
 }
 
@@ -3232,11 +3234,6 @@ thead th.drag-over {
   gap: 6px;
 }
 
-.chat-hide-btn {
-  font-size: 11px;
-  padding: 2px 8px;
-}
-
 .chat-composer {
   display: flex;
   flex-wrap: wrap;
@@ -3382,6 +3379,98 @@ thead th.drag-over {
 .icon-picker-more {
   margin: 12px auto 0;
   display: block;
+}
+
+.file-picker-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 42, 55, 0.45);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-picker-overlay.open {
+  display: flex;
+}
+
+.file-picker-box {
+  background: var(--panel);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 460px;
+  max-height: 80vh;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-picker-box h3 {
+  margin: 0 0 1rem;
+  color: var(--text);
+}
+
+.file-picker-search {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.file-picker-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 160px;
+}
+
+.file-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.file-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--text);
+}
+
+.file-picker-item:hover {
+  background: var(--accent-mid);
+}
+
+.file-picker-item img {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.file-picker-name {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-picker-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px 0;
 }
 
 .um-list {

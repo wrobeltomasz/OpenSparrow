@@ -372,6 +372,7 @@
         "new_message": "Novo sporočilo od {user}",
         "message_user": "Sporočilo",
         "insert_icon": "Vstavi ikono",
+        "insert_file": "Vstavi povezavo do datoteke",
         "icon_picker_title": "Izberi ikono",
         "icon_search": "Iskanje ikon…",
         "icon_no_results": "Ni najdenih ikon",

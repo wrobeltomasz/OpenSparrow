@@ -55,20 +55,24 @@ final class ChatController
         $userId = $this->session->userId();
 
         $sql = "
-        SELECT DISTINCT ON (peer_id) peer_id, peer_username, peer_avatar_id, body, created_at
+        SELECT peer_id, peer_username, peer_avatar_id, body, created_at
         FROM (
-            SELECT
-                CASE WHEN m.sender_id = \$1 THEN m.recipient_id ELSE m.sender_id END AS peer_id,
-                u.username AS peer_username,
-                u.avatar_id AS peer_avatar_id,
-                m.body,
-                m.created_at
-            FROM " . sys_table('chat_messages') . " m
-            JOIN " . sys_table('users') . " u
-              ON u.id = CASE WHEN m.sender_id = \$1 THEN m.recipient_id ELSE m.sender_id END
-            WHERE m.is_visible AND (m.sender_id = \$1 OR m.recipient_id = \$1)
-        ) t
-        ORDER BY peer_id, created_at DESC
+            SELECT DISTINCT ON (peer_id) peer_id, peer_username, peer_avatar_id, body, created_at
+            FROM (
+                SELECT
+                    CASE WHEN m.sender_id = \$1 THEN m.recipient_id ELSE m.sender_id END AS peer_id,
+                    u.username AS peer_username,
+                    u.avatar_id AS peer_avatar_id,
+                    m.body,
+                    m.created_at
+                FROM " . sys_table('chat_messages') . " m
+                JOIN " . sys_table('users') . " u
+                  ON u.id = CASE WHEN m.sender_id = \$1 THEN m.recipient_id ELSE m.sender_id END
+                WHERE m.is_visible AND (m.sender_id = \$1 OR m.recipient_id = \$1)
+            ) t
+            ORDER BY peer_id, created_at DESC
+        ) ranked
+        ORDER BY created_at DESC
     ";
 
         $result = pg_query_params($this->conn, $sql, [$userId]);
@@ -130,8 +134,11 @@ final class ChatController
         }
 
         require_once __DIR__ . '/../../comment_links.php';
+        require_once __DIR__ . '/../../file_links.php';
         $bodies = array_map(fn($message) => (string)($message['body'] ?? ''), $messages);
-        $links  = record_links_resolve($this->conn, $bodies, $userId);
+        $role   = $this->session->get('role', '');
+        $links  = record_links_resolve($this->conn, $bodies, $userId)
+            + file_links_resolve($this->conn, $bodies, $userId, $role);
 
         jsonSuccess(['messages' => $messages, 'links' => $links]);
     }
@@ -200,7 +207,10 @@ final class ChatController
         $this->notifyRecipient((int)$recipient['id'], $messageId, $senderUsername);
 
         require_once __DIR__ . '/../../comment_links.php';
-        $links = record_links_resolve($this->conn, [$rawBody], $userId);
+        require_once __DIR__ . '/../../file_links.php';
+        $role  = $this->session->get('role', '');
+        $links = record_links_resolve($this->conn, [$rawBody], $userId)
+            + file_links_resolve($this->conn, [$rawBody], $userId, $role);
 
         jsonSuccess(['message' => [
             'id'               => $messageId,

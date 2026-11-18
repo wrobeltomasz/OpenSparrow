@@ -364,6 +364,7 @@
         "new_message": "Ny besked fra {user}",
         "message_user": "Besked",
         "insert_icon": "Indsæt ikon",
+        "insert_file": "Indsæt fillink",
         "icon_picker_title": "Vælg ikon",
         "icon_search": "Søg efter ikoner…",
         "icon_no_results": "Ingen ikoner fundet",

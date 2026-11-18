@@ -364,6 +364,7 @@
         "new_message": "Nieuw bericht van {user}",
         "message_user": "Bericht",
         "insert_icon": "Pictogram invoegen",
+        "insert_file": "Bestandslink invoegen",
         "icon_picker_title": "Pictogram kiezen",
         "icon_search": "Pictogrammen zoeken…",
         "icon_no_results": "Geen pictogrammen gevonden",

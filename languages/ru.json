@@ -368,6 +368,7 @@
         "new_message": "Новое сообщение от {user}",
         "message_user": "Сообщение",
         "insert_icon": "Вставить значок",
+        "insert_file": "Вставить ссылку на файл",
         "icon_picker_title": "Выбрать значок",
         "icon_search": "Поиск значков…",
         "icon_no_results": "Значки не найдены",

@@ -368,6 +368,7 @@
         "new_message": "Нове повідомлення від {user}",
         "message_user": "Повідомлення",
         "insert_icon": "Вставити значок",
+        "insert_file": "Вставити посилання на файл",
         "icon_picker_title": "Вибрати значок",
         "icon_search": "Пошук значків…",
         "icon_no_results": "Значки не знайдено",

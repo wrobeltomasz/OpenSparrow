@@ -368,6 +368,7 @@
         "new_message": "Nauja žinutė nuo {user}",
         "message_user": "Žinutė",
         "insert_icon": "Įterpti piktogramą",
+        "insert_file": "Įterpti failo nuorodą",
         "icon_picker_title": "Pasirinkti piktogramą",
         "icon_search": "Ieškoti piktogramų…",
         "icon_no_results": "Piktogramų nerasta",

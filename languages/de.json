@@ -364,6 +364,7 @@
         "new_message": "Neue Nachricht von {user}",
         "message_user": "Nachricht",
         "insert_icon": "Symbol einfügen",
+        "insert_file": "Dateilink einfügen",
         "icon_picker_title": "Symbol auswählen",
         "icon_search": "Symbole suchen…",
         "icon_no_results": "Keine Symbole gefunden",
