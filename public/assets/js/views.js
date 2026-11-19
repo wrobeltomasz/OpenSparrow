@@ -123,7 +123,10 @@ function handleColumnFilterChange() {
     if (!filterBarElement) return;
     filterBarElement.replaceChildren();
     const columnId = columnFilterElement ? columnFilterElement.value : '';
-    if (!columnId) return;
+    if (!columnId) {
+        if (viewSearchTerm && _applyFilters) _applyFilters();
+        return;
+    }
 
     const type     = detectColumnType(columnId);
     const existing = columnFilters[columnId] || {};
@@ -248,6 +251,8 @@ function handleColumnFilterChange() {
         });
         filterBarElement.appendChild(select);
     }
+
+    if (viewSearchTerm) apply();
 }
 
 if (columnFilterElement) columnFilterElement.addEventListener('change', handleColumnFilterChange);
@@ -610,9 +615,13 @@ function renderView(data) {
         let result = rows;
         if (viewSearchTerm) {
             const term = viewSearchTerm.toLowerCase();
-            result = result.filter(row =>
-                Object.values(row).some(numericValue => String(numericValue ?? '').toLowerCase().includes(term))
-            );
+            const selectedColumn = columnFilterElement ? columnFilterElement.value : '';
+            result = result.filter(row => {
+                if (selectedColumn) {
+                    return String(row[selectedColumn] ?? '').toLowerCase().includes(term);
+                }
+                return Object.values(row).some(numericValue => String(numericValue ?? '').toLowerCase().includes(term));
+            });
         }
         if (Object.keys(columnFilters).length > 0) result = result.filter(rowPassesColumnFilters);
         renderFilterPills();
