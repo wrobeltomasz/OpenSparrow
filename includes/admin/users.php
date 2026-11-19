@@ -10,6 +10,8 @@ declare(strict_types=1);
 use App\Exception\ControlFlowException;
 use App\Exception\ResponseException;
 
+require_once __DIR__ . '/../user_custom_fields.php';
+
 const USER_ROLES = ['admin', 'editor', 'viewer'];
 
 $adminActorId = admin_user_id() ?? 0;
@@ -85,13 +87,99 @@ function admin_user_contact_columns(\PgSql\Connection $conn): bool
     return $present;
 }
 
+function admin_user_custom_value_error(string $value, array $definition): ?string
+{
+    $label = $definition['label'];
+
+    switch ($definition['type']) {
+        case 'email':
+            if (mb_strlen($value) > 255 || !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                return 'Invalid email address for ' . $label . '.';
+            }
+            return null;
+        case 'phone':
+            if (mb_strlen($value) > 32) {
+                return $label . ' must be at most 32 characters.';
+            }
+            return null;
+        case 'number':
+            if (mb_strlen($value) > 32 || preg_match('/^-?\d+(?:\.\d+)?$/', $value) !== 1) {
+                return 'Invalid number for ' . $label . '.';
+            }
+            return null;
+        case 'date':
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+                return 'Invalid date for ' . $label . '. Use YYYY-MM-DD.';
+            }
+            [$year, $month, $day] = array_map('intval', explode('-', $value));
+            if (!checkdate($month, $day, $year)) {
+                return 'Invalid date for ' . $label . '.';
+            }
+            return null;
+        default:
+            if (mb_strlen($value) > 255) {
+                return $label . ' must be at most 255 characters.';
+            }
+            return null;
+    }
+}
+
+function admin_user_custom_values_input(array $data, array $definitions): array
+{
+    if (!array_key_exists('custom_fields', $data)) {
+        return [[], null];
+    }
+    $submitted = $data['custom_fields'];
+    if (!is_array($submitted)) {
+        return [[], 'Custom fields must be a JSON object.'];
+    }
+
+    $definedKeys = [];
+    foreach ($definitions as $definition) {
+        $definedKeys[$definition['key']] = true;
+    }
+    foreach ($submitted as $key => $value) {
+        if (!is_string($key) || !isset($definedKeys[$key])) {
+            return [[], 'Unknown custom field: ' . $key];
+        }
+    }
+
+    $values = [];
+    foreach ($definitions as $definition) {
+        $key = $definition['key'];
+        if (!array_key_exists($key, $submitted)) {
+            continue;
+        }
+        $raw = $submitted[$key];
+        if ($raw === null || (is_string($raw) && trim($raw) === '')) {
+            continue;
+        }
+        if (!is_scalar($raw)) {
+            return [[], 'Custom field values must be text.'];
+        }
+        $value = trim((string)$raw);
+        if ($value === '') {
+            continue;
+        }
+        $error = admin_user_custom_value_error($value, $definition);
+        if ($error !== null) {
+            return [[], $error];
+        }
+        $values[$key] = $value;
+    }
+
+    return [$values, null];
+}
+
 if ($action === 'users_list') {
     try {
         require_once __DIR__ . '/../../includes/db.php';
         $conn = db_connect();
         $hasContact = admin_user_contact_columns($conn);
+        $hasCustom = user_custom_column_present($conn);
         $columns = 'id, username, is_active, role'
-            . ($hasContact ? ', first_name, last_name, email, phone' : '');
+            . ($hasContact ? ', first_name, last_name, email, phone' : '')
+            . ($hasCustom ? ', custom_fields' : '');
         $queryResult = @pg_query($conn, "SELECT {$columns} FROM " . sys_table('users') . ' ORDER BY id ASC');
         if (!$queryResult) {
             admin_user_schema_guard(pg_last_error($conn));
@@ -101,13 +189,18 @@ if ($action === 'users_list') {
         $users = [];
         while ($row = pg_fetch_assoc($queryResult)) {
             $row['is_active'] = ($row['is_active'] === 't' || $row['is_active'] === true);
+            if ($hasCustom) {
+                $row['custom_fields'] = user_custom_fields_decode($row['custom_fields'] ?? null);
+            }
             $users[] = $row;
         }
 
         echo json_encode([
-            'status'          => 'success',
-            'users'           => $users,
-            'contact_columns' => $hasContact,
+            'status'             => 'success',
+            'users'              => $users,
+            'contact_columns'    => $hasContact,
+            'custom_columns'     => $hasCustom,
+            'custom_fields_defs' => $hasCustom ? user_custom_field_definitions() : [],
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
@@ -140,6 +233,13 @@ if ($action === 'users_add') {
     if ($contactError !== null) {
         admin_err($contactError);
     }
+    [$customValues, $customError] = admin_user_custom_values_input(
+        is_array($data) ? $data : [],
+        user_custom_field_definitions()
+    );
+    if ($customError !== null) {
+        admin_err($customError);
+    }
 
     try {
         require_once __DIR__ . '/../../includes/db.php';
@@ -154,6 +254,14 @@ if ($action === 'users_add') {
                 . 'the user without them.'
             );
         }
+        $hasCustom = user_custom_column_present($conn);
+        if (!$hasCustom && $customValues !== []) {
+            throw new AdminApiMessage(
+                'Custom fields need the 4.7_user_custom_fields migration '
+                . '(Migrations → Initialize System Tables). Leave them empty to create '
+                . 'the user without them.'
+            );
+        }
 
         $newSalt = bin2hex(random_bytes(32));
         $hash    = password_hash($newSalt . $password, PASSWORD_ARGON2ID, ARGON2_OPTIONS);
@@ -164,6 +272,11 @@ if ($action === 'users_add') {
             $columns  .= ', first_name, last_name, email, phone';
             $values  .= ', $7, $8, $9, $10';
             $parameters = array_merge($parameters, $contact);
+        }
+        if ($hasCustom) {
+            $columns  .= ', custom_fields';
+            $values  .= ', $' . (count($parameters) + 1);
+            $parameters[] = json_encode((object) $customValues);
         }
         $sql = 'INSERT INTO ' . sys_table('users') . " ({$columns}) VALUES ({$values}) RETURNING id";
         $queryResult = @pg_query_params($conn, $sql, $parameters);
@@ -251,9 +364,17 @@ if ($action === 'users_update_contact') {
     if ($userId <= 0) {
         admin_err('Invalid user ID.');
     }
+    $hasCustomInput = is_array($data) && array_key_exists('custom_fields', $data);
     [$contact, $contactError] = admin_user_contact_input(is_array($data) ? $data : []);
     if ($contactError !== null) {
         admin_err($contactError);
+    }
+    [$customValues, $customError] = admin_user_custom_values_input(
+        is_array($data) ? $data : [],
+        user_custom_field_definitions()
+    );
+    if ($customError !== null) {
+        admin_err($customError);
     }
 
     try {
@@ -267,9 +388,24 @@ if ($action === 'users_update_contact') {
                 . '(Migrations → Initialize System Tables).'
             );
         }
-        $sql = 'UPDATE ' . sys_table('users')
-            . ' SET first_name = $1, last_name = $2, email = $3, phone = $4 WHERE id = $5';
-        $queryResult = @pg_query_params($conn, $sql, array_merge($contact, [$userId]));
+        $hasCustom = user_custom_column_present($conn);
+        if (!$hasCustom && $customValues !== []) {
+            throw new AdminApiMessage(
+                'Custom fields need the 4.7_user_custom_fields migration '
+                . '(Migrations → Initialize System Tables).'
+            );
+        }
+        if ($hasCustom && $hasCustomInput) {
+            $sql = 'UPDATE ' . sys_table('users')
+                . ' SET first_name = $1, last_name = $2, email = $3, phone = $4, custom_fields = $6::jsonb'
+                . ' WHERE id = $5';
+            $parameters = array_merge($contact, [$userId, json_encode((object) $customValues)]);
+        } else {
+            $sql = 'UPDATE ' . sys_table('users')
+                . ' SET first_name = $1, last_name = $2, email = $3, phone = $4 WHERE id = $5';
+            $parameters = array_merge($contact, [$userId]);
+        }
+        $queryResult = @pg_query_params($conn, $sql, $parameters);
         if (!$queryResult) {
             admin_user_schema_guard(pg_last_error($conn));
             admin_db_fail($conn, 'users_update_contact');
@@ -279,15 +415,19 @@ if ($action === 'users_update_contact') {
             admin_err('User not found.');
         }
         log_user_action($conn, $adminActorId, 'UPDATE_USER_CONTACT', 'users', $userId);
+        $responseUser = [
+            'id' => $userId,
+            'first_name' => $contact[0],
+            'last_name' => $contact[1],
+            'email' => $contact[2],
+            'phone' => $contact[3],
+        ];
+        if ($hasCustom && $hasCustomInput) {
+            $responseUser['custom_fields'] = (object) $customValues;
+        }
         echo json_encode([
             'status' => 'success',
-            'user' => [
-                'id' => $userId,
-                'first_name' => $contact[0],
-                'last_name' => $contact[1],
-                'email' => $contact[2],
-                'phone' => $contact[3],
-            ],
+            'user' => $responseUser,
         ]);
     } catch (ControlFlowException $signal) {
         throw $signal;
@@ -649,5 +789,85 @@ if ($action === 'user_tables_save') {
     } catch (Throwable $exception) {
         echo json_encode(['status' => 'error', 'error' => admin_error_message($exception)]);
     }
+    throw ResponseException::sent();
+}
+
+if ($action === 'user_fields_get') {
+    throw ResponseException::encoded([
+        'status' => 'success',
+        'fields' => user_custom_field_definitions(),
+    ]);
+}
+
+if ($action === 'user_fields_save') {
+    require_not_demo();
+
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($data)) {
+        admin_err('Invalid JSON body.');
+    }
+    $submitted = $data['fields'] ?? null;
+    if ($submitted === null) {
+        admin_err('Fields are required.');
+    }
+    if (!is_array($submitted)) {
+        admin_err('Fields must be an array.');
+    }
+    if (count($submitted) > 30) {
+        admin_err('At most 30 custom fields are allowed.');
+    }
+
+    $definitions = [];
+    foreach ($submitted as $field) {
+        if (!is_array($field)) {
+            admin_err('Each field must be an object.');
+        }
+        $keyValue = $field['key'] ?? '';
+        $labelValue = $field['label'] ?? '';
+        $typeValue = $field['type'] ?? 'text';
+        if (!is_string($keyValue) || !is_string($labelValue) || !is_string($typeValue)) {
+            admin_err('Field key, label and type must be text values.');
+        }
+        $key = trim($keyValue);
+        $label = trim($labelValue);
+        $type = $typeValue;
+
+        if ($key === '' || preg_match('/^[a-z][a-z0-9_]{0,49}$/', $key) !== 1) {
+            admin_err(
+                'Field keys must start with a lowercase letter and contain only lowercase '
+                . 'letters, digits and underscores (max 50 characters).'
+            );
+        }
+        if ($label === '' || mb_strlen($label) > 100) {
+            admin_err('Field labels are required and must be at most 100 characters.');
+        }
+        if (!in_array($type, USER_CUSTOM_FIELD_TYPES, true)) {
+            admin_err('Unknown field type: ' . $type);
+        }
+        if (isset($definitions[$key])) {
+            admin_err('Duplicate field key: ' . $key);
+        }
+        $definitions[$key] = ['key' => $key, 'label' => $label, 'type' => $type];
+    }
+    $fields = array_values($definitions);
+
+    $row = config_get_row('user_custom_fields');
+    $result = config_save(
+        'user_custom_fields',
+        ['fields' => $fields],
+        $row['version'] ?? null,
+        $adminActorId ?: null
+    );
+    if ($result['status'] === 'conflict') {
+        admin_err('Config was modified by someone else — reload and retry.');
+    }
+    if ($result['status'] !== 'ok') {
+        admin_err($result['error'] ?? 'Failed to save custom fields.');
+    }
+
+    require_once __DIR__ . '/../../includes/db.php';
+    require_once __DIR__ . '/../../includes/api_helpers.php';
+    log_user_action(db_connect(), $adminActorId, 'UPDATE_USER_FIELDS', 'users', 0);
+    echo json_encode(['status' => 'success', 'fields' => $fields]);
     throw ResponseException::sent();
 }

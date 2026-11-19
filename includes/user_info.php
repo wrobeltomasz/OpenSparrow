@@ -7,9 +7,14 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/user_custom_fields.php';
+
 function user_info_fetch(PgSql\Connection $conn, string $username): ?array
 {
-    $sql = 'SELECT id, username, avatar_id, role, first_name, last_name, email, phone'
+    $hasCustom = user_custom_column_present($conn);
+    $columns = 'id, username, avatar_id, role, first_name, last_name, email, phone'
+        . ($hasCustom ? ', custom_fields' : '');
+    $sql = 'SELECT ' . $columns
         . ' FROM ' . sys_table('users')
         . ' WHERE username = $1';
     $result = pg_query_params($conn, $sql, [$username]);
@@ -23,7 +28,7 @@ function user_info_fetch(PgSql\Connection $conn, string $username): ?array
         return null;
     }
 
-    return [
+    $user = [
         'id'         => (int)$row['id'],
         'username'   => $row['username'],
         'avatar_id'  => $row['avatar_id'] !== null ? (int)$row['avatar_id'] : null,
@@ -33,4 +38,9 @@ function user_info_fetch(PgSql\Connection $conn, string $username): ?array
         'email'      => $row['email'],
         'phone'      => $row['phone'],
     ];
+    $user['custom_fields'] = $hasCustom
+        ? user_custom_fields_resolve($row['custom_fields'] ?? null, user_custom_field_definitions())
+        : [];
+
+    return $user;
 }

@@ -347,6 +347,15 @@ ${_ul([
     `<strong>${strings.s9p_scope_label}:</strong> ${strings.s9p_scope}`
 ])}
 
+${_h3('doc-9p2', strings.s9p2_head)}
+${paragraphHtml(strings.s9p2_desc)}
+${_ul([
+    `<strong>${strings.s9p2_where_label}:</strong> ${strings.s9p2_where}`,
+    `<strong>${strings.s9p2_storage_label}:</strong> ${strings.s9p2_storage}`,
+    `<strong>${strings.s9p2_values_label}:</strong> ${strings.s9p2_values}`,
+    `<strong>${strings.s9p2_scope_label}:</strong> ${strings.s9p2_scope}`
+])}
+
 ${_h3('doc-9e', strings.s9e_head)}
 ${_ul([
     `<strong>${strings.s9e_sort_label}:</strong> ${strings.s9e_sort}`,

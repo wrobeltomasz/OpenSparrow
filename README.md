@@ -226,6 +226,7 @@ The table allow-list is the *read* grant. Each ticked table also carries three o
 Granting a board, a roadmap or a workflow does not grant the tables it uses — both ticks have to hold, so a board or roadmap whose table you did not grant is not listed, and a workflow is dropped when any of its steps targets a table the user cannot reach. Hidden tables are the one automatic case: they have no menu entry and no grid, so they cannot be ticked and are granted along with the table whose subtable they are.
 
 - **Password reset:** click **Change pwd** next to any user. For your own account the current password is required; for other accounts the admin can override without it.
+- **Custom fields:** define extra per-user fields (second email, second phone, employee id, department, …) in **Users → Custom Fields**; values are edited per account in **Manage Users** and shown in frontend user tooltips. Stored in the `spw_users.custom_fields` jsonb column, so adding fields never changes the database schema.
 - Re-run **System → Migrations → Apply Pending Migrations** after every upgrade — it uses `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE … ADD COLUMN IF NOT EXISTS`. (Older docs and some in-app messages still call this "Initialize System Tables" — it is the same `init_db` action.)
 
 ---

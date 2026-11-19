@@ -71,6 +71,10 @@ if ($action === 'init_db') {
                 static fn(string $tableName): string => sys_table($tableName)
             ),
 
+            '4.7_user_custom_fields' => system_tables_user_custom_fields_ddl(
+                static fn(string $tableName): string => sys_table($tableName)
+            ),
+
         ];
 
         $applied_count = 0;
@@ -159,6 +163,7 @@ if ($action === 'migrations_list') {
             '3.3_clickstats',
             '3.6_external_api_log',
             '4.4_user_chat',
+            '4.7_user_custom_fields',
         ];
 
         $appliedResult = @pg_query($conn, "SELECT name, applied_at FROM $migrationsTable ORDER BY applied_at ASC");

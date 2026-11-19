@@ -457,6 +457,16 @@ function system_tables_user_contact_ddl(callable $ident): array
     ];
 }
 
+function system_tables_user_custom_fields_ddl(callable $ident): array
+{
+    $usersTable = $ident('users');
+
+    return [
+        "ALTER TABLE $usersTable ADD COLUMN IF NOT EXISTS custom_fields jsonb NOT NULL DEFAULT '{}'::jsonb",
+        "COMMENT ON COLUMN $usersTable.custom_fields IS 'Admin-defined custom field values keyed by field key. Definitions live in spw_config.user_custom_fields. Applies to every user regardless of role.'",
+    ];
+}
+
 function system_tables_clickstats_ddl(callable $ident): array
 {
     $clickstatsTable = $ident('clickstats');

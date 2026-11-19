@@ -47,6 +47,13 @@ function buildUserInfoModel(username, info, titlePrefix) {
         if (info.email) rows.push({ label: I18n.t('comments.user_info_email'), value: info.email });
         if (info.phone) rows.push({ label: I18n.t('comments.user_info_phone'), value: info.phone });
 
+        const customFields = Array.isArray(info.custom_fields) ? info.custom_fields : [];
+        customFields.forEach(field => {
+            if (field && field.label && field.value !== undefined && field.value !== null && field.value !== '') {
+                rows.push({ label: field.label, value: field.value });
+            }
+        });
+
         if (info.id && String(info.id) !== String(window.CURRENT_USER_ID ?? '')) {
             const peer = {
                 id: info.id,

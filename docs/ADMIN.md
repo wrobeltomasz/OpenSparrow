@@ -43,7 +43,7 @@ Before configuring OpenSparrow, make sure your PostgreSQL database meets these c
 
 OpenSparrow reserves a set of internal tables, all prefixed with `spw_` and created inside the configured system schema:
 
-- `spw_users` — frontend user accounts (id, username, password hash, role, active flag, optional contact details).
+- `spw_users` — frontend user accounts (id, username, password hash, role, active flag, optional contact details, and admin-defined custom fields in `custom_fields` jsonb).
 - `spw_users_log` — audit trail of user actions (LOGIN, LOGOUT, CRUD operations).
 - `spw_users_notifications` — per-user in-app notifications, produced by the cron runner.
 - `spw_users_notifications_log` — execution log for the notifications cron: start/end time, status (`running` / `success` / `error`), trigger source (`cron` or `admin`), number of sources processed and notifications created, and error message on failure.

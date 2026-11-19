@@ -19,11 +19,11 @@ Reference for every system-owned table. All of them live in the PostgreSQL schem
 |---|---|
 | Initial version | **3.0** — single migration `3.0_baseline` (the pre-3.0 incremental history was collapsed into it) |
 | Current version | **4.7** (`includes/version.php`, `includes/VERSION`) |
-| Migrations after the baseline | **`3.1_table_comments`** — table/column comments<br>**`3.1_notes_reminder_time`** — `spw_notes.reminder_date` `date` → `timestamp`<br>**`3.3_user_contact`** — four nullable contact columns on `spw_users`<br>**`3.3_clickstats`** — `spw_clickstats`<br>**`3.6_external_api_log`** — `spw_external_api_log`<br>**`4.4_user_chat`** — `spw_chat_messages` |
+| Migrations after the baseline | **`3.1_table_comments`** — table/column comments<br>**`3.1_notes_reminder_time`** — `spw_notes.reminder_date` `date` → `timestamp`<br>**`3.3_user_contact`** — four nullable contact columns on `spw_users`<br>**`3.3_clickstats`** — `spw_clickstats`<br>**`3.6_external_api_log`** — `spw_external_api_log`<br>**`4.4_user_chat`** — `spw_chat_messages`<br>**`4.7_user_custom_fields`** — `spw_users.custom_fields` jsonb |
 
 The `$migrations` registry and `$known` list (`includes/admin/migrations.php`), `$knownMigrations`
 (`includes/admin/overview.php`) and the migration `INSERT` rows (`public/setup_api.php`) contain the
-same seven keys in the same order — a parity that `tests/Admin/MigrationRegistryTest.php` enforces.
+same eight keys in the same order — a parity that `tests/Admin/MigrationRegistryTest.php` enforces.
 `config/migrations.json` separately tracks release migrations for file and configuration cleanup.
 
 `3.1_notes_reminder_time` widens `spw_notes.reminder_date` from `date` to `timestamp`, so a note
@@ -83,6 +83,7 @@ Created by the bootstrap block, *not* by `system_tables_ddl()`. One row per appl
 | `last_name` | varchar(100) NULL | Optional surname, managed from the admin panel and shown in frontend user tooltips. Added by `3.3_user_contact`. |
 | `email` | varchar(255) NULL | Optional, format-checked contact email; not unique. Used for two-factor email codes and shown in user tooltips. Added by `3.3_user_contact`. |
 | `phone` | varchar(32) NULL | Optional contact phone, managed from the admin panel and shown in user tooltips. Added by `3.3_user_contact`. |
+| `custom_fields` | jsonb NOT NULL DEFAULT `'{}'` | Admin-defined custom field values, keyed by field key. Definitions live in `spw_config.user_custom_fields`; applies to every user regardless of role or access. Added by `4.7_user_custom_fields`. |
 
 ### `spw_users_log` — user action audit trail
 

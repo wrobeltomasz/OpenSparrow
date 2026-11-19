@@ -19,8 +19,9 @@ export async function renderUsersEditor(context) {
         'Manage accounts, roles and per-user frontend access. Roles: Admin (admin panel only), Editor (full frontend CRUD), Viewer (read-only frontend).'
     ));
 
-    const [managePanel, accessPanel, statisticsPanel, settingsPanel] = buildInnerTabs(wrap, [
+    const [managePanel, fieldsPanel, accessPanel, statisticsPanel, settingsPanel] = buildInnerTabs(wrap, [
         { label: 'Manage Users', icon: 'material/user_attributes.svg' },
+        { label: 'Custom Fields', icon: 'material/badge.svg' },
         { label: 'Access', icon: 'material/table_chart_view.svg' },
         { label: 'Statistics', icon: 'material/bar_chart.svg' },
         { label: 'Global Settings', icon: 'material/settings.svg' },
@@ -29,9 +30,182 @@ export async function renderUsersEditor(context) {
     workspaceElement.appendChild(wrap);
 
     renderManageUsers(managePanel, context);
+    renderUserFields(fieldsPanel);
     renderUserAccess(accessPanel);
     renderUserStatistics(statisticsPanel);
     renderUserSettings(settingsPanel, context);
+}
+
+async function renderUserFields(panel) {
+    const content = el('div');
+    panel.appendChild(content);
+    content.innerHTML = '<p class="c-muted" style="padding:16px;">Loading fields…</p>';
+
+    let data;
+    try {
+        const response = await apiFetch('api.php?action=user_fields_get');
+        data = await response.json();
+    } catch (_) {
+        content.innerHTML = '';
+        content.appendChild(el('p', '', 'Network error while loading fields.')).style.color = 'var(--error)';
+        return;
+    }
+    if (data.status !== 'success') {
+        content.innerHTML = '';
+        content.appendChild(el('p', '', data.error || 'Could not load fields.')).style.color = 'var(--error)';
+        return;
+    }
+
+    renderUserFieldsEditor(content, Array.isArray(data.fields) ? data.fields : []);
+}
+
+function renderUserFieldsEditor(content, fields) {
+    content.innerHTML = '';
+
+    const typeLabels = { text: 'Text', email: 'Email', phone: 'Phone', number: 'Number', date: 'Date' };
+    const fieldTypes = [['text', 'Text'], ['email', 'Email'], ['phone', 'Phone'], ['number', 'Number'], ['date', 'Date']];
+
+    const { card, body } = buildSectionCard(
+        'Custom User Fields',
+        'Extra fields stored on every account, regardless of role or access. '
+        + 'Values are edited per user in Manage Users (Edit Details). Fields added here apply everywhere immediately.'
+    );
+    content.appendChild(card);
+
+    const tableWrap = el('div');
+    tableWrap.style.cssText = 'overflow-x:auto;';
+    body.appendChild(tableWrap);
+
+    const tableElement = mkTable();
+    mkThead(tableElement, ['Label', 'Key', 'Type', 'Actions']);
+    const tbody = tableElement.createTBody();
+    tableWrap.appendChild(tableElement);
+
+    const moveField = (index, delta) => {
+        const target = index + delta;
+        if (target < 0 || target >= fields.length) return;
+        [fields[index], fields[target]] = [fields[target], fields[index]];
+        render();
+    };
+
+    const render = () => {
+        tbody.innerHTML = '';
+        if (fields.length === 0) {
+            const row = tbody.insertRow();
+            const emptyCell = row.insertCell();
+            emptyCell.colSpan = 4;
+            emptyCell.textContent = 'No custom fields yet. Add one below.';
+            emptyCell.style.cssText = 'padding:16px;text-align:center;font-style:italic;';
+            return;
+        }
+        fields.forEach((field, index) => {
+            const row = tbody.insertRow();
+            row.appendChild(tdEl(el('strong', '', field.label)));
+            row.appendChild(tdEl(el('code', '', field.key)));
+            row.appendChild(td(typeLabels[field.type] || field.type));
+
+            const actionsCell = el('td', 'adm-td');
+            actionsCell.style.cssText = 'display:flex; gap:6px;';
+
+            const up = el('button', 'btn btn-xs btn-secondary', '↑');
+            up.title = 'Move up';
+            up.disabled = index === 0;
+            const down = el('button', 'btn btn-xs btn-secondary', '↓');
+            down.title = 'Move down';
+            down.disabled = index === fields.length - 1;
+            const remove = el('button', 'btn btn-xs btn-danger', 'Remove');
+
+            up.addEventListener('click', () => moveField(index, -1));
+            down.addEventListener('click', () => moveField(index, 1));
+            remove.addEventListener('click', () => { fields.splice(index, 1); render(); });
+
+            actionsCell.append(up, down, remove);
+            row.appendChild(actionsCell);
+        });
+    };
+
+    render();
+
+    const { card: addCard, body: addBody } = buildSectionCard(
+        'Add Custom Field',
+        'Key must start with a lowercase letter and use only letters, digits and underscores (max 50). Label is what the admin sees.'
+    );
+    content.appendChild(addCard);
+
+    const addForm = el('div');
+    addForm.style.maxWidth = '520px';
+    addBody.appendChild(addForm);
+
+    const addGroup = (labelText, inputElement) => {
+        const group = el('div');
+        group.style.marginBottom = '15px';
+        group.appendChild(el('label', 'adm-field-label', labelText));
+        inputElement.className = 'adm-input w-full';
+        group.appendChild(inputElement);
+        addForm.appendChild(group);
+        return group;
+    };
+
+    const newLabel = el('input');
+    newLabel.type = 'text';
+    newLabel.maxLength = 100;
+    newLabel.placeholder = 'e.g. Second email';
+    addGroup('Label', newLabel);
+
+    const newKey = el('input');
+    newKey.type = 'text';
+    newKey.maxLength = 50;
+    newKey.placeholder = 'e.g. email_2';
+    addGroup('Key', newKey);
+
+    const newType = el('select');
+    fieldTypes.forEach(([value, labelText]) => {
+        const option = el('option', '', labelText);
+        option.value = value;
+        newType.appendChild(option);
+    });
+    addGroup('Type', newType);
+
+    const addButton = el('button', 'btn btn-success', 'Add Field');
+    addForm.appendChild(addButton);
+
+    addButton.addEventListener('click', () => {
+        const label = newLabel.value.trim();
+        const key = newKey.value.trim();
+        const type = newType.value;
+        if (!label || !key) { showStatusPill(addButton, 'Label and key are required.', 'error'); return; }
+        if (!/^[a-z][a-z0-9_]{0,49}$/.test(key)) { showStatusPill(addButton, 'Invalid key format.', 'error'); return; }
+        if (fields.some(field => field.key === key)) { showStatusPill(addButton, 'Duplicate key.', 'error'); return; }
+        if (fields.length >= 30) { showStatusPill(addButton, 'At most 30 fields are allowed.', 'error'); return; }
+        fields.push({ key, label, type });
+        newLabel.value = '';
+        newKey.value = '';
+        render();
+        showStatusPill(addButton, 'Field added. Save to persist.', 'success');
+    });
+
+    const saveRow = el('div');
+    saveRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:4px;';
+    const saveButton = el('button', 'btn btn-save', 'Save Fields');
+    saveRow.appendChild(saveButton);
+    content.appendChild(saveRow);
+
+    saveButton.addEventListener('click', async () => {
+        try {
+            const response = await apiFetch('api.php?action=user_fields_save', {
+                method: 'POST',
+                body: JSON.stringify({ fields }),
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                showStatusPill(saveButton, 'Fields saved.', 'success');
+            } else {
+                showStatusPill(saveButton, result.error || 'Save failed.', 'error');
+            }
+        } catch (_) {
+            showStatusPill(saveButton, 'Network error.', 'error');
+        }
+    });
 }
 
 async function renderUserAccess(panel) {
@@ -399,6 +573,7 @@ async function loadUserAccess(panel, anchorCard, selectElement) {
 }
 
 async function renderManageUsers(panel, context) {
+    panel.innerHTML = '';
     const content = el('div');
     panel.appendChild(content);
     content.innerHTML = '<p class="c-muted" style="padding:16px;">Loading users…</p>';
@@ -430,6 +605,8 @@ async function renderManageUsers(panel, context) {
         const defaultRole = policy.status === 'success' ? policy.default_role : 'editor';
 
         const hasContact = data.contact_columns !== false;
+        const hasCustom = data.custom_columns === true;
+        const customFields = Array.isArray(data.custom_fields_defs) ? data.custom_fields_defs : [];
 
         const listDescription = 'Manage user accounts and roles. Roles: Admin — admin panel only; Editor — full frontend CRUD; Viewer — read-only frontend.';
         const { card: listCard, body: listBody } = buildSectionCard('System Users', listDescription);
@@ -443,6 +620,14 @@ async function renderManageUsers(panel, context) {
                 + '<code>3.3_user_contact</code> migration.';
             listBody.appendChild(contactWarning);
         }
+        if (!hasCustom) {
+            const customWarning = el('p', 'admin-page-desc');
+            customWarning.style.color = 'var(--error)';
+            customWarning.innerHTML = 'Custom fields are unavailable: run '
+                + 'Migrations &rarr; Initialize System Tables to apply the '
+                + '<code>4.7_user_custom_fields</code> migration.';
+            listBody.appendChild(customWarning);
+        }
 
         const tableWrap = el('div');
         tableWrap.style.cssText = 'overflow-x:auto;';
@@ -451,6 +636,7 @@ async function renderManageUsers(panel, context) {
         const tableElement = mkTable();
         const headerColumns = ['ID', 'Username'];
         if (hasContact) headerColumns.push('Name', 'Email', 'Phone');
+        if (hasCustom) customFields.forEach(field => headerColumns.push(field.label));
         headerColumns.push('Status', 'Role', 'Actions');
         mkThead(tableElement, headerColumns);
         const tbody = tableElement.createTBody();
@@ -471,6 +657,12 @@ async function renderManageUsers(panel, context) {
                 row.appendChild(tdEl(cell(fullName(user))));
                 row.appendChild(tdEl(cell(user.email)));
                 row.appendChild(tdEl(cell(user.phone)));
+            }
+            if (hasCustom) {
+                customFields.forEach(field => {
+                    const value = (user.custom_fields && user.custom_fields[field.key]) ?? '';
+                    row.appendChild(tdEl(cell(value)));
+                });
             }
             const statusCell = el('td', 'adm-td');
             statusCell.appendChild(el(
@@ -605,6 +797,18 @@ async function renderManageUsers(panel, context) {
             newPhone.id = 'newPhone';
             newPhone.maxLength = 32;
             addField('Phone (Optional)', newPhone);
+        }
+
+        const newCustomFields = {};
+        if (hasCustom) {
+            customFields.forEach(field => {
+                const input = el('input');
+                input.type = ['number', 'email', 'date'].includes(field.type) ? field.type : 'text';
+                input.maxLength = 255;
+                input.id = 'newCustom_' + field.key;
+                addField(field.label + ' (Optional)', input);
+                newCustomFields[field.key] = input;
+            });
         }
 
         const addButton = el('button', 'btn btn-success', 'Create User');
@@ -755,6 +959,7 @@ async function renderManageUsers(panel, context) {
         content.querySelectorAll('.btn-edit-contact').forEach(button => {
             button.addEventListener('click', () => {
                 const id = parseInt(button.getAttribute('data-id'), 10);
+                const user = data.users.find(userEntry => String(userEntry.id) === String(id)) || {};
 
                 const { body, msgEl: messageElement, saveBtn: saveButton, close } = buildModal({
                     title: 'Edit Details',
@@ -785,12 +990,36 @@ async function renderManageUsers(panel, context) {
                     inputs[fieldElement.key] = input;
                 });
 
+                const customInputs = {};
+                if (hasCustom) {
+                    customFields.forEach(field => {
+                        const label = document.createElement('label');
+                        label.className = 'adm-field-label';
+                        label.textContent = field.label;
+                        body.appendChild(label);
+
+                        const input = document.createElement('input');
+                        input.type = ['number', 'email', 'date'].includes(field.type) ? field.type : 'text';
+                        input.className = 'adm-input w-full';
+                        input.maxLength = 255;
+                        input.value = (user.custom_fields && user.custom_fields[field.key]) || '';
+                        input.style.marginBottom = '8px';
+                        body.appendChild(input);
+                        customInputs[field.key] = input;
+                    });
+                }
+
                 inputs.first_name.focus();
 
                 saveButton.addEventListener('click', async () => {
                     messageElement.textContent = 'Saving…';
                     const payload = { id };
                     fields.forEach(fieldElement => { payload[fieldElement.key] = inputs[fieldElement.key].value; });
+                    if (hasCustom) {
+                        const customValues = {};
+                        customFields.forEach(field => { customValues[field.key] = customInputs[field.key].value; });
+                        payload.custom_fields = customValues;
+                    }
                     try {
                         const response = await apiFetch('api.php?action=users_update_contact', {
                             method: 'POST',
@@ -856,6 +1085,11 @@ async function renderManageUsers(panel, context) {
             const email      = contactValue('#newEmail');
             const phone      = contactValue('#newPhone');
 
+            const custom_fields = {};
+            if (hasCustom) {
+                customFields.forEach(field => { custom_fields[field.key] = newCustomFields[field.key].value; });
+            }
+
             if (!username || !password) {
                 showStatusPill(addButton, 'Username and password are required.', 'error');
                 return;
@@ -864,7 +1098,7 @@ async function renderManageUsers(panel, context) {
             try {
                 const request = await apiFetch('api.php?action=users_add', {
                     method: 'POST',
-                    body: JSON.stringify({ username, password, role, first_name, last_name, email, phone })
+                    body: JSON.stringify({ username, password, role, first_name, last_name, email, phone, custom_fields })
                 });
                 const resultData = await request.json();
 
@@ -981,6 +1215,7 @@ async function renderUserStatistics(panel) {
 }
 
 async function renderUserSettings(panel, context) {
+    panel.innerHTML = '';
     const content = el('div');
     panel.appendChild(content);
     content.innerHTML = '<p class="c-muted" style="padding:16px;">Loading settings…</p>';
