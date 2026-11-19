@@ -6,7 +6,7 @@
 import { debugLog } from '../debug.js';
 import { state } from './state.js';
 
-export async function fetchTableData(table, urlParameters, { offset = 0, search = '', includeTotal = true, order = null, columnFilters = null } = {}) {
+export async function fetchTableData(table, urlParameters, { offset = 0, search = '', includeTotal = true, order = null, columnFilters = null, searchColumn = '' } = {}) {
     let url = `api.php?api=list&table=${encodeURIComponent(table)}`;
     const filterColumn = urlParameters.get('filter_col');
     const filterValue = urlParameters.get('filter_val');
@@ -20,6 +20,7 @@ export async function fetchTableData(table, urlParameters, { offset = 0, search 
     }
     if (offset > 0) url += `&offset=${offset}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (searchColumn) url += `&search_column=${encodeURIComponent(searchColumn)}`;
     if (!includeTotal) url += '&include_total=0';
     if (order && order.length > 0) {
         const orderValue = order.map(rule => `${rule.column}:${rule.asc ? 'asc' : 'desc'}`).join(',');

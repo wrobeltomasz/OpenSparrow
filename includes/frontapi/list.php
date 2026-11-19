@@ -147,11 +147,16 @@ function frontapi_list(FrontApiContext $context): never
 
     $search = trim($_GET['search'] ?? '');
     if ($search !== '') {
+        $searchColumn = trim($_GET['search_column'] ?? '');
+        $searchColumns = $selectColumns;
+        if ($searchColumn !== '' && in_array($searchColumn, $selectColumns, true)) {
+            $searchColumns = [$searchColumn];
+        }
         $likeValue  = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
         $parameterNumber = count($parameters) + 1;
         $searchClauses = array_map(
             fn($column) => sprintf('%s::text ILIKE $%d', pg_ident($column), $parameterNumber),
-            $selectColumns
+            $searchColumns
         );
         $whereSql .= ($whereSql !== '' ? ' AND ' : ' WHERE ') . '(' . implode(' OR ', $searchClauses) . ')';
         $parameters[]  = $likeValue;

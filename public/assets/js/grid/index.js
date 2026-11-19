@@ -200,6 +200,7 @@ export async function appendMoreRows(schema, search = '') {
             includeTotal: false,
             order: state.sortState,
             columnFilters: state.columnFilters,
+            searchColumn: state.searchColumn,
         });
         const newRows = data.rows || [];
         applyVirtualColumns(schema, newRows);
@@ -225,6 +226,7 @@ export async function serverApplyView(schema, { search = '', reset = true } = {}
             order: state.sortState,
             columnFilters: state.columnFilters,
             offset: reset ? 0 : state.loadedOffset,
+            searchColumn: state.searchColumn,
         });
         const rows = data.rows || [];
         applyVirtualColumns(schema, rows);

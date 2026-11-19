@@ -184,7 +184,10 @@ function handleColumnFilterChange() {
     const filterBar = document.getElementById('filterBar');
 
     filterBar.innerHTML = '';
-    if (!column || !currentTable || !window.schema.tables[currentTable]) return;
+    if (!column || !currentTable || !window.schema.tables[currentTable]) {
+        if (activeFilters.search) applySearch();
+        return;
+    }
 
     const columnConfig = window.schema.tables[currentTable].columns[column] || {};
     const type = (columnConfig.type || '').toLowerCase();
@@ -291,6 +294,8 @@ function handleColumnFilterChange() {
         });
         filterBar.appendChild(select);
     }
+
+    if (activeFilters.search) applySearch();
 }
 
 function renderFilterPills() {
@@ -395,6 +400,10 @@ function applyColumnFiltersOnly(rows) {
 async function applySearch() {
     const { fullData, displayedColumns, serverSearchMode } = getState();
     const searchTerm = activeFilters.search.toLowerCase();
+    const selectedColumn = columnFilterElement.value;
+    const searchColumns = selectedColumn ? [selectedColumn] : displayedColumns;
+
+    gridState.searchColumn = selectedColumn;
 
     if (serverSearchMode && (searchTerm || Object.keys(activeFilters.columns).length > 0)) {
         resetPagination();
@@ -410,7 +419,7 @@ async function applySearch() {
         if (!rowMatchesColumnFilters(row, activeFilters.columns)) return false;
 
         if (searchTerm) {
-            const matchesText = displayedColumns.some(columnName => {
+            const matchesText = searchColumns.some(columnName => {
                 const raw = String(row[columnName] ?? '').toLowerCase();
                 const display = (row[columnName + '__display'] ?? '').toString().toLowerCase();
                 return raw.includes(searchTerm) || display.includes(searchTerm);
@@ -439,6 +448,7 @@ clearFiltersButton.addEventListener('click', async () => {
     searchElement.value = '';
     columnFilterElement.value = '';
     gridState.searchTerm = '';
+    gridState.searchColumn = '';
     gridState.columnFilters = {};
 
     renderFilterPills();
@@ -487,6 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener("tableLoaded", () => {
     activeFilters = { search: '', columns: {} };
     gridState.columnFilters = {};
+    gridState.searchColumn = '';
     searchElement.value = '';
     const filterBar = document.getElementById('filterBar');
     if(filterBar) filterBar.innerHTML = '';

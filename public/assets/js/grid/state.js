@@ -14,6 +14,7 @@ export const state = {
     fkCache: new Map(),
     fkData: new Map(),
     searchTerm: '',
+    searchColumn: '',
     containerEl: null,
     gridTitleEl: null,
     addRowBtn: null,
