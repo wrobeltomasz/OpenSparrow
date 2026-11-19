@@ -468,6 +468,10 @@ header .print-filter-label {
   filter: brightness(0) invert(1);
 }
 
+:root[data-theme="dark"] img[src*="icons/material/"] {
+  filter: brightness(0) invert(1);
+}
+
 .user-avatar-menu-item.danger {
   color: var(--error);
 }
@@ -4917,7 +4921,7 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
   min-height: 40px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--panel);
   color: var(--text);
   cursor: pointer;
   list-style: none;
@@ -4940,7 +4944,7 @@ nav.collapsed .menu-collapse-icon-right { display: block; }
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--panel);
   box-shadow: 0 8px 20px rgba(31, 42, 55, 0.12);
 }
 .m2m-panel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
