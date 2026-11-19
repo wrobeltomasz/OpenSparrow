@@ -477,11 +477,11 @@ function system_tables_clickstats_ddl(callable $ident): array
         )",
         "CREATE INDEX IF NOT EXISTS idx_spw_clickstats_created ON $clickstatsTable (created_at DESC)",
         "CREATE INDEX IF NOT EXISTS idx_spw_clickstats_element ON $clickstatsTable (element)",
-        "COMMENT ON TABLE $clickstatsTable IS 'Click statistics. Written only while Admin -> Click Statistics is enabled; one row per UI element click.'",
-        "COMMENT ON COLUMN $clickstatsTable.element IS 'Element label: the data-stat attribute when present, otherwise a derived id/class/text label.'",
-        "COMMENT ON COLUMN $clickstatsTable.page IS 'Page script the click happened on, e.g. index.php.'",
-        "COMMENT ON COLUMN $clickstatsTable.table_name IS 'Table in context when the click happened, or NULL.'",
-        "COMMENT ON COLUMN $clickstatsTable.record_id IS 'Record in context when the click happened, or NULL.'",
+        "COMMENT ON TABLE $clickstatsTable IS 'Click statistics. Written only while Admin -> Click Statistics is enabled; one row per page load.'",
+        "COMMENT ON COLUMN $clickstatsTable.element IS 'Page script name (same value as page), e.g. index.php. Column kept NOT NULL from the click-based design.'",
+        "COMMENT ON COLUMN $clickstatsTable.page IS 'Page script that was loaded, e.g. index.php.'",
+        "COMMENT ON COLUMN $clickstatsTable.table_name IS 'Table in context when the page loaded, or NULL.'",
+        "COMMENT ON COLUMN $clickstatsTable.record_id IS 'Record in context when the page loaded, or NULL.'",
     ];
 }
 

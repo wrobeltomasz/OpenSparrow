@@ -232,18 +232,13 @@ Your administrator can switch on a Click Statistics module. It is off by default
 it is off nothing about it reaches the page at all — no script is loaded, nothing is
 watched and no data is sent.
 
-When it is on, clicking a button or a link records: who you are, the time, a short label
-for the element you clicked, the page you were on, and — if the admin left that option on —
-the table and record you had open. Clicks are collected in the browser and sent in batches,
-not one request per click.
+When it is on, loading a page records: who you are, the time, the name of the page you
+opened, and — if the admin left that option on — the table and record you had open. One small
+entry is sent per page load, not one per click, and nothing else you do on the page is
+recorded.
 
 What is NOT recorded: anything you type. Field values, search terms, form contents and the
 parameters in the address bar are all left out.
-
-One thing worth knowing: when an element has no label of its own, the label falls back to
-the text you can see on it — and in a list of records that text is record content, such as
-a file name or a record title. So the log can contain record names, though never data you
-entered into a form.
 
 Only administrators can read this log, in the Admin panel. Entries are deleted automatically
 after a period the admin sets (90 days by default), and an admin can clear the log at any

@@ -338,14 +338,14 @@ COMMENT ON COLUMN app.spw_etl_flow_step_log.finished_at IS 'Step end.';
 -- 11. Click Statistics (3.3_clickstats)
 -- ---------------------------------------------------------------------------
 
-COMMENT ON TABLE app.spw_clickstats IS 'Click statistics. Written only while Admin -> Click Statistics is enabled; one row per UI element click.';
-COMMENT ON COLUMN app.spw_clickstats.id IS 'Click event id.';
-COMMENT ON COLUMN app.spw_clickstats.user_id IS 'User who clicked. FK to spw_users(id) ON DELETE SET NULL.';
-COMMENT ON COLUMN app.spw_clickstats.element IS 'Element label: the data-stat attribute when present, otherwise a derived id/class/text label.';
-COMMENT ON COLUMN app.spw_clickstats.page IS 'Page script the click happened on, e.g. index.php.';
-COMMENT ON COLUMN app.spw_clickstats.table_name IS 'Table in context when the click happened, or NULL.';
-COMMENT ON COLUMN app.spw_clickstats.record_id IS 'Record in context when the click happened, or NULL.';
-COMMENT ON COLUMN app.spw_clickstats.created_at IS 'Click time; drives retention and log ordering.';
+COMMENT ON TABLE app.spw_clickstats IS 'Click statistics. Written only while Admin -> Click Statistics is enabled; one row per page load.';
+COMMENT ON COLUMN app.spw_clickstats.id IS 'Page view id.';
+COMMENT ON COLUMN app.spw_clickstats.user_id IS 'User who loaded the page. FK to spw_users(id) ON DELETE SET NULL.';
+COMMENT ON COLUMN app.spw_clickstats.element IS 'Page script name (same value as page), e.g. index.php. Column kept NOT NULL from the click-based design.';
+COMMENT ON COLUMN app.spw_clickstats.page IS 'Page script that was loaded, e.g. index.php.';
+COMMENT ON COLUMN app.spw_clickstats.table_name IS 'Table in context when the page loaded, or NULL.';
+COMMENT ON COLUMN app.spw_clickstats.record_id IS 'Record in context when the page loaded, or NULL.';
+COMMENT ON COLUMN app.spw_clickstats.created_at IS 'Page view time; drives retention and log ordering.';
 
 -- ---------------------------------------------------------------------------
 -- 12. External API (3.6_external_api_log)

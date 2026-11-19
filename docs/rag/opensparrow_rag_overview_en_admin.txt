@@ -321,37 +321,30 @@ Anonymization (GDPR):
     Download button saving it as a .json file for the data-protection record
 
 Click Statistics:
-  - Records which page elements users click: user, time, element label, the page, and
-    optionally the table and record that were in context
+  - Records one row per page load: user, time, the page script name, and optionally the
+    table and record that were in context
   - Disabled by default, and disabled means absent: with the module off no collector
     script is emitted into any page, so nothing is downloaded, no listener is installed
     and no request is ever sent. The endpoint re-checks the flag on every request and
     answers 204 without writing, so a page left open when the module is switched off
     stops recording immediately
   - Settings tab (the last tab on the right): "Enable Click Statistics", "Record Table And
-    Record" (turn the latter off to keep entries to user, time and element only) and
+    Record" (turn the latter off to keep entries to user, time and page only) and
     "Delete Automatically After N days". Config in the spw_config key "clickstats"
-  - Log tab: recorded clicks newest first, 100 per page, filterable by element and by user
-  - Top Elements tab: a rollup of the 20 most-clicked elements, aggregated from all
-    recorded clicks, with the same element and user filters as the Log tab
+  - Log tab: recorded page views newest first, 100 per page, filterable by page and by user
+  - Pages tab: a graphical rollup of page views per page script, one tile per page with
+    its icon and view count, with the same page and user filters as the Log tab
   - Retention: "Delete Automatically After N days" (default 90) is applied by the
     notifications cron and is what bounds the table without anyone remembering to
     purge it; 0 means keep everything until cleared by hand. An unusable value falls
     back to the default, never to "keep everything". On top of that the Log tab
     purges on demand: "Delete Older Than N day(s)" trims to a rolling window and
     "Clear Log" empties spw_clickstats entirely
-  - Collection: one delegated click listener matches [data-stat], button, a and .btn;
-    the label is the data-stat value when present, otherwise a derived id/class/text
-    label. Input values, query strings and form contents are never recorded. Clicks are
-    buffered in the browser and delivered in batches via navigator.sendBeacon to
-    public/api/clickstats.php, so a session costs a handful of requests, not one per
-    click. A table name sent by a client is stored only if that user has access to it
-  - Labels can contain record data: with no data-stat and no id the label falls back to
-    the element's own visible text (up to 40 chars), which in a list of records is
-    record content — a file name on the Files page, a record title in a row link.
-    Unchecking "Record Table And Record" does not change that; it governs only the
-    separate table_name/record_id columns. Annotate an element with data-stat to pin
-    exactly what is stored for it
+  - Collection: a single page-view event is sent on page load via navigator.sendBeacon to
+    public/api/clickstats.php, so a session costs one small request per page, not one
+    per click. The stored "element" is the page script name (identical to the "page"
+    column). Input values, query strings and form contents are never recorded. A table
+    name sent by a client is stored only if that user has access to it
   - The endpoint accepts at most 50 events per request and 300 rows per minute per
     session; anything past that is dropped silently
   - Requires the 3.3_clickstats migration (Migrations -> Initialize System Tables)
@@ -497,9 +490,9 @@ Anonymization (GDPR):
   spw_anonymization_report   — detailed per-run compliance report (JSONB, downloadable)
 
 Click statistics:
-  spw_clickstats             — recorded UI clicks (user, time, element, page, and
-                               optionally the table and record in context). Written
-                               only while the Click Statistics module is enabled
+  spw_clickstats             — recorded page views (user, time, page, and optionally the
+                               table and record in context). Written only while the Click
+                               Statistics module is enabled
 
 External API:
   spw_external_api_log       — usage log of the read-only External API endpoint, one row per
@@ -559,7 +552,7 @@ Read and written through includes/config_store.php — never as files.
   etl_flows     — ordered chains ("flows") of existing ETL job ids, run
                   sequentially, stopping on the first step failure
   clickstats    — click statistics on/off ("enabled") and whether the table and
-                  record in context are stored alongside each click
+                  record in context are stored alongside each page view
                   ("track_records"). Absent or enabled=false means the collector is
                   never loaded into any page
 

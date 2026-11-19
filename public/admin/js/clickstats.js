@@ -66,19 +66,17 @@ export async function renderClickstatsPage(context) {
 
     wrap.appendChild(createPageHeader(
         'Click Statistics',
-        'Records which page elements users click: who, when, which element, and — when the page has one — '
+        'Records one row per page load: who, when, which page, and — when the page has one — '
         + 'the record in context. Disabled by default. While it is off nothing is loaded into the page and '
         + 'no request is made, so the application behaves exactly as if the module did not exist.'
     ));
 
-    const [logPanel, topPanel, pagesPanel, settingsPanel] = buildInnerTabs(wrap, [
+    const [logPanel, pagesPanel, settingsPanel] = buildInnerTabs(wrap, [
         { label: 'Log', icon: 'material/list.svg' },
-        { label: 'Top Elements', icon: 'material/leaderboard.svg' },
         { label: 'Pages', icon: 'material/web.svg' },
         { label: 'Settings', icon: 'material/settings.svg' },
     ]);
     renderLog(logPanel, state);
-    renderTopPanel(topPanel);
     renderPagesPanel(pagesPanel);
     renderSettings(settingsPanel, state);
 }
@@ -98,21 +96,21 @@ function renderSettings(panel, state) {
 
     const { card, body } = buildSectionCard(
         'Click Statistics Settings',
-        'Collection toggle, retention and what is stored with every recorded click.'
+        'Collection toggle, retention and what is stored with every recorded page view.'
     );
     content.appendChild(card);
 
     const enabled = checkboxRow(
         'Enable Click Statistics',
-        'Load the collector on user-facing pages and record clicks.',
+        'Load the collector on user-facing pages and record one row per page load.',
         state.config.enabled
     );
     enabled.input.disabled = !state.tableExists;
 
     const records = checkboxRow(
         'Record Table And Record',
-        'Also store which table and record was open when the click happened. Turn this off to keep '
-        + 'the log to user, time and element only.',
+        'Also store which table and record was open when the page loaded. Turn this off to keep '
+        + 'the log to user, time and page only.',
         state.config.track_records
     );
 
@@ -133,14 +131,14 @@ function renderSettings(panel, state) {
         el('span', '', 'days'),
     );
     const retentionNote = el('p', 'admin-page-desc',
-        'Applied by the notifications cron. Set to 0 to keep every click until you '
+        'Applied by the notifications cron. Set to 0 to keep every page view until you '
         + 'purge the log by hand — the log has no other automatic expiry.');
     body.appendChild(retentionRow);
     body.appendChild(retentionNote);
 
     if (typeof state.total === 'number') {
         body.appendChild(el('p', 'admin-page-desc',
-            `${state.total} click(s) recorded when this tab was opened. Expired rows are `
+            `${state.total} page view(s) recorded when this tab was opened. Expired rows are `
             + 'removed by the notifications cron; the Log tab trims or clears on demand.'));
     }
 
@@ -231,7 +229,7 @@ function renderLog(panel, state) {
     const elementFilter = document.createElement('input');
     elementFilter.type = 'search';
     elementFilter.className = 'adm-input w-220';
-    elementFilter.placeholder = 'Filter by element';
+    elementFilter.placeholder = 'Filter by page';
 
     const userFilter = document.createElement('input');
     userFilter.type = 'search';
@@ -270,7 +268,7 @@ function renderLog(panel, state) {
 
     const { card: logCard, body: rowsHost } = buildSectionCard(
         'Click log',
-        'Recorded clicks, newest first. Filter by element or user, trim by age or clear the log.'
+        'Recorded page views, newest first. Filter by page or user, trim by age or clear the log.'
     );
     content.appendChild(logCard);
 
@@ -313,8 +311,8 @@ function renderLog(panel, state) {
         const total = data.total ?? 0;
         const limit = data.limit ?? 100;
         summary.textContent = total === 0
-            ? 'No clicks recorded yet.'
-            : `${total} recorded click(s).`;
+            ? 'No page views recorded yet.'
+            : `${total} recorded page view(s).`;
 
         renderRows(rowsHost, data.rows || []);
         renderPager(pager, state, total, limit, load);
@@ -360,7 +358,7 @@ function renderLog(panel, state) {
     }
 
     purgeButton.addEventListener('click', () => {
-        if (!confirm('Delete every recorded click? This cannot be undone.')) return;
+        if (!confirm('Delete every recorded page view? This cannot be undone.')) return;
         purge(purgeButton, pillAnchor, { all: true });
     });
 
@@ -371,111 +369,8 @@ function renderLog(panel, state) {
             showStatusPill(trimPill, `Enter a valid number of days (1-${MAX_RETENTION_DAYS}).`, 'error');
             return;
         }
-        if (!confirm(`Delete recorded clicks older than ${days} day(s)? This cannot be undone.`)) return;
+        if (!confirm(`Delete recorded page views older than ${days} day(s)? This cannot be undone.`)) return;
         purge(trimButton, trimPill, { days });
-    });
-
-    load();
-}
-
-function renderTopPanel(panel) {
-    const content = el('div');
-    panel.appendChild(content);
-    content.innerHTML = '';
-
-    const filterBar = el('div');
-    filterBar.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;';
-
-    const elementFilter = document.createElement('input');
-    elementFilter.type = 'search';
-    elementFilter.className = 'adm-input w-220';
-    elementFilter.placeholder = 'Filter by element';
-
-    const userFilter = document.createElement('input');
-    userFilter.type = 'search';
-    userFilter.className = 'adm-input w-160';
-    userFilter.placeholder = 'Filter by user';
-
-    const fromField = dateField('From');
-    const toField = dateField('To');
-
-    const applyButton = el('button', 'btn btn-secondary', 'Apply');
-    const clearButton = el('button', 'btn btn-secondary', 'Clear Filters');
-    const pillAnchor = el('span');
-
-    filterBar.append(elementFilter, userFilter, fromField.wrap, toField.wrap, applyButton, clearButton, pillAnchor);
-    content.appendChild(filterBar);
-
-    const filters = { element: '', user: '', from: '', to: '' };
-
-    const { card, body } = buildSectionCard(
-        'Top Elements',
-        'The most-clicked elements, aggregated from all recorded clicks.'
-    );
-    content.appendChild(card);
-
-    async function load() {
-        body.innerHTML = '<p>Loading...</p>';
-        const parameters = new URLSearchParams({ action: 'clickstats_log', page: '1' });
-        if (filters.element) parameters.set('element', filters.element);
-        if (filters.user) parameters.set('user', filters.user);
-        if (filters.from) parameters.set('from', filters.from);
-        if (filters.to) parameters.set('to', filters.to);
-
-        let data;
-        try {
-            const response = await apiFetch('api.php?' + parameters.toString());
-            data = await response.json();
-        } catch (error) {
-            body.innerHTML = '<p style="color:var(--error);">Request failed.</p>';
-            return;
-        }
-        if (data.status !== 'success') {
-            body.innerHTML = '';
-            body.appendChild(el('p', '', data.error || 'Could not load the statistics.')).style.color = 'var(--error)';
-            return;
-        }
-        if (data.note) {
-            body.innerHTML = '';
-            body.appendChild(el('p', '', data.note));
-            return;
-        }
-
-        const top = data.top || [];
-        body.innerHTML = '';
-        if (top.length === 0) {
-            body.appendChild(el('p', '', 'Nothing to show.'));
-            return;
-        }
-
-        const table = mkTable();
-        mkThead(table, ['Element', 'Clicks']);
-        const tbody = table.createTBody();
-        top.forEach(row => {
-            const tr = tbody.insertRow();
-            tr.appendChild(td(row.element));
-            tr.appendChild(td(row.clicks));
-        });
-        body.appendChild(table);
-    }
-
-    applyButton.addEventListener('click', () => {
-        filters.element = elementFilter.value.trim();
-        filters.user = userFilter.value.trim();
-        filters.from = fromField.input.value;
-        filters.to = toField.input.value;
-        load();
-    });
-    clearButton.addEventListener('click', () => {
-        elementFilter.value = '';
-        userFilter.value = '';
-        fromField.input.value = '';
-        toField.input.value = '';
-        filters.element = '';
-        filters.user = '';
-        filters.from = '';
-        filters.to = '';
-        load();
     });
 
     load();
@@ -501,7 +396,7 @@ function renderPagesPanel(panel) {
     const elementFilter = document.createElement('input');
     elementFilter.type = 'search';
     elementFilter.className = 'adm-input w-220';
-    elementFilter.placeholder = 'Filter by element';
+    elementFilter.placeholder = 'Filter by page';
 
     const userFilter = document.createElement('input');
     userFilter.type = 'search';
@@ -522,7 +417,7 @@ function renderPagesPanel(panel) {
 
     const { card, body } = buildSectionCard(
         'Pages',
-        'Clicks aggregated by the page they happened on.'
+        'Page views aggregated per page script.'
     );
     content.appendChild(card);
 
@@ -609,12 +504,11 @@ function renderRows(host, rows) {
     }
 
     const table = mkTable();
-    mkThead(table, ['User', 'Element', 'Page', 'Table', 'Record', 'Time']);
+    mkThead(table, ['User', 'Page', 'Table', 'Record', 'Time']);
     const tbody = table.createTBody();
     rows.forEach(row => {
         const tr = tbody.insertRow();
         tr.appendChild(td(row.username));
-        tr.appendChild(td(row.element));
         tr.appendChild(td(row.page));
         tr.appendChild(td(row.table_name));
         tr.appendChild(td(row.record_id));

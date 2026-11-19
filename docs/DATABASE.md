@@ -518,19 +518,19 @@ Index: `(flow_run_id)`.
 
 ## 11. Click Statistics
 
-### `spw_clickstats` — recorded UI interactions
+### `spw_clickstats` — recorded page views
 
 Created by `3.3_clickstats`. Rows are written by `public/api/clickstats.php` only while the module is enabled.
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | bigserial PK | Click event id. |
-| `user_id` | int4 NULL → `spw_users(id)` ON DELETE SET NULL | User who clicked; NULL after account deletion. |
-| `element` | varchar(120) NOT NULL | `data-stat` value or a derived element label. |
-| `page` | varchar(120) NULL | Page script on which the click occurred. |
+| `id` | bigserial PK | Page view id. |
+| `user_id` | int4 NULL → `spw_users(id)` ON DELETE SET NULL | User who loaded the page; NULL after account deletion. |
+| `element` | varchar(120) NOT NULL | Page script name (same value as `page`). |
+| `page` | varchar(120) NULL | Page script that was loaded. |
 | `table_name` | varchar(100) NULL | Table in context, when recording it is enabled and access allows it. |
 | `record_id` | int4 NULL | Record in context, when recording it is enabled. |
-| `created_at` | timestamp NOT NULL DEFAULT now() | Click time; drives retention and log ordering. |
+| `created_at` | timestamp NOT NULL DEFAULT now() | Page view time; drives retention and log ordering. |
 
 Indexes: `(created_at DESC)`, `(element)`. Retention is configured in **System → Click Statistics** and enforced by the notification cron.
 
