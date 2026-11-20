@@ -2,7 +2,7 @@
 --
 -- Scope:   26 baseline tables + spw_migrations from the init_db bootstrap block
 --          + spw_clickstats + spw_external_api_log + spw_chat_messages = 30 tables.
--- Version: current 4.6 layout, including all seven database migrations through 4.4_user_chat.
+-- Version: current 4.8 layout, including all eight database migrations through 4.8_user_custom_fields.
 --
 -- Schema:  statements below use "app", the default from config/database.json -> schema.
 --          If your installation uses a different schema, run the script after:
@@ -41,7 +41,7 @@ COMMENT ON COLUMN app.spw_users.first_name IS 'Optional given name managed from 
 COMMENT ON COLUMN app.spw_users.last_name IS 'Optional surname managed from the admin panel and shown in frontend user tooltips. Added by 3.3_user_contact.';
 COMMENT ON COLUMN app.spw_users.email IS 'Optional contact email. Format-checked, not unique; used for two-factor login codes and shown in frontend user tooltips. Added by 3.3_user_contact.';
 COMMENT ON COLUMN app.spw_users.phone IS 'Optional contact phone managed from the admin panel and shown in frontend user tooltips. Added by 3.3_user_contact.';
-COMMENT ON COLUMN app.spw_users.custom_fields IS 'Admin-defined custom field values keyed by field key. Definitions live in spw_config.user_custom_fields. Applies to every user regardless of role. Added by 4.7_user_custom_fields.';
+COMMENT ON COLUMN app.spw_users.custom_fields IS 'Admin-defined custom field values keyed by field key. Definitions live in spw_config.user_custom_fields. Applies to every user regardless of role. Added by 4.8_user_custom_fields.';
 
 COMMENT ON TABLE  app.spw_users_log IS 'User action audit trail. Written by log_user_action() (includes/api_helpers.php); every mutation must produce a row.';
 COMMENT ON COLUMN app.spw_users_log.id IS 'Log entry id; referenced by spw_record_snapshots.log_id.';

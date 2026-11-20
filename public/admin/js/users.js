@@ -625,7 +625,7 @@ async function renderManageUsers(panel, context) {
             customWarning.style.color = 'var(--error)';
             customWarning.innerHTML = 'Custom fields are unavailable: run '
                 + 'Migrations &rarr; Initialize System Tables to apply the '
-                + '<code>4.7_user_custom_fields</code> migration.';
+                + '<code>4.8_user_custom_fields</code> migration.';
             listBody.appendChild(customWarning);
         }
 

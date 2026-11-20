@@ -257,7 +257,7 @@ if ($action === 'users_add') {
         $hasCustom = user_custom_column_present($conn);
         if (!$hasCustom && $customValues !== []) {
             throw new AdminApiMessage(
-                'Custom fields need the 4.7_user_custom_fields migration '
+                'Custom fields need the 4.8_user_custom_fields migration '
                 . '(Migrations → Initialize System Tables). Leave them empty to create '
                 . 'the user without them.'
             );
@@ -391,7 +391,7 @@ if ($action === 'users_update_contact') {
         $hasCustom = user_custom_column_present($conn);
         if (!$hasCustom && $customValues !== []) {
             throw new AdminApiMessage(
-                'Custom fields need the 4.7_user_custom_fields migration '
+                'Custom fields need the 4.8_user_custom_fields migration '
                 . '(Migrations → Initialize System Tables).'
             );
         }

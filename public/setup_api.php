@@ -229,7 +229,7 @@ if ($action === 'init_database') {
                 "INSERT INTO $migrationsTable (name) VALUES ('3.3_clickstats') ON CONFLICT (name) DO NOTHING",
                 "INSERT INTO $migrationsTable (name) VALUES ('3.6_external_api_log') ON CONFLICT (name) DO NOTHING",
                 "INSERT INTO $migrationsTable (name) VALUES ('4.4_user_chat') ON CONFLICT (name) DO NOTHING",
-                "INSERT INTO $migrationsTable (name) VALUES ('4.7_user_custom_fields') ON CONFLICT (name) DO NOTHING",
+                "INSERT INTO $migrationsTable (name) VALUES ('4.8_user_custom_fields') ON CONFLICT (name) DO NOTHING",
             ]
         );
 

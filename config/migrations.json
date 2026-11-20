@@ -236,5 +236,11 @@
         "deprecated_files": [],
         "removed_config_keys": [],
         "notes": "Adds a light/dark/system theme toggle in the avatar menu with localStorage persistence, an anti-flash bootstrap script and dark token overrides. The header surface moves to a dedicated --header-bg token and the Excel-like table shades (files table, record-history table and edit-form subtables) become --table-header-bg/--table-zebra-bg/--table-hover-bg tokens so those rows darken correctly. Every signed-in user gains a My history panel listing their latest 100 clicks that carry a record link (table icon, record link and time), served by a new read-only public/api/clickstats_history.php endpoint. The Files tab on the edit form is now hidden for tables not listed in the files relations configuration. Adds nine UI locales - Dutch, Finnish, Icelandic, Norwegian Bokmål, Japanese, Korean, Simplified Chinese, Russian and Ukrainian - bringing the total to 29. No database migration, no removed files and no removed config keys by this release."
+    },
+    "4.8": {
+        "removed_files": [],
+        "deprecated_files": [],
+        "removed_config_keys": [],
+        "notes": "Adds rich chat messages with [Record: table:id] links, file links and bold/italic markdown, shared record-link, file-link and icon pickers, and a double-width toggle for every slide-in drawer. The AI assistant is renamed Ask AI to Chatbot across the admin and frontend. Click Statistics now records one row per page load (page views) instead of per click, and My history shows record-linked page views. Adds admin-defined per-user custom fields (Users to Custom Fields) stored in the spw_users.custom_fields jsonb column created by the 4.8_user_custom_fields migration; definitions live in spw_config.user_custom_fields. Grid and view search now scope to the selected column (grid search_column, views column filter). Fixes dark-theme gaps: material icons invert, the m2m picker and record tooltip use the panel token, and grid highlight colours darken. No removed files and no removed config keys by this release."
     }
 }
